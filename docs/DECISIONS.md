@@ -24,7 +24,8 @@ entries below are the points where this project departs from it or goes beyond i
 | [0003](#adr-0003) | Coil shares the app's Ktor `HttpClient` | Accepted |
 | [0004](#adr-0004) | Android + JVM now, `wasmJs` in stage 3; no iOS | Accepted |
 | [0005](#adr-0005) | A Ktor server in the same repository | Accepted |
-| [0006](#adr-0006) | PostgreSQL tests run in `verify`, skip without Docker, never skip on CI | Accepted |
+| [0006](#adr-0006) | PostgreSQL tests run in `verify`, skip without Docker, never skip on CI | Accepted, **amended** by 0007 |
+| [0007](#adr-0007) | Embedded PostgreSQL when Docker is missing | Accepted |
 
 ---
 
@@ -217,3 +218,31 @@ the reason in the report ("Docker is not available…"), and Gradle lists it as 
 Anything touching SQL is not done until CI has run it.
 
 **Review when:** Docker is installed on every development machine — then the skip can go.
+
+---
+
+## ADR-0007
+
+### Embedded PostgreSQL when Docker is missing
+
+**Accepted** · 2026-09-25 · amends [ADR-0006](#adr-0006)
+
+**Context.** ADR-0006 lets the PostgreSQL tests skip without Docker and relies on CI to run them.
+On the development machine Docker is not installed, and on the day the server's schema was
+written GitHub Actions had not started a single run for this repository — so the SQL would
+have been merged untested everywhere.
+
+**Decision.** `TestPostgres` tries Testcontainers first and falls back to
+`io.zonky.test:embedded-postgres`, which unpacks and starts real PostgreSQL binaries (the same
+major version as docker-compose, 17) from Maven. The tests skip only when neither starts; on CI
+that is still a failure.
+
+**Alternatives rejected.**
+- *Keep skipping (ADR-0006 as written).* Leaves every repository and migration unverified until
+  CI works and Docker is installed.
+- *H2 or another in-memory database.* Not PostgreSQL: rejected in ADR-0006 for the same reasons.
+
+**Consequences.** One more test-only dependency; the first run downloads the binaries for the
+host platform. The server's database tests run on any machine the build runs on.
+
+**Review when:** Docker is present everywhere the build runs — then the fallback can go.
