@@ -26,6 +26,9 @@ dependencies {
 
     testImplementation(libs.ktor.client.content.negotiation)
     testImplementation(libs.testcontainers.postgresql)
+    // Real PostgreSQL binaries for machines without Docker (ADR-0007).
+    testImplementation(libs.embedded.postgres)
+    testImplementation(platform(libs.embedded.postgres.binaries.bom))
 }
 
 tasks.named<JavaExec>("run") {

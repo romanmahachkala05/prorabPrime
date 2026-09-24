@@ -494,7 +494,8 @@ Rules:
 - **Tests:** services — unit tests with fakes (cover rules, compensation on file and
   database failures); routes — Ktor `testApplication` (status codes, 401 without a
   token, error format, path traversal); repositories — integration tests against
-  PostgreSQL via Testcontainers, which skip without Docker except on CI (ADR-0006).
+  PostgreSQL via Testcontainers, falling back to embedded PostgreSQL without Docker
+  (ADR-0006, ADR-0007).
 
 ---
 
