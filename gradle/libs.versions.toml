@@ -13,6 +13,8 @@ flyway = "13.8.0"
 postgresql = "42.7.13"
 hikari = "7.1.0"
 testcontainers = "2.0.5"
+metadataExtractor = "2.21.0"
+twelvemonkeys = "3.15.2"
 embeddedPostgres = "2.2.2"
 # PostgreSQL itself for the embedded fallback; the same major version as docker-compose.
 embeddedPostgresBinaries = "17.11.0"
@@ -76,6 +78,10 @@ flyway-core = { module = "org.flywaydb:flyway-core", version.ref = "flyway" }
 flyway-database-postgresql = { module = "org.flywaydb:flyway-database-postgresql", version.ref = "flyway" }
 postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
 hikaricp = { module = "com.zaxxer:HikariCP", version.ref = "hikari" }
+# EXIF orientation for thumbnails; ImageIO does not read it.
+metadata-extractor = { module = "com.drewnoakes:metadata-extractor", version.ref = "metadataExtractor" }
+# A WebP reader for ImageIO, which has none of its own. Registers itself as a service.
+imageio-webp = { module = "com.twelvemonkeys.imageio:imageio-webp", version.ref = "twelvemonkeys" }
 testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgresql", version.ref = "testcontainers" }
 embedded-postgres = { module = "io.zonky.test:embedded-postgres", version.ref = "embeddedPostgres" }
 embedded-postgres-binaries-bom = { module = "io.zonky.test.postgres:embedded-postgres-binaries-bom", version.ref = "embeddedPostgresBinaries" }

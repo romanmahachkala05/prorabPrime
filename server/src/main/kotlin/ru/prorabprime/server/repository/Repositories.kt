@@ -24,9 +24,25 @@ interface ObjectRepository {
 
     /** Deletes the object and, by cascade, its photo rows. Returns false when there is no such object. */
     suspend fun delete(id: UUID): Boolean
+
+    /** The database rejects a photo of another object (composite foreign key). */
+    suspend fun setCover(id: UUID, photoId: UUID?)
+
+    /** Moves `updated_at`: a change to an object's photos is a change to the object. */
+    suspend fun touch(id: UUID, at: Instant)
 }
 
 interface PhotoRepository {
     /** In carousel order. */
     suspend fun listByObject(objectId: UUID): List<PhotoRecord>
+
+    suspend fun find(id: UUID): PhotoRecord?
+
+    suspend fun insert(photo: PhotoRecord)
+
+    /** Returns false when there is no such photo. */
+    suspend fun delete(id: UUID): Boolean
+
+    /** One past the object's highest sort order, so a new photo goes to the end. */
+    suspend fun nextSortOrder(objectId: UUID): Int
 }

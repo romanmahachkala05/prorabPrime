@@ -480,6 +480,9 @@ Rules:
 - **Blocking calls** (JDBC, file I/O, image decoding) run on an injected dispatcher.
   Database work goes through `DbExecutor.query { }`: Exposed's `suspendTransaction` inside
   `withContext(dispatcher)` (`newSuspendedTransaction` is deprecated in Exposed 1.x).
+- **Several repository writes that belong together run in `Transactor.inTransaction { }`**
+  (implemented by `DbExecutor`); a repository call inside it joins that transaction. Services
+  get the `Transactor`, not Exposed, so fakes can stand in for it.
 - **Routes unwrap service results with `getOrThrow()`**; a `ServiceException` carries the
   `ServiceError` to StatusPages. Anything else thrown is a 500 whose message stays in the log.
 - **Configuration** comes from `application.conf` overridden by environment

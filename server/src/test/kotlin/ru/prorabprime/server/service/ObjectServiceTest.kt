@@ -10,6 +10,7 @@ import ru.prorabprime.contract.ObjectStatusDto
 import ru.prorabprime.server.error.ServiceError
 import ru.prorabprime.server.error.ServiceException
 import ru.prorabprime.server.fakes.FIXED_NOW
+import ru.prorabprime.server.fakes.FakeFileStorage
 import ru.prorabprime.server.fakes.FakeObjectRepository
 import ru.prorabprime.server.fakes.FakePhotoRepository
 import ru.prorabprime.server.fakes.FixedClock
@@ -21,7 +22,8 @@ class ObjectServiceTest {
     private val objects = FakeObjectRepository(photos)
     private val clock = FixedClock()
     private val id = UUID.fromString("00000000-0000-0000-0000-000000000001")
-    private val service = ObjectService(objects, photos, clock, newId = { id })
+    private val storage = FakeFileStorage()
+    private val service = ObjectService(objects, photos, storage, clock, newId = { id })
 
     private val request = ObjectRequestDto(address = "Тверская, 5", status = ObjectStatusDto.IN_PROGRESS)
 
@@ -94,8 +96,19 @@ class ObjectServiceTest {
     }
 
     @Test
-    fun `deleting removes the object`() = runTest {
+    fun `deleting removes the object and its files`() = runTest {
         service.create(request)
+        storage.write(id, "a.jpg", byteArrayOf(1))
+
+        assertThat(service.delete(id).isSuccess).isTrue()
+        assertThat(objects.records).isEmpty()
+        assertThat(storage.files).isEmpty()
+    }
+
+    @Test
+    fun `files that cannot be deleted do not fail the request`() = runTest {
+        service.create(request)
+        storage.failDeletes = true
 
         assertThat(service.delete(id).isSuccess).isTrue()
         assertThat(objects.records).isEmpty()
