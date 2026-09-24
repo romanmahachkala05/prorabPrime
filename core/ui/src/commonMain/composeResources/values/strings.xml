@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- common: errors, in the order of AppError -->
+    <string name="common_error_network">Сервер не отвечает. Проверьте Wi‑Fi и адрес сервера в настройках.</string>
+    <string name="common_error_unauthorized">Сервер не принял токен. Проверьте его в настройках.</string>
+    <string name="common_error_not_found">Объект не найден — возможно, он уже удалён.</string>
+    <string name="common_error_validation">Сервер не принял данные. Проверьте поля.</string>
+    <string name="common_error_photo_unsupported">Этот формат фото не поддерживается. Подойдут JPEG, PNG и WebP.</string>
+    <string name="common_error_photo_too_large">Фото слишком большое: не больше 15 МБ.</string>
+    <string name="common_error_server">Ошибка на сервере (%1$d). Попробуйте ещё раз позже.</string>
+    <string name="common_error_unknown">Что-то пошло не так. Попробуйте ещё раз.</string>
+</resources>

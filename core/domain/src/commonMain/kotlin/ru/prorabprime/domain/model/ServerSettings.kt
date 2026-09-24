@@ -10,4 +10,12 @@ data class ServerSettings(
         baseUrl = baseUrl.trim().trimEnd('/'),
         apiToken = apiToken.trim(),
     )
+
+    /** An `http://` or `https://` address with something after the scheme; the rest is the server's to judge. */
+    val hasUsableAddress: Boolean
+        get() {
+            val address = baseUrl.trim()
+            val scheme = listOf("http://", "https://").find { address.startsWith(it) } ?: return false
+            return address.length > scheme.length
+        }
 }

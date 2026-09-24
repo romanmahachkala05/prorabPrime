@@ -11,7 +11,18 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            implementation(project(":core:domain"))
+            // `api`: AppError and the models appear in this module's signatures.
+            api(project(":core:domain"))
+            // `api`: every screen's ViewModel extends ViewModel and uses launchCatching on it.
+            api(libs.androidx.lifecycle.viewmodel)
+            // `api`: UiText.Resource holds its format arguments as an ImmutableList.
+            api(libs.kotlinx.collections.immutable)
+        }
+
+        jvmTest.dependencies {
+            implementation(libs.junit)
+            implementation(libs.truth)
+            implementation(libs.kotlinx.coroutines.test)
         }
     }
 }

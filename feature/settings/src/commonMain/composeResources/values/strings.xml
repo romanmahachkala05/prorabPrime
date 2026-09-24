@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- settings -->
+    <string name="settings_title">Настройки</string>
+    <string name="settings_back">Назад</string>
+    <string name="settings_address_label">Адрес сервера</string>
+    <string name="settings_address_hint">http://192.168.1.10:8080</string>
+    <string name="settings_token_label">Токен</string>
+    <string name="settings_check">Проверить соединение</string>
+    <string name="settings_check_running">Проверяю…</string>
+    <string name="settings_check_succeeded">Соединение есть, токен принят</string>
+    <string name="settings_check_unreachable">Сервер не отвечает по этому адресу. Проверьте адрес и что телефон в той же сети Wi‑Fi.</string>
+    <string name="settings_check_bad_token">Сервер отвечает, но не принял токен.</string>
+    <string name="settings_error_address">Адрес должен начинаться с http:// или https://</string>
+    <string name="settings_save">Сохранить</string>
+    <string name="settings_saved">Настройки сохранены</string>
+</resources>

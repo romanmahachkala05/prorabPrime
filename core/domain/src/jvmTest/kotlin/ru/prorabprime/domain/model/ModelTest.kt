@@ -26,6 +26,15 @@ class ModelTest {
     }
 
     @Test
+    fun `only an http or https address is usable`() {
+        assertThat(ServerSettings("http://192.168.1.10:8080", "t").hasUsableAddress).isTrue()
+        assertThat(ServerSettings(" https://example.org ", "t").hasUsableAddress).isTrue()
+        assertThat(ServerSettings("192.168.1.10:8080", "t").hasUsableAddress).isFalse()
+        assertThat(ServerSettings("http://", "t").hasUsableAddress).isFalse()
+        assertThat(ServerSettings("", "t").hasUsableAddress).isFalse()
+    }
+
+    @Test
     fun `an AppError survives the trip through Result`() {
         val result = AppError.Server(503).asFailure<Unit>()
 
