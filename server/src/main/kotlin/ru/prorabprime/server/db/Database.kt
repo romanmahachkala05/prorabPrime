@@ -31,14 +31,27 @@ fun migrate(dataSource: DataSource) {
 }
 
 /**
+ * Makes several repository calls one atomic unit. Services depend on this, not on Exposed, so
+ * they stay testable with fakes.
+ */
+interface Transactor {
+    suspend fun <T> inTransaction(block: suspend () -> T): T
+}
+
+/**
  * Runs database work off the caller's thread: JDBC blocks. Exposed's `suspendTransaction`
  * takes no context (its `newSuspendedTransaction` did, and is deprecated), hence `withContext`.
+ *
+ * A [query] inside [inTransaction] joins the outer transaction instead of opening its own
+ * (Exposed's default with nested transactions off), so it commits or rolls back with it.
  */
 class DbExecutor(
     private val database: Database,
     private val dispatcher: CoroutineDispatcher,
-) {
+) : Transactor {
     suspend fun <T> query(block: suspend JdbcTransaction.() -> T): T = withContext(dispatcher) {
         suspendTransaction(database) { block() }
     }
+
+    override suspend fun <T> inTransaction(block: suspend () -> T): T = query { block() }
 }

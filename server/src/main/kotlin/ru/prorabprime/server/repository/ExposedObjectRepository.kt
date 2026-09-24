@@ -101,6 +101,14 @@ class ExposedObjectRepository(
         ObjectsTable.deleteWhere { ObjectsTable.id eq id } > 0
     }
 
+    override suspend fun setCover(id: UUID, photoId: UUID?) {
+        db.query { ObjectsTable.update({ ObjectsTable.id eq id }) { it[coverPhotoId] = photoId } }
+    }
+
+    override suspend fun touch(id: UUID, at: Instant) {
+        db.query { ObjectsTable.update({ ObjectsTable.id eq id }) { it[updatedAt] = at.toJavaInstant() } }
+    }
+
     private fun UpdateBuilder<*>.setFields(fields: ObjectFields) {
         this[ObjectsTable.title] = fields.title
         this[ObjectsTable.address] = fields.address

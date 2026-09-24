@@ -24,6 +24,9 @@ dependencies {
     implementation(libs.postgresql)
     implementation(libs.hikaricp)
 
+    implementation(libs.metadata.extractor)
+    implementation(libs.imageio.webp)
+
     testImplementation(libs.ktor.client.content.negotiation)
     testImplementation(libs.testcontainers.postgresql)
     // Real PostgreSQL binaries for machines without Docker (ADR-0007).

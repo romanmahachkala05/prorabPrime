@@ -5,6 +5,7 @@ import kotlin.time.Clock
 import kotlin.time.Instant
 import ru.prorabprime.contract.SortFieldDto
 import ru.prorabprime.contract.SortOrderDto
+import ru.prorabprime.server.db.Transactor
 import ru.prorabprime.server.model.ObjectFields
 import ru.prorabprime.server.model.ObjectListItem
 import ru.prorabprime.server.model.ObjectListQuery
@@ -67,14 +68,42 @@ class FakeObjectRepository(
         photos.records.values.removeAll { it.objectId == id }
         return records.remove(id) != null
     }
+
+    override suspend fun setCover(id: UUID, photoId: UUID?) {
+        records[id]?.let { records[id] = it.copy(coverPhotoId = photoId) }
+    }
+
+    override suspend fun touch(id: UUID, at: Instant) {
+        records[id]?.let { records[id] = it.copy(updatedAt = at) }
+    }
 }
 
 class FakePhotoRepository : PhotoRepository {
 
     val records = linkedMapOf<UUID, PhotoRecord>()
 
+    /** When set, [insert] throws it, as a failed database write would. */
+    var insertFailure: Exception? = null
+
     override suspend fun listByObject(objectId: UUID): List<PhotoRecord> =
         records.values.filter { it.objectId == objectId }.sortedBy { it.sortOrder }
+
+    override suspend fun find(id: UUID): PhotoRecord? = records[id]
+
+    override suspend fun insert(photo: PhotoRecord) {
+        insertFailure?.let { throw it }
+        records[photo.id] = photo
+    }
+
+    override suspend fun delete(id: UUID): Boolean = records.remove(id) != null
+
+    override suspend fun nextSortOrder(objectId: UUID): Int =
+        (records.values.filter { it.objectId == objectId }.maxOfOrNull { it.sortOrder } ?: 0) + 1
+}
+
+/** Runs the block directly; the fakes have no transactions to join. */
+object ImmediateTransactor : Transactor {
+    override suspend fun <T> inTransaction(block: suspend () -> T): T = block()
 }
 
 fun aPhotoRecord(

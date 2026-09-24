@@ -37,6 +37,11 @@ complexity:
     excludes: *testSources
 
 style:
+  ReturnCount:
+    # `if (invalid) return failure` at the top of a function is how preconditions read in
+    # Kotlin; counting them pushes code into nested ifs that hide the main path.
+    excludeGuardClauses: true
+
   MagicNumber:
     # `val Purple40 = Color(0xFF6650a4)` — the property is the name, so extracting a
     # constant would just rename it twice. Same for `RoundedCornerShape(50)` behind a
