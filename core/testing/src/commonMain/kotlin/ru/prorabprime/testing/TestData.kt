@@ -9,6 +9,7 @@ import ru.prorabprime.domain.model.ObjectStatus
 import ru.prorabprime.domain.model.ObjectSummary
 import ru.prorabprime.domain.model.Photo
 import ru.prorabprime.domain.model.PhotoId
+import ru.prorabprime.domain.model.ServerFilePath
 
 val TEST_INSTANT: Instant = Instant.parse("2026-09-25T10:00:00Z")
 
@@ -25,7 +26,7 @@ fun anObjectSummary(
     address = address,
     status = status,
     clientName = null,
-    coverThumbPath = coverThumbPath,
+    coverThumbPath = coverThumbPath?.let(::ServerFilePath),
     photoCount = photoCount,
     createdAt = TEST_INSTANT,
     updatedAt = TEST_INSTANT,
@@ -54,8 +55,8 @@ fun anObjectDetails(
 
 fun aPhoto(id: String = "photo-1", objectId: String = "object-1") = Photo(
     id = PhotoId(id),
-    path = "/files/$objectId/$id.jpg",
-    thumbPath = "/files/$objectId/${id}_thumb.jpg",
+    path = ServerFilePath("/files/$objectId/$id.jpg"),
+    thumbPath = ServerFilePath("/files/$objectId/${id}_thumb.jpg"),
     width = 2048,
     height = 1536,
     createdAt = TEST_INSTANT,

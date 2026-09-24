@@ -52,7 +52,8 @@ androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidx
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
 androidx-lifecycle-viewmodel = { module = "androidx.lifecycle:lifecycle-viewmodel", version.ref = "lifecycle" }
 androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycle" }
-androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
+# The multiplatform core (Android and JVM), so the settings store is tested on the JVM too.
+androidx-datastore-preferences-core = { module = "androidx.datastore:datastore-preferences-core", version.ref = "datastore" }
 # Version-ref'd rather than BOM-managed: a KMP source set's dependency block has no
 # non-deprecated `platform()`, and the catalog already pins one version in one place.
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
