@@ -26,6 +26,7 @@ entries below are the points where this project departs from it or goes beyond i
 | [0005](#adr-0005) | A Ktor server in the same repository | Accepted |
 | [0006](#adr-0006) | PostgreSQL tests run in `verify`, skip without Docker, never skip on CI | Accepted, **amended** by 0007 |
 | [0007](#adr-0007) | Embedded PostgreSQL when Docker is missing | Accepted |
+| [0008](#adr-0008) | Requests go to a placeholder host, resolved per request | Accepted |
 
 ---
 
@@ -246,3 +247,35 @@ that is still a failure.
 host platform. The server's database tests run on any machine the build runs on.
 
 **Review when:** Docker is present everywhere the build runs — then the fallback can go.
+
+---
+
+## ADR-0008
+
+### Requests go to a placeholder host, resolved per request
+
+**Accepted** · 2026-09-25 · refines [ADR-0003](#adr-0003)
+
+**Context.** ADR-0003 has API calls and image loads share one `HttpClient` whose plugin applies
+the configured address and token. The domain carries file locations as server-relative paths.
+Coil, though, only hands absolute `http(s)` URLs to its network fetcher, so a relative path
+never reaches the client at all.
+
+**Decision.** Every request to our server — API and images alike — is built against the
+placeholder base `http://prorab-server.invalid`. The `ServerAddress` plugin in `:core:data`
+recognizes that host, replaces scheme, host, port and base path with the configured server,
+and adds the bearer token; requests to any other host pass untouched and never carry the
+token. File locations in the domain are a `ServerFilePath` value class, so `:app` registers a
+Coil mapper for exactly that type (`ServerFilePath.toRequestUrl()`).
+
+**Alternatives rejected.**
+- *Absolute URLs built in the data layer's mappers.* Go stale in memory when the address
+  changes, and put the configured address into every model.
+- *Resolve in a Coil interceptor or mapper against the current settings.* A second place that
+  knows the server's address; the API would still need the plugin.
+
+**Consequences.** Changing the server in the settings affects the very next request. A request
+that somehow escaped the plugin goes nowhere: `.invalid` never resolves (RFC 2606). The
+connection check addresses candidate settings directly, bypassing the placeholder on purpose.
+
+**Review when:** images come from somewhere other than our server.

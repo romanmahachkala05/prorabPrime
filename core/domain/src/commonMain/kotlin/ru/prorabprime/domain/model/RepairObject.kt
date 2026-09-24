@@ -10,14 +10,14 @@ enum class ObjectStatus {
     PAUSED,
 }
 
-/** One row of the objects list. [coverThumbPath] is relative to the server (`/files/...`). */
+/** One row of the objects list. */
 data class ObjectSummary(
     val id: ObjectId,
     val title: String?,
     val address: String,
     val status: ObjectStatus,
     val clientName: String?,
-    val coverThumbPath: String?,
+    val coverThumbPath: ServerFilePath?,
     val photoCount: Int,
     val createdAt: Instant,
     val updatedAt: Instant,
@@ -43,11 +43,10 @@ data class ObjectDetails(
     val displayTitle: String get() = title ?: address
 }
 
-/** Paths are relative to the server (`/files/...`); the HTTP client resolves them. */
 data class Photo(
     val id: PhotoId,
-    val path: String,
-    val thumbPath: String,
+    val path: ServerFilePath,
+    val thumbPath: ServerFilePath,
     val width: Int,
     val height: Int,
     val createdAt: Instant,
