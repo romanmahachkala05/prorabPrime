@@ -19,3 +19,14 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "ProrabPrime"
+include(":app")
+include(":shared")
+include(":server")
+include(":api-contract")
+include(":core:domain")
+include(":core:data")
+include(":core:ui")
+include(":core:designsystem")
+include(":core:testing")
+include(":feature:objects")
+include(":feature:settings")
