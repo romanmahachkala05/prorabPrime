@@ -39,6 +39,10 @@ gradlePlugin {
             id = "prorab.koin"
             implementationClass = "KoinConventionPlugin"
         }
+        register("ktorServer") {
+            id = "prorab.ktor.server"
+            implementationClass = "KtorServerConventionPlugin"
+        }
         register("quality") {
             id = "prorab.quality"
             implementationClass = "QualityConventionPlugin"
