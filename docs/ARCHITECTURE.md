@@ -241,7 +241,9 @@ Every screen is a subpackage with these parts:
 - All failure → UI mapping lives in `IXxxErrorHandler`. The ViewModel calls it;
   the handler calls StateHolder mutators + `notifier`.
 - Branch on the sealed **`AppError`** from the domain (`Network`, `Unauthorized`,
-  `NotFound`, `Validation`, `Server`, `Unknown`), never on raw exception classes.
+  `NotFound`, `Validation`, `PhotoRejected`, `Server`, `Unknown`), never on raw exception
+  classes. `Result` failures carry it wrapped in `AppErrorException`; unwrap with
+  `Throwable.asAppError()`.
   Only `:core:data`'s error mapper knows what an HTTP status or an `IOException`
   means (CatsListKMP ADR-0032).
 
