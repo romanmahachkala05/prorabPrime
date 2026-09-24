@@ -24,6 +24,7 @@ entries below are the points where this project departs from it or goes beyond i
 | [0003](#adr-0003) | Coil shares the app's Ktor `HttpClient` | Accepted |
 | [0004](#adr-0004) | Android + JVM now, `wasmJs` in stage 3; no iOS | Accepted |
 | [0005](#adr-0005) | A Ktor server in the same repository | Accepted |
+| [0006](#adr-0006) | PostgreSQL tests run in `verify`, skip without Docker, never skip on CI | Accepted |
 
 ---
 
@@ -185,3 +186,34 @@ services → repositories/storage, errors mapped once in StatusPages) is ARCHITE
 tests need Docker (Testcontainers).
 
 **Review when:** the server gets a second, independent client or its own release cadence.
+
+---
+
+## ADR-0006
+
+### PostgreSQL tests run in `verify`, skip without Docker, never skip on CI
+
+**Accepted** · 2026-09-25
+
+**Context.** The server's repositories and migrations are tested against a real PostgreSQL
+started by Testcontainers — the schema relies on PostgreSQL-specific behavior (a composite
+foreign key with `ON DELETE SET NULL (column)`, `JSONB`) that no in-memory database reproduces.
+Testcontainers needs Docker. The CI runner has it; the development machine currently does not.
+
+**Decision.** The integration tests are ordinary tests in `:server:test`, so `verify` runs them.
+Each one first calls `TestPostgres.assumeAvailable()`: without Docker the test is skipped with
+the reason in the report ("Docker is not available…"), and Gradle lists it as `SKIPPED`. When the
+`CI` environment variable is set, a missing Docker fails the test instead.
+
+**Alternatives rejected.**
+- *A separate task, like `verifyOnDevice`.* A gate nobody is forced to run is the one that
+  stops being run; CI would need a second job to cover it.
+- *Always require Docker.* `verify` would be red on a machine that cannot run it, for reasons
+  unrelated to the change.
+- *H2 in PostgreSQL mode.* Does not implement the partial `SET NULL` or `JSONB`; a green test
+  would prove nothing about the real schema.
+
+**Consequences.** A local green `verify` without Docker does not cover the database; CI does.
+Anything touching SQL is not done until CI has run it.
+
+**Review when:** Docker is installed on every development machine — then the skip can go.

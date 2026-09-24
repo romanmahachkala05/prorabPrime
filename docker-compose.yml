@@ -1,7 +1,8 @@
 # Local infrastructure for the server. Reads credentials from `.env` (copy `.env.example`).
 #
-#   docker compose up -d      # start PostgreSQL
-#   ./gradlew :server:run     # start the server against it
+#   docker compose up -d                       # PostgreSQL only; then ./gradlew :server:run
+#   ./gradlew :server:buildFatJar
+#   docker compose --profile server up -d --build   # PostgreSQL and the server in Docker
 services:
   postgres:
     # 15+ is required: the cover-photo foreign key uses ON DELETE SET NULL (column).
@@ -22,5 +23,26 @@ services:
       retries: 10
     restart: unless-stopped
 
+  server:
+    # Opt-in, so a plain `docker compose up` leaves port 8080 to `./gradlew :server:run`.
+    profiles: ["server"]
+    build: ./server
+    env_file: .env
+    environment:
+      # Inside the compose network the database is `postgres`, not localhost.
+      DB_URL: jdbc:postgresql://postgres:5432/prorab
+      STORAGE_DIR: /data/uploads
+      # The container always listens on 8080; PORT from .env only picks the host side.
+      PORT: 8080
+    ports:
+      - "${PORT:-8080}:8080"
+    volumes:
+      - uploads:/data/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
 volumes:
   postgres-data:
+  uploads:
