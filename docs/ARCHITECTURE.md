@@ -477,8 +477,11 @@ Rules:
 - **Errors:** services return `Result` / a sealed `ServiceError` (`NotFound`,
   `Validation`, `UnsupportedMedia`, `TooLarge`, …). They become HTTP statuses and an
   `ErrorDto { code, message }` in exactly one place: StatusPages.
-- **Blocking calls** (JDBC, file I/O, image decoding) run on an injected dispatcher;
-  Exposed uses `newSuspendedTransaction`.
+- **Blocking calls** (JDBC, file I/O, image decoding) run on an injected dispatcher.
+  Database work goes through `DbExecutor.query { }`: Exposed's `suspendTransaction` inside
+  `withContext(dispatcher)` (`newSuspendedTransaction` is deprecated in Exposed 1.x).
+- **Routes unwrap service results with `getOrThrow()`**; a `ServiceException` carries the
+  `ServiceError` to StatusPages. Anything else thrown is a 500 whose message stays in the log.
 - **Configuration** comes from `application.conf` overridden by environment
   variables. Nothing is hardcoded; secrets live in `.env`, never in git.
 - **Auth:** every endpoint except `/health` requires `Authorization: Bearer <API_TOKEN>`;
@@ -491,7 +494,7 @@ Rules:
 - **Tests:** services — unit tests with fakes (cover rules, compensation on file and
   database failures); routes — Ktor `testApplication` (status codes, 401 without a
   token, error format, path traversal); repositories — integration tests against
-  PostgreSQL via Testcontainers.
+  PostgreSQL via Testcontainers, which skip without Docker except on CI (ADR-0006).
 
 ---
 
