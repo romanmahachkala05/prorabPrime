@@ -1,2 +1,5 @@
-gradlew text eol=lf
-*.bat   text eol=crlf
+# LF everywhere, whatever core.autocrlf says: ktlint and .editorconfig expect it.
+* text=auto eol=lf
+*.bat text eol=crlf
+*.jar binary
+*.png binary
