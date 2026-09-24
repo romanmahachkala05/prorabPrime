@@ -1,0 +1,33 @@
+# Read by ktlint and by the IDE, so the two agree on what "formatted" means.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{kt,kts}]
+max_line_length = 120
+ktlint_code_style = android_studio
+# Keep constructor parameters one per line rather than collapsing them whenever they
+# happen to fit. Adding a parameter then stays a one-line diff, and it matches how this
+# codebase was already written.
+ktlint_class_signature_rule_force_multiline_when_parameter_count_greater_or_equal_than = 1
+ktlint_function_signature_rule_force_multiline_when_parameter_count_greater_or_equal_than = 3
+
+# @Composable functions are PascalCase by the official Compose convention, which the
+# default function-naming rule would otherwise reject.
+ktlint_function_naming_ignore_when_annotated_with = Composable
+
+# Trailing commas keep a one-line diff when a parameter is added.
+ij_kotlin_allow_trailing_comma = true
+ij_kotlin_allow_trailing_comma_on_call_site = true
+
+[*.{yml,yaml,json,toml}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false

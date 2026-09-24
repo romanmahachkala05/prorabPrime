@@ -1,0 +1,50 @@
+# Deviations from detekt's defaults, and nothing else.
+#
+# `buildUponDefaultConfig` is on, so every rule not named here keeps its default. This
+# file is deliberately short: a generated 700-line config would bury the handful of rules
+# this project actually chose to bend, and those choices are the only part worth reviewing.
+#
+# Rules bent for a whole category of code live here. One-off exceptions are suppressed at
+# the call site with a comment instead, so they stay visible where someone will read them.
+
+# detekt's defaults already exempt test sources from the naming and magic-number rules, but
+# the list it ships predates AGP's multiplatform source sets — `androidHostTest` and
+# `androidDeviceTest` are not in it. Restated in full here because setting `excludes`
+# replaces the default list rather than adding to it.
+naming:
+  FunctionNaming:
+    # @Composable functions are PascalCase by the official Compose naming convention.
+    # Without this, detekt wants every composable in the project renamed.
+    ignoreAnnotated: ['Composable']
+    excludes: &testSources
+      - '**/test/**'
+      - '**/androidTest/**'
+      - '**/commonTest/**'
+      - '**/jvmTest/**'
+      - '**/androidHostTest/**'
+      - '**/androidDeviceTest/**'
+
+complexity:
+  LongParameterList:
+    # Constructor injection lists a class's collaborators; that is the pattern working, not
+    # a smell. A ViewModel that genuinely does too much is caught by reading it, not by
+    # counting its parameters. Koin ViewModels carry no annotation to key an exemption to,
+    # so the threshold is raised instead.
+    allowedConstructorParameters: 8
+
+  TooManyFunctions:
+    # One test method per case is the point, not a smell.
+    excludes: *testSources
+
+style:
+  MagicNumber:
+    # `val Purple40 = Color(0xFF6650a4)` — the property is the name, so extracting a
+    # constant would just rename it twice. Same for `RoundedCornerShape(50)` behind a
+    # named `CARD_SHAPE`.
+    ignorePropertyDeclaration: true
+    excludes: *testSources
+
+  UnusedPrivateFunction:
+    # @Preview composables are called by the IDE renderer, which detekt cannot see.
+    # ARCHITECTURE.md §10 requires them, so deleting them is not the fix.
+    ignoreAnnotated: ['Preview']

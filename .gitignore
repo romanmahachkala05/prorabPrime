@@ -1,0 +1,68 @@
+# Built application files
+*.apk
+*.aar
+*.ap_
+*.aab
+
+# Files for the ART/Dalvik VM
+*.dex
+
+# Java class files
+*.class
+
+# Generated files
+bin/
+gen/
+out/
+release/
+
+# Gradle
+.gradle/
+build/
+
+# Local configuration file (SDK path, default server URL and token)
+local.properties
+
+# Server secrets and runtime data (uploaded photos)
+.env
+data/
+
+# Log files
+*.log
+
+# Android Studio / IntelliJ
+*.iml
+# `.idea/*`, not `.idea/`: git cannot re-include a path inside an excluded *directory*,
+# so the negation below would silently do nothing.
+.idea/*
+!.idea/dictionaries/
+.navigation/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Kotlin
+.kotlin/
+
+# Signing material — never commit
+*.jks
+*.keystore
+keystore.properties
+
+# Crash / profiling dumps
+*.hprof
+
+# OS cruft
+.DS_Store
+Thumbs.db
+
+# --- AI coding-agent scaffolding (kept local, not part of the app) ---
+CLAUDE.md
+CLAUDE.local.md
+.claude/*
+!.claude/skills/
+.cursor/
+.cursorrules
+.aider*
+.windsurfrules
+.github/copilot-instructions.md
