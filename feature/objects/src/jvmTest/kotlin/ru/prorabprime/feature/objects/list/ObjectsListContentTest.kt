@@ -53,6 +53,13 @@ class ObjectsListContentTest {
     }
 
     @Test
+    fun `an object without photos says so rather than zero`() = runComposeUiTest {
+        setContent { show(ObjectsListState(status = ObjectsListStatus.Content, items = persistentListOf(cards[1]))) }
+
+        onNodeWithText("Нет фото").assertIsDisplayed()
+    }
+
+    @Test
     fun `no objects offers to add the first one`() = runComposeUiTest {
         setContent { show(ObjectsListState(status = ObjectsListStatus.Empty)) }
 

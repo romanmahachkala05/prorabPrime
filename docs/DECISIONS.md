@@ -27,6 +27,7 @@ entries below are the points where this project departs from it or goes beyond i
 | [0006](#adr-0006) | PostgreSQL tests run in `verify`, skip without Docker, never skip on CI | Accepted, **amended** by 0007 |
 | [0007](#adr-0007) | Embedded PostgreSQL when Docker is missing | Accepted |
 | [0008](#adr-0008) | Requests go to a placeholder host, resolved per request | Accepted |
+| [0009](#adr-0009) | Ask for local network access at startup | Accepted |
 
 ---
 
@@ -279,3 +280,32 @@ that somehow escaped the plugin goes nowhere: `.invalid` never resolves (RFC 260
 connection check addresses candidate settings directly, bypassing the placeholder on purpose.
 
 **Review when:** images come from somewhere other than our server.
+
+---
+
+## ADR-0009
+
+### Ask for local network access at startup
+
+**Accepted** · 2026-09-25
+
+**Context.** The app targets SDK 37. Android 17 puts connections to the local network behind a
+runtime permission, `ACCESS_LOCAL_NETWORK` (protection level *dangerous*); without it a
+connection to a LAN address simply times out. In stage 1 the server is exactly that: a computer
+on the same Wi-Fi. Found on the emulator: the connection check timed out while the same address
+answered from `adb shell`.
+
+**Decision.** `:app` declares the permission and `MainActivity` requests it on start on
+Android 17+, before any screen talks to the server. A refusal needs no special handling: requests
+fail as `AppError.Network` and the screens say the server does not answer.
+
+**Alternatives rejected.**
+- *Ask only when a request fails.* The first failure would already be on screen, and the data
+  layer would have to know about Android permissions.
+- *Target an older SDK to avoid the permission.* Postpones the problem to the next Play policy
+  bump and drops other platform behavior along with it.
+
+**Consequences.** One system dialog on first launch. The request becomes unnecessary once the
+server moves to a public VPS (stage "VPS"), but costs nothing until then.
+
+**Review when:** the server no longer lives on the local network.

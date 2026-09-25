@@ -63,6 +63,7 @@ import ru.prorabprime.feature.objects.resources.objectslist_add
 import ru.prorabprime.feature.objects.resources.objectslist_clear_search
 import ru.prorabprime.feature.objects.resources.objectslist_empty
 import ru.prorabprime.feature.objects.resources.objectslist_empty_action
+import ru.prorabprime.feature.objects.resources.objectslist_no_photos
 import ru.prorabprime.feature.objects.resources.objectslist_nothing_found
 import ru.prorabprime.feature.objects.resources.objectslist_photo_count
 import ru.prorabprime.feature.objects.resources.objectslist_search
@@ -263,7 +264,11 @@ private fun ObjectCard(item: ObjectCardUi, onClick: () -> Unit) {
             ) {
                 StatusChip(item.status)
                 Text(
-                    pluralStringResource(Res.plurals.objectslist_photo_count, item.photoCount, item.photoCount),
+                    if (item.photoCount == 0) {
+                        stringResource(Res.string.objectslist_no_photos)
+                    } else {
+                        pluralStringResource(Res.plurals.objectslist_photo_count, item.photoCount, item.photoCount)
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
