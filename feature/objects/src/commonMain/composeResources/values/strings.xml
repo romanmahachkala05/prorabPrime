@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- objectslist -->
+    <string name="objectslist_title">Объекты</string>
+    <string name="objectslist_settings">Настройки</string>
+    <string name="objectslist_add">Добавить объект</string>
+    <string name="objectslist_search">Поиск по адресу или названию</string>
+    <string name="objectslist_clear_search">Очистить поиск</string>
+    <string name="objectslist_sort_address_asc">Адрес А–Я</string>
+    <string name="objectslist_sort_address_desc">Адрес Я–А</string>
+    <string name="objectslist_sort_created">Сначала новые</string>
+    <string name="objectslist_sort_updated">Недавно изменённые</string>
+    <string name="objectslist_empty">Пока нет ни одного объекта</string>
+    <string name="objectslist_empty_action">Добавить первый объект</string>
+    <string name="objectslist_nothing_found">Ничего не найдено</string>
+    <plurals name="objectslist_photo_count">
+        <item quantity="zero">Нет фото</item>
+        <item quantity="one">%1$d фото</item>
+        <item quantity="few">%1$d фото</item>
+        <item quantity="many">%1$d фото</item>
+        <item quantity="other">%1$d фото</item>
+    </plurals>
+
+    <!-- common: object statuses, shared by the list and the details -->
+    <string name="objects_status_planned">Запланирован</string>
+    <string name="objects_status_in_progress">В работе</string>
+    <string name="objects_status_done">Сдан</string>
+    <string name="objects_status_paused">На паузе</string>
+</resources>
