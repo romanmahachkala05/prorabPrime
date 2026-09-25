@@ -34,12 +34,13 @@ dependencies {
     testImplementation(platform(libs.embedded.postgres.binaries.bom))
 }
 
-tasks.named<JavaExec>("run") {
-    // Run from the repository root, so `./data/uploads` is the same directory docker-compose
-    // and the README talk about.
+/**
+ * Both ways of running the server locally: from the repository root, so `./data/...` is the
+ * directory docker-compose and the README talk about, and with `.env` loaded so the local
+ * secrets never have to be exported by hand. Real environment variables still win.
+ */
+fun JavaExec.runsLocally() {
     workingDir = rootProject.projectDir
-    // `.env` holds the local secrets; loading it here means they never have to be exported
-    // by hand. Real environment variables still win.
     val envFile = rootProject.file(".env")
     if (envFile.exists()) {
         envFile.readLines()
@@ -49,6 +50,17 @@ tasks.named<JavaExec>("run") {
             .filter { (key, _) -> System.getenv(key) == null }
             .forEach { (key, value) -> environment(key, value) }
     }
+}
+
+tasks.named<JavaExec>("run") { runsLocally() }
+
+// The server over an embedded PostgreSQL, for machines without Docker (see DevServer.kt).
+tasks.register<JavaExec>("runDev") {
+    group = "application"
+    description = "Runs the server with an embedded PostgreSQL in data/dev-postgres. Needs API_TOKEN (.env)."
+    classpath = sourceSets["test"].runtimeClasspath
+    mainClass.set("ru.prorabprime.server.dev.DevServerKt")
+    runsLocally()
 }
 
 tasks.withType<Test>().configureEach {
