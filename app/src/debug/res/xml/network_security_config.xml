@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Debug only: the stage 1 server runs over plain HTTP on a computer in the same Wi-Fi network,
+    at an address no domain-config could name in advance, so cleartext is allowed everywhere.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>
