@@ -13,8 +13,9 @@
     <string name="objectslist_empty">Пока нет ни одного объекта</string>
     <string name="objectslist_empty_action">Добавить первый объект</string>
     <string name="objectslist_nothing_found">Ничего не найдено</string>
+    <!-- Russian plurals have no "zero" form; zero is its own string. -->
+    <string name="objectslist_no_photos">Нет фото</string>
     <plurals name="objectslist_photo_count">
-        <item quantity="zero">Нет фото</item>
         <item quantity="one">%1$d фото</item>
         <item quantity="few">%1$d фото</item>
         <item quantity="many">%1$d фото</item>
