@@ -18,6 +18,8 @@ kotlin {
             implementation(project(":core:designsystem"))
 
             implementation(libs.androidx.lifecycle.runtime.compose)
+            // SavedStateHandle: the edit form's draft survives process death.
+            implementation(libs.androidx.lifecycle.viewmodel.savedstate)
             implementation(libs.koin.compose.viewmodel)
             implementation(libs.androidx.navigation3.runtime)
             implementation(libs.kotlinx.collections.immutable)

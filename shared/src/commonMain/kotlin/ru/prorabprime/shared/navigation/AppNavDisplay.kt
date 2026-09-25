@@ -18,6 +18,10 @@ import androidx.navigation3.ui.NavDisplay
 import androidx.savedstate.serialization.SavedStateConfiguration
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
+import ru.prorabprime.feature.objects.details.ObjectDetailsNavKey
+import ru.prorabprime.feature.objects.details.ObjectDetailsScreen
+import ru.prorabprime.feature.objects.edit.ObjectEditNavKey
+import ru.prorabprime.feature.objects.edit.ObjectEditScreen
 import ru.prorabprime.feature.objects.list.ObjectsListNavKey
 import ru.prorabprime.feature.objects.list.ObjectsListScreen
 import ru.prorabprime.feature.settings.SettingsNavKey
@@ -50,10 +54,27 @@ fun AppNavDisplay(notifier: SnackbarNotifier, modifier: Modifier = Modifier) {
             entryProvider = entryProvider {
                 entry<ObjectsListNavKey> {
                     ObjectsListScreen(
-                        // Details and the form arrive in step 9.
-                        onOpenObject = {},
-                        onCreateObject = {},
+                        onOpenObject = { backStack.add(ObjectDetailsNavKey(it)) },
+                        onCreateObject = { backStack.add(ObjectEditNavKey()) },
                         onOpenSettings = { backStack.add(SettingsNavKey) },
+                    )
+                }
+                entry<ObjectDetailsNavKey> { key ->
+                    ObjectDetailsScreen(
+                        objectId = key.objectId,
+                        onEdit = { backStack.add(ObjectEditNavKey(key.objectId)) },
+                        onClose = { backStack.pop() },
+                    )
+                }
+                entry<ObjectEditNavKey> { key ->
+                    ObjectEditScreen(
+                        objectId = key.objectId,
+                        // The form gives way to the new object's card, so back goes to the list.
+                        onCreated = { id ->
+                            backStack.pop()
+                            backStack.add(ObjectDetailsNavKey(id))
+                        },
+                        onBack = { backStack.pop() },
                     )
                 }
                 entry<SettingsNavKey> { SettingsScreen(onBack = { backStack.pop() }) }
@@ -76,6 +97,8 @@ private val NAV_KEYS = SavedStateConfiguration {
     serializersModule = SerializersModule {
         polymorphic(NavKey::class) {
             subclass(ObjectsListNavKey::class, ObjectsListNavKey.serializer())
+            subclass(ObjectDetailsNavKey::class, ObjectDetailsNavKey.serializer())
+            subclass(ObjectEditNavKey::class, ObjectEditNavKey.serializer())
             subclass(SettingsNavKey::class, SettingsNavKey.serializer())
         }
     }

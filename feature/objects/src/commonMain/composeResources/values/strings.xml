@@ -22,6 +22,35 @@
         <item quantity="other">%1$d фото</item>
     </plurals>
 
+    <!-- objectdetails -->
+    <string name="objectdetails_back">Назад</string>
+    <string name="objectdetails_edit">Редактировать</string>
+    <string name="objectdetails_delete">Удалить объект</string>
+    <string name="objectdetails_address">Адрес</string>
+    <string name="objectdetails_client">Клиент</string>
+    <string name="objectdetails_phone">Телефон</string>
+    <string name="objectdetails_notes">Заметки</string>
+    <string name="objectdetails_delete_title">Удалить объект?</string>
+    <string name="objectdetails_delete_message">Объект и все его фото будут удалены без возможности восстановления.</string>
+    <string name="objectdetails_delete_confirm">Удалить</string>
+    <string name="objectdetails_deleted">Объект удалён</string>
+    <string name="objectdetails_error_gone">Этот объект удалён.</string>
+
+    <!-- objectedit -->
+    <string name="objectedit_title_new">Новый объект</string>
+    <string name="objectedit_title_edit">Редактирование</string>
+    <string name="objectedit_back">Назад</string>
+    <string name="objectedit_title">Название</string>
+    <string name="objectedit_address">Адрес *</string>
+    <string name="objectedit_status">Статус</string>
+    <string name="objectedit_client_name">Имя клиента</string>
+    <string name="objectedit_client_phone">Телефон клиента</string>
+    <string name="objectedit_notes">Заметки</string>
+    <string name="objectedit_save">Сохранить</string>
+    <string name="objectedit_error_required">Обязательное поле</string>
+    <string name="objectedit_error_too_long">Слишком длинное значение</string>
+    <string name="objectedit_error_invalid">Неверное значение</string>
+
     <!-- common: object statuses, shared by the list and the details -->
     <string name="objects_status_planned">Запланирован</string>
     <string name="objects_status_in_progress">В работе</string>
