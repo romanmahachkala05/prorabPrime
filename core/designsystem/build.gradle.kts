@@ -15,6 +15,10 @@ kotlin {
             api(project(":core:ui"))
             // `api`: screens use the same icons as the components.
             api(libs.compose.mp.material.icons.core)
+
+            // No network fetcher here: :app registers one over the app's HttpClient (ADR-0003).
+            implementation(project.dependencies.platform(libs.coil.bom))
+            implementation(libs.coil.compose)
         }
 
         jvmTest.dependencies {

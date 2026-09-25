@@ -18,6 +18,8 @@ import androidx.navigation3.ui.NavDisplay
 import androidx.savedstate.serialization.SavedStateConfiguration
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
+import ru.prorabprime.feature.objects.list.ObjectsListNavKey
+import ru.prorabprime.feature.objects.list.ObjectsListScreen
 import ru.prorabprime.feature.settings.SettingsNavKey
 import ru.prorabprime.feature.settings.SettingsScreen
 import ru.prorabprime.ui.SnackbarNotifier
@@ -35,7 +37,7 @@ fun AppNavDisplay(notifier: SnackbarNotifier, modifier: Modifier = Modifier) {
         notifier.messages.collect { snackbarHostState.showSnackbar(it.load()) }
     }
 
-    val backStack = rememberNavBackStack(NAV_KEYS, SettingsNavKey)
+    val backStack = rememberNavBackStack(NAV_KEYS, ObjectsListNavKey)
     Scaffold(modifier = modifier, snackbarHost = { SnackbarHost(snackbarHostState) }) {
         // No padding from this Scaffold: each screen has its own, with its own top bar.
         NavDisplay(
@@ -46,6 +48,14 @@ fun AppNavDisplay(notifier: SnackbarNotifier, modifier: Modifier = Modifier) {
                 rememberViewModelStoreNavEntryDecorator(),
             ),
             entryProvider = entryProvider {
+                entry<ObjectsListNavKey> {
+                    ObjectsListScreen(
+                        // Details and the form arrive in step 9.
+                        onOpenObject = {},
+                        onCreateObject = {},
+                        onOpenSettings = { backStack.add(SettingsNavKey) },
+                    )
+                }
                 entry<SettingsNavKey> { SettingsScreen(onBack = { backStack.pop() }) }
             },
             modifier = Modifier.fillMaxSize(),
@@ -65,6 +75,7 @@ private fun NavBackStack<NavKey>.pop() {
 private val NAV_KEYS = SavedStateConfiguration {
     serializersModule = SerializersModule {
         polymorphic(NavKey::class) {
+            subclass(ObjectsListNavKey::class, ObjectsListNavKey.serializer())
             subclass(SettingsNavKey::class, SettingsNavKey.serializer())
         }
     }
