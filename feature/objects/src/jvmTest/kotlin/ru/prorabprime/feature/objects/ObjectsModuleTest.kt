@@ -1,16 +1,26 @@
 package ru.prorabprime.feature.objects
 
+import androidx.lifecycle.SavedStateHandle
 import com.google.common.truth.Truth.assertThat
 import org.junit.Rule
 import org.junit.Test
+import org.koin.core.parameter.parametersOf
 import org.koin.dsl.koinApplication
 import org.koin.dsl.module
+import ru.prorabprime.domain.model.ObjectId
 import ru.prorabprime.domain.repository.ObjectsRepository
 import ru.prorabprime.domain.repository.SettingsRepository
+import ru.prorabprime.domain.usecase.CreateObjectUseCase
+import ru.prorabprime.domain.usecase.DeleteObjectUseCase
 import ru.prorabprime.domain.usecase.ObserveObjectSortUseCase
+import ru.prorabprime.domain.usecase.ObserveObjectUseCase
 import ru.prorabprime.domain.usecase.ObserveObjectsUseCase
 import ru.prorabprime.domain.usecase.RefreshObjectsUseCase
 import ru.prorabprime.domain.usecase.SaveObjectSortUseCase
+import ru.prorabprime.domain.usecase.UpdateObjectUseCase
+import ru.prorabprime.feature.objects.details.ObjectDetailsViewModel
+import ru.prorabprime.feature.objects.edit.ObjectEditArgs
+import ru.prorabprime.feature.objects.edit.ObjectEditViewModel
 import ru.prorabprime.feature.objects.list.ObjectsListViewModel
 import ru.prorabprime.testing.FakeObjectsRepository
 import ru.prorabprime.testing.FakeSettingsRepository
@@ -31,13 +41,22 @@ class ObjectsModuleTest {
         factory { RefreshObjectsUseCase(get()) }
         factory { ObserveObjectSortUseCase(get()) }
         factory { SaveObjectSortUseCase(get()) }
+        factory { ObserveObjectUseCase(get()) }
+        factory { DeleteObjectUseCase(get()) }
+        factory { CreateObjectUseCase(get()) }
+        factory { UpdateObjectUseCase(get()) }
+        // What the ViewModel store supplies at runtime.
+        factory { SavedStateHandle() }
         single<SnackbarNotifier> { FakeSnackbarNotifier() }
     }
 
     @Test
-    fun `resolves the objects list ViewModel`() {
+    fun `resolves every objects ViewModel with its arguments`() {
         val koin = koinApplication { modules(fakes, objectsModule) }.koin
 
         assertThat(koin.get<ObjectsListViewModel>()).isNotNull()
+        assertThat(koin.get<ObjectDetailsViewModel> { parametersOf(ObjectId("o1")) }).isNotNull()
+        assertThat(koin.get<ObjectEditViewModel> { parametersOf(ObjectEditArgs(null)) }).isNotNull()
+        assertThat(koin.get<ObjectEditViewModel> { parametersOf(ObjectEditArgs(ObjectId("o1"))) }).isNotNull()
     }
 }
