@@ -4,6 +4,7 @@ import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 import ru.prorabprime.domain.model.ObjectId
 import ru.prorabprime.feature.objects.details.IObjectDetailsStateHolder
+import ru.prorabprime.feature.objects.details.ObjectDetailsActions
 import ru.prorabprime.feature.objects.details.ObjectDetailsErrorHandler
 import ru.prorabprime.feature.objects.details.ObjectDetailsStateHolder
 import ru.prorabprime.feature.objects.details.ObjectDetailsViewModel
@@ -16,6 +17,8 @@ import ru.prorabprime.feature.objects.list.IObjectsListStateHolder
 import ru.prorabprime.feature.objects.list.ObjectsListErrorHandler
 import ru.prorabprime.feature.objects.list.ObjectsListStateHolder
 import ru.prorabprime.feature.objects.list.ObjectsListViewModel
+import ru.prorabprime.feature.objects.viewer.PhotoViewerArgs
+import ru.prorabprime.feature.objects.viewer.PhotoViewerViewModel
 
 /**
  * The objects screens' graph. Each StateHolder is built inside its `viewModel` lambda, so the
@@ -34,18 +37,18 @@ val objectsModule = module {
             saveObjectSort = get(),
         )
     }
+    factory { ObjectDetailsActions(get(), get(), get(), get(), get(), get()) }
     viewModel { (objectId: ObjectId) ->
         val stateHolder: IObjectDetailsStateHolder = ObjectDetailsStateHolder()
         ObjectDetailsViewModel(
             objectId = objectId,
             stateHolder = stateHolder,
             errorHandler = ObjectDetailsErrorHandler(stateHolder, get()),
-            observeObject = get(),
-            refreshObjects = get(),
-            deleteObject = get(),
+            actions = get(),
             notifier = get(),
         )
     }
+    viewModel { (args: PhotoViewerArgs) -> PhotoViewerViewModel(args, get()) }
     viewModel { (args: ObjectEditArgs) ->
         val stateHolder: IObjectEditStateHolder = ObjectEditStateHolder(isNew = args.objectId == null)
         ObjectEditViewModel(
