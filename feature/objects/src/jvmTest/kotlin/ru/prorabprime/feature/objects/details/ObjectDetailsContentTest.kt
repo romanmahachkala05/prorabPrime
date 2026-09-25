@@ -8,8 +8,10 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.v2.runComposeUiTest
 import com.google.common.truth.Truth.assertThat
+import kotlinx.collections.immutable.persistentListOf
 import org.junit.Test
 import ru.prorabprime.designsystem.theme.ProrabTheme
+import ru.prorabprime.domain.model.LocalImageRef
 import ru.prorabprime.domain.model.ObjectStatus
 import ru.prorabprime.ui.DialogModel
 import ru.prorabprime.ui.UiText
@@ -66,6 +68,50 @@ class ObjectDetailsContentTest {
         onNodeWithText("Удалить").performClick()
 
         assertThat(events).containsExactly(ObjectDetailsEvent.DialogConfirmed)
+    }
+
+    @Test
+    fun `the camera tile offers the camera and the gallery`() = runComposeUiTest {
+        var takes = 0
+        var picks = 0
+        setContent {
+            ProrabTheme {
+                ObjectDetailsContent(
+                    state = ObjectDetailsState(status = ObjectDetailsStatus.Content, details = details),
+                    onEvent = {},
+                    onEdit = {},
+                    onBack = {},
+                    onTakePhoto = { takes++ },
+                    onPickPhotos = { picks++ },
+                )
+            }
+        }
+
+        onNodeWithText("Добавить фото").performClick()
+        onNodeWithText("Сфотографировать").performClick()
+        onNodeWithText("Добавить фото").performClick()
+        onNodeWithText("Выбрать из галереи").performClick()
+
+        assertThat(takes to picks).isEqualTo(1 to 1)
+    }
+
+    @Test
+    fun `a failed upload shows why and can be retried`() = runComposeUiTest {
+        val upload = UploadUi(LocalImageRef("content://a"), failure = UiText.Raw("Фото слишком большое"))
+        setContent {
+            show(
+                ObjectDetailsState(
+                    status = ObjectDetailsStatus.Content,
+                    details = details,
+                    uploads = persistentListOf(upload),
+                ),
+            )
+        }
+
+        onNodeWithText("Фото слишком большое").assertIsDisplayed()
+        onNodeWithContentDescription("Повторить загрузку").performClick()
+
+        assertThat(events).containsExactly(ObjectDetailsEvent.RetryUpload(upload.image))
     }
 
     @Test

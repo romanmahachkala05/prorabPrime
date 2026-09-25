@@ -24,6 +24,8 @@ import ru.prorabprime.feature.objects.edit.ObjectEditNavKey
 import ru.prorabprime.feature.objects.edit.ObjectEditScreen
 import ru.prorabprime.feature.objects.list.ObjectsListNavKey
 import ru.prorabprime.feature.objects.list.ObjectsListScreen
+import ru.prorabprime.feature.objects.viewer.PhotoViewerNavKey
+import ru.prorabprime.feature.objects.viewer.PhotoViewerScreen
 import ru.prorabprime.feature.settings.SettingsNavKey
 import ru.prorabprime.feature.settings.SettingsScreen
 import ru.prorabprime.ui.SnackbarNotifier
@@ -63,8 +65,12 @@ fun AppNavDisplay(notifier: SnackbarNotifier, modifier: Modifier = Modifier) {
                     ObjectDetailsScreen(
                         objectId = key.objectId,
                         onEdit = { backStack.add(ObjectEditNavKey(key.objectId)) },
+                        onOpenPhoto = { backStack.add(PhotoViewerNavKey(key.objectId, it)) },
                         onClose = { backStack.pop() },
                     )
+                }
+                entry<PhotoViewerNavKey> { key ->
+                    PhotoViewerScreen(objectId = key.objectId, photoId = key.photoId, onBack = { backStack.pop() })
                 }
                 entry<ObjectEditNavKey> { key ->
                     ObjectEditScreen(
@@ -99,6 +105,7 @@ private val NAV_KEYS = SavedStateConfiguration {
             subclass(ObjectsListNavKey::class, ObjectsListNavKey.serializer())
             subclass(ObjectDetailsNavKey::class, ObjectDetailsNavKey.serializer())
             subclass(ObjectEditNavKey::class, ObjectEditNavKey.serializer())
+            subclass(PhotoViewerNavKey::class, PhotoViewerNavKey.serializer())
             subclass(SettingsNavKey::class, SettingsNavKey.serializer())
         }
     }

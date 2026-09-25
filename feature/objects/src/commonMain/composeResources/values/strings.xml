@@ -35,6 +35,22 @@
     <string name="objectdetails_delete_confirm">Удалить</string>
     <string name="objectdetails_deleted">Объект удалён</string>
     <string name="objectdetails_error_gone">Этот объект удалён.</string>
+    <string name="objectdetails_add_photo">Добавить фото</string>
+    <string name="objectdetails_take_photo">Сфотографировать</string>
+    <string name="objectdetails_pick_photos">Выбрать из галереи</string>
+    <string name="objectdetails_cover">Обложка</string>
+    <string name="objectdetails_make_cover">Сделать обложкой</string>
+    <string name="objectdetails_cover_set">Обложка обновлена</string>
+    <string name="objectdetails_delete_photo">Удалить фото</string>
+    <string name="objectdetails_delete_photo_title">Удалить фото?</string>
+    <string name="objectdetails_delete_photo_message">Фото будет удалено с сервера.</string>
+    <string name="objectdetails_upload_retry">Повторить загрузку</string>
+    <string name="objectdetails_upload_dismiss">Убрать</string>
+    <string name="objectdetails_upload_unreadable">Не удалось прочитать фото</string>
+
+    <!-- photoviewer -->
+    <string name="photoviewer_back">Назад</string>
+    <string name="photoviewer_position">%1$d из %2$d</string>
 
     <!-- objectedit -->
     <string name="objectedit_title_new">Новый объект</string>

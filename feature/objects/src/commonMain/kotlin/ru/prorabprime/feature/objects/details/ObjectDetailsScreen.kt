@@ -10,19 +10,26 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.style.TextOverflow
@@ -39,6 +46,8 @@ import ru.prorabprime.designsystem.theme.Spacing
 import ru.prorabprime.domain.model.ObjectId
 import ru.prorabprime.domain.model.ObjectStatus
 import ru.prorabprime.feature.objects.components.StatusChip
+import ru.prorabprime.feature.objects.photos.PhotoCarousel
+import ru.prorabprime.feature.objects.photos.rememberPhotoSources
 import ru.prorabprime.feature.objects.resources.Res
 import ru.prorabprime.feature.objects.resources.objectdetails_address
 import ru.prorabprime.feature.objects.resources.objectdetails_back
@@ -47,28 +56,44 @@ import ru.prorabprime.feature.objects.resources.objectdetails_delete
 import ru.prorabprime.feature.objects.resources.objectdetails_edit
 import ru.prorabprime.feature.objects.resources.objectdetails_notes
 import ru.prorabprime.feature.objects.resources.objectdetails_phone
+import ru.prorabprime.feature.objects.resources.objectdetails_pick_photos
+import ru.prorabprime.feature.objects.resources.objectdetails_take_photo
 import ru.prorabprime.ui.resolve
 
+/** [onOpenPhoto] gets the photo's id, for the full-screen viewer. */
 @Composable
 fun ObjectDetailsScreen(
     objectId: String,
     onEdit: () -> Unit,
+    onOpenPhoto: (photoId: String) -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    ObjectDetailsScreen(onEdit, onClose, modifier, koinViewModel(key = objectId) { parametersOf(ObjectId(objectId)) })
+    val viewModel: ObjectDetailsViewModel = koinViewModel(key = objectId) { parametersOf(ObjectId(objectId)) }
+    ObjectDetailsScreen(onEdit, onOpenPhoto, onClose, modifier, viewModel)
 }
 
 @Composable
 private fun ObjectDetailsScreen(
     onEdit: () -> Unit,
+    onOpenPhoto: (photoId: String) -> Unit,
     onClose: () -> Unit,
     modifier: Modifier,
     viewModel: ObjectDetailsViewModel,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     LaunchedEffect(state.isClosed) { if (state.isClosed) onClose() }
-    ObjectDetailsContent(state, viewModel::onEvent, onEdit = onEdit, onBack = onClose, modifier = modifier)
+    val sources = rememberPhotoSources(onPicked = { viewModel.onEvent(ObjectDetailsEvent.PhotosPicked(it)) })
+    ObjectDetailsContent(
+        state = state,
+        onEvent = viewModel::onEvent,
+        onEdit = onEdit,
+        onBack = onClose,
+        onOpenPhoto = onOpenPhoto,
+        onTakePhoto = sources::takePhoto,
+        onPickPhotos = sources::pickFromGallery,
+        modifier = modifier,
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -79,38 +104,22 @@ internal fun ObjectDetailsContent(
     onEdit: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenPhoto: (photoId: String) -> Unit = {},
+    onTakePhoto: () -> Unit = {},
+    onPickPhotos: () -> Unit = {},
 ) {
+    // Whether the "camera or gallery" sheet is open is view state, like a menu.
+    var choosingSource by remember { mutableStateOf(false) }
     Scaffold(
         modifier = modifier,
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(state.details?.title.orEmpty(), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(Res.string.objectdetails_back))
-                    }
-                },
-                actions = {
-                    if (state.status == ObjectDetailsStatus.Content) {
-                        IconButton(onClick = onEdit) {
-                            Icon(Icons.Default.Edit, stringResource(Res.string.objectdetails_edit))
-                        }
-                        IconButton(onClick = {
-                            onEvent(ObjectDetailsEvent.DeleteClicked)
-                        }, enabled = !state.isDeleting) {
-                            Icon(Icons.Default.Delete, stringResource(Res.string.objectdetails_delete))
-                        }
-                    }
-                },
-            )
-        },
+        topBar = { DetailsTopBar(state, onEvent, onEdit, onBack) },
     ) { padding ->
         Column(Modifier.padding(padding).fillMaxSize()) {
             if (state.isDeleting) LinearProgressIndicator(Modifier.fillMaxWidth())
             when (val status = state.status) {
-                ObjectDetailsStatus.Content -> state.details?.let { DetailsFields(it) }
+                ObjectDetailsStatus.Content -> state.details?.let { details ->
+                    DetailsBody(details, state, onEvent, onOpenPhoto, onAddPhoto = { choosingSource = true })
+                }
 
                 ObjectDetailsStatus.Loading -> LoadingBox()
 
@@ -125,13 +134,105 @@ internal fun ObjectDetailsContent(
         onConfirm = { onEvent(ObjectDetailsEvent.DialogConfirmed) },
         onDismiss = { onEvent(ObjectDetailsEvent.DialogDismissed) },
     )
+    if (choosingSource) {
+        PhotoSourceSheet(
+            onTakePhoto = {
+                choosingSource = false
+                onTakePhoto()
+            },
+            onPickPhotos = {
+                choosingSource = false
+                onPickPhotos()
+            },
+            onDismiss = { choosingSource = false },
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PhotoSourceSheet(
+    onTakePhoto: () -> Unit,
+    onPickPhotos: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        ListItem(
+            headlineContent = { Text(stringResource(Res.string.objectdetails_take_photo)) },
+            leadingContent = { Icon(Icons.Default.Add, contentDescription = null) },
+            modifier = Modifier.clickable(onClick = onTakePhoto),
+        )
+        ListItem(
+            headlineContent = { Text(stringResource(Res.string.objectdetails_pick_photos)) },
+            leadingContent = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = null) },
+            modifier = Modifier.clickable(onClick = onPickPhotos).padding(bottom = Spacing.l),
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DetailsTopBar(
+    state: ObjectDetailsState,
+    onEvent: (ObjectDetailsEvent) -> Unit,
+    onEdit: () -> Unit,
+    onBack: () -> Unit,
+) {
+    TopAppBar(
+        title = {
+            Text(state.details?.title.orEmpty(), maxLines = 1, overflow = TextOverflow.Ellipsis)
+        },
+        navigationIcon = {
+            IconButton(onClick = onBack) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(Res.string.objectdetails_back))
+            }
+        },
+        actions = {
+            if (state.status == ObjectDetailsStatus.Content) {
+                IconButton(onClick = onEdit) {
+                    Icon(Icons.Default.Edit, stringResource(Res.string.objectdetails_edit))
+                }
+                IconButton(onClick = {
+                    onEvent(ObjectDetailsEvent.DeleteClicked)
+                }, enabled = !state.isDeleting) {
+                    Icon(Icons.Default.Delete, stringResource(Res.string.objectdetails_delete))
+                }
+            }
+        },
+    )
+}
+
+@Composable
+private fun DetailsBody(
+    details: ObjectDetailsUi,
+    state: ObjectDetailsState,
+    onEvent: (ObjectDetailsEvent) -> Unit,
+    onOpenPhoto: (photoId: String) -> Unit,
+    onAddPhoto: () -> Unit,
+) {
+    Column(
+        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(vertical = Spacing.m),
+        verticalArrangement = Arrangement.spacedBy(Spacing.m),
+    ) {
+        PhotoCarousel(
+            photos = details.photos,
+            uploads = state.uploads,
+            onAddClick = onAddPhoto,
+            onPhotoClick = { onOpenPhoto(it.id) },
+            onMakeCover = { onEvent(ObjectDetailsEvent.MakeCoverClicked(it.id)) },
+            onDelete = { onEvent(ObjectDetailsEvent.DeletePhotoClicked(it.id)) },
+            onRetryUpload = { onEvent(ObjectDetailsEvent.RetryUpload(it.image)) },
+            onDismissUpload = { onEvent(ObjectDetailsEvent.DismissUpload(it.image)) },
+        )
+        DetailsFields(details)
+    }
 }
 
 @Composable
 private fun DetailsFields(details: ObjectDetailsUi) {
     val uriHandler = LocalUriHandler.current
     Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Spacing.m),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.m),
         verticalArrangement = Arrangement.spacedBy(Spacing.m),
     ) {
         StatusChip(details.status)
