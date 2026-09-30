@@ -24,6 +24,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.koin.dsl.module
+import ru.prorabprime.contract.AttachmentKindDto
 import ru.prorabprime.contract.ErrorCode
 import ru.prorabprime.contract.ErrorDto
 import ru.prorabprime.contract.ObjectDetailsDto
@@ -35,12 +36,14 @@ import ru.prorabprime.server.TEST_TOKEN
 import ru.prorabprime.server.db.Transactor
 import ru.prorabprime.server.di.serviceModule
 import ru.prorabprime.server.fakes.FIXED_NOW
+import ru.prorabprime.server.fakes.FakeContactRepository
 import ru.prorabprime.server.fakes.FakeObjectRepository
 import ru.prorabprime.server.fakes.FakePhotoRepository
 import ru.prorabprime.server.fakes.FixedClock
 import ru.prorabprime.server.fakes.ImmediateTransactor
 import ru.prorabprime.server.model.ObjectFields
 import ru.prorabprime.server.model.ObjectRecord
+import ru.prorabprime.server.repository.ContactRepository
 import ru.prorabprime.server.repository.ObjectRepository
 import ru.prorabprime.server.repository.PhotoRepository
 import ru.prorabprime.server.storage.FileStorage
@@ -69,6 +72,7 @@ class PhotoRoutesTest {
         val fakes = module {
             single<ObjectRepository> { objects }
             single<PhotoRepository> { photos }
+            single<ContactRepository> { FakeContactRepository() }
             single<Transactor> { ImmediateTransactor }
             single<Clock> { FixedClock() }
             single<FileStorage> { LocalFileStorage(folder.root.toPath(), Dispatchers.IO) }
@@ -80,8 +84,9 @@ class PhotoRoutesTest {
         bytes: ByteArray,
         target: UUID = objectId,
         field: String = "file",
+        query: String = "",
     ): HttpResponse = submitFormWithBinaryData(
-        url = "/api/objects/$target/photos",
+        url = "/api/objects/$target/photos$query",
         formData = formData {
             append(
                 field,
@@ -199,5 +204,23 @@ class PhotoRoutesTest {
         assertThat(response.status).isEqualTo(HttpStatusCode.NoContent)
         assertThat(client.get(photo.url) { bearerAuth(TEST_TOKEN) }.status).isEqualTo(HttpStatusCode.NotFound)
         assertThat(client.details().photos).isEmpty()
+    }
+
+    @Test
+    fun `a receipt is uploaded with the kind parameter and does not count as the cover`() = server { client ->
+        val response = client.upload(TestImages.jpeg(800, 600), query = "?kind=RECEIPT")
+
+        assertThat(response.status).isEqualTo(HttpStatusCode.Created)
+        assertThat(response.body<PhotoDto>().kind).isEqualTo(AttachmentKindDto.RECEIPT)
+        val details = client.details()
+        assertThat(details.photos.map { it.kind }).containsExactly(AttachmentKindDto.RECEIPT)
+        assertThat(details.coverPhotoId).isNull()
+    }
+
+    @Test
+    fun `an unknown kind is 400`() = server { client ->
+        val response = client.upload(TestImages.jpeg(800, 600), query = "?kind=SELFIE")
+
+        assertThat(response.status).isEqualTo(HttpStatusCode.BadRequest)
     }
 }

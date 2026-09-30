@@ -3,14 +3,18 @@ package ru.prorabprime.server.fakes
 import java.util.UUID
 import kotlin.time.Clock
 import kotlin.time.Instant
+import ru.prorabprime.contract.AttachmentKindDto
 import ru.prorabprime.contract.SortFieldDto
 import ru.prorabprime.contract.SortOrderDto
 import ru.prorabprime.server.db.Transactor
+import ru.prorabprime.server.model.ContactFields
+import ru.prorabprime.server.model.ContactRecord
 import ru.prorabprime.server.model.ObjectFields
 import ru.prorabprime.server.model.ObjectListItem
 import ru.prorabprime.server.model.ObjectListQuery
 import ru.prorabprime.server.model.ObjectRecord
 import ru.prorabprime.server.model.PhotoRecord
+import ru.prorabprime.server.repository.ContactRepository
 import ru.prorabprime.server.repository.ObjectRepository
 import ru.prorabprime.server.repository.PhotoRepository
 import ru.prorabprime.server.repository.searchTextOf
@@ -43,7 +47,7 @@ class FakeObjectRepository(
             ObjectListItem(
                 record = record,
                 coverThumbFileName = objectPhotos.find { it.id == record.coverPhotoId }?.thumbFileName,
-                photoCount = objectPhotos.size,
+                photoCount = objectPhotos.count { it.kind == AttachmentKindDto.PHOTO },
             )
         }
     }
@@ -101,6 +105,31 @@ class FakePhotoRepository : PhotoRepository {
         (records.values.filter { it.objectId == objectId }.maxOfOrNull { it.sortOrder } ?: 0) + 1
 }
 
+class FakeContactRepository : ContactRepository {
+
+    val records = linkedMapOf<UUID, ContactRecord>()
+
+    override suspend fun listByObject(objectId: UUID): List<ContactRecord> =
+        records.values.filter { it.objectId == objectId }.sortedBy { it.sortOrder }
+
+    override suspend fun find(id: UUID): ContactRecord? = records[id]
+
+    override suspend fun insert(contact: ContactRecord) {
+        records[contact.id] = contact
+    }
+
+    override suspend fun update(id: UUID, fields: ContactFields): Boolean {
+        val record = records[id] ?: return false
+        records[id] = record.copy(fields = fields)
+        return true
+    }
+
+    override suspend fun delete(id: UUID): Boolean = records.remove(id) != null
+
+    override suspend fun nextSortOrder(objectId: UUID): Int =
+        (records.values.filter { it.objectId == objectId }.maxOfOrNull { it.sortOrder } ?: 0) + 1
+}
+
 /** Runs the block directly; the fakes have no transactions to join. */
 object ImmediateTransactor : Transactor {
     override suspend fun <T> inTransaction(block: suspend () -> T): T = block()
@@ -111,6 +140,7 @@ fun aPhotoRecord(
     id: UUID = UUID.randomUUID(),
     sortOrder: Int = 1,
     createdAt: Instant = FIXED_NOW,
+    kind: AttachmentKindDto = AttachmentKindDto.PHOTO,
 ) = PhotoRecord(
     id = id,
     objectId = objectId,
@@ -122,4 +152,5 @@ fun aPhotoRecord(
     height = 1536,
     sortOrder = sortOrder,
     createdAt = createdAt,
+    kind = kind,
 )

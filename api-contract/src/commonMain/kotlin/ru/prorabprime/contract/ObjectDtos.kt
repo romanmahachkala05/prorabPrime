@@ -34,11 +34,20 @@ data class ObjectDetailsDto(
     val clientName: String? = null,
     val clientPhone: String? = null,
     val notes: String? = null,
+    val chatLink: String? = null,
     val coverPhotoId: String? = null,
+    val contacts: List<ContactDto> = emptyList(),
     val photos: List<PhotoDto>,
     val createdAt: Instant,
     val updatedAt: Instant,
 )
+
+/** Which folder of the object a file belongs to. */
+@Serializable
+enum class AttachmentKindDto {
+    PHOTO,
+    RECEIPT,
+}
 
 @Serializable
 data class PhotoDto(
@@ -48,6 +57,7 @@ data class PhotoDto(
     val width: Int,
     val height: Int,
     val createdAt: Instant,
+    val kind: AttachmentKindDto = AttachmentKindDto.PHOTO,
 )
 
 /** Body of `POST /api/objects` and `PUT /api/objects/{id}`; a PUT replaces every field. */
@@ -59,6 +69,7 @@ data class ObjectRequestDto(
     val clientName: String? = null,
     val clientPhone: String? = null,
     val notes: String? = null,
+    val chatLink: String? = null,
 )
 
 @Serializable

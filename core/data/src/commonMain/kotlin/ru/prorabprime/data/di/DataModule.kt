@@ -4,17 +4,21 @@ import kotlinx.coroutines.flow.first
 import org.koin.core.module.Module
 import org.koin.dsl.module
 import ru.prorabprime.data.network.createHttpClient
+import ru.prorabprime.data.remote.ContactsApi
 import ru.prorabprime.data.remote.KtorConnectionChecker
 import ru.prorabprime.data.remote.ServerApi
+import ru.prorabprime.data.repository.ContactsRepositoryImpl
 import ru.prorabprime.data.repository.Invalidator
 import ru.prorabprime.data.repository.ObjectsRepositoryImpl
 import ru.prorabprime.data.repository.PhotosRepositoryImpl
 import ru.prorabprime.domain.ConnectionChecker
+import ru.prorabprime.domain.repository.ContactsRepository
 import ru.prorabprime.domain.repository.ObjectsRepository
 import ru.prorabprime.domain.repository.PhotosRepository
 import ru.prorabprime.domain.repository.SettingsRepository
 import ru.prorabprime.domain.usecase.CheckConnectionUseCase
 import ru.prorabprime.domain.usecase.CreateObjectUseCase
+import ru.prorabprime.domain.usecase.DeleteContactUseCase
 import ru.prorabprime.domain.usecase.DeleteObjectUseCase
 import ru.prorabprime.domain.usecase.DeletePhotoUseCase
 import ru.prorabprime.domain.usecase.ObserveObjectSortUseCase
@@ -22,6 +26,7 @@ import ru.prorabprime.domain.usecase.ObserveObjectUseCase
 import ru.prorabprime.domain.usecase.ObserveObjectsUseCase
 import ru.prorabprime.domain.usecase.ObserveServerSettingsUseCase
 import ru.prorabprime.domain.usecase.RefreshObjectsUseCase
+import ru.prorabprime.domain.usecase.SaveContactUseCase
 import ru.prorabprime.domain.usecase.SaveObjectSortUseCase
 import ru.prorabprime.domain.usecase.SaveServerSettingsUseCase
 import ru.prorabprime.domain.usecase.SetCoverPhotoUseCase
@@ -39,8 +44,10 @@ val dataModule: Module = module {
     }
     single { Invalidator() }
     single { ServerApi(get()) }
+    single { ContactsApi(get()) }
     single<ObjectsRepository> { ObjectsRepositoryImpl(get(), get(), get()) }
     single<PhotosRepository> { PhotosRepositoryImpl(get(), get()) }
+    single<ContactsRepository> { ContactsRepositoryImpl(get(), get()) }
     single<ConnectionChecker> { KtorConnectionChecker(get()) }
 
     factory { ObserveObjectsUseCase(get()) }
@@ -52,6 +59,8 @@ val dataModule: Module = module {
     factory { UploadPhotoUseCase(get(), get()) }
     factory { DeletePhotoUseCase(get()) }
     factory { SetCoverPhotoUseCase(get()) }
+    factory { SaveContactUseCase(get()) }
+    factory { DeleteContactUseCase(get()) }
     factory { ObserveServerSettingsUseCase(get()) }
     factory { SaveServerSettingsUseCase(get()) }
     factory { CheckConnectionUseCase(get()) }

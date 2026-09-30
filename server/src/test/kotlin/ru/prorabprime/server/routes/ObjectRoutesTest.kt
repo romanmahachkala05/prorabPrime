@@ -17,6 +17,9 @@ import java.util.UUID
 import kotlin.time.Clock
 import org.junit.Test
 import org.koin.dsl.module
+import ru.prorabprime.contract.ContactCreatedDto
+import ru.prorabprime.contract.ContactRequestDto
+import ru.prorabprime.contract.ContactRoleDto
 import ru.prorabprime.contract.ErrorCode
 import ru.prorabprime.contract.ErrorDto
 import ru.prorabprime.contract.FieldErrorDto
@@ -29,10 +32,12 @@ import ru.prorabprime.contract.ObjectStatusDto
 import ru.prorabprime.contract.ObjectSummaryDto
 import ru.prorabprime.server.TEST_TOKEN
 import ru.prorabprime.server.di.serviceModule
+import ru.prorabprime.server.fakes.FakeContactRepository
 import ru.prorabprime.server.fakes.FakeObjectRepository
 import ru.prorabprime.server.fakes.FakePhotoRepository
 import ru.prorabprime.server.fakes.FixedClock
 import ru.prorabprime.server.fakes.aPhotoRecord
+import ru.prorabprime.server.repository.ContactRepository
 import ru.prorabprime.server.repository.ObjectRepository
 import ru.prorabprime.server.repository.PhotoRepository
 import ru.prorabprime.server.testServer
@@ -44,6 +49,7 @@ class ObjectRoutesTest {
     private val fakes = module {
         single<ObjectRepository> { objects }
         single<PhotoRepository> { photos }
+        single<ContactRepository> { FakeContactRepository() }
         single<Clock> { FixedClock() }
     }
 
@@ -143,5 +149,80 @@ class ObjectRoutesTest {
 
         assertThat(response.status).isEqualTo(HttpStatusCode.NoContent)
         assertThat(client.authedGet("/api/objects/$id").status).isEqualTo(HttpStatusCode.NotFound)
+    }
+
+    @Test
+    fun `a contact is created, shown in the details, updated and deleted`() = server { client ->
+        val objectId = client.create("Тверская, 5")
+
+        val created = client.post("/api/objects/$objectId/contacts") {
+            bearerAuth(TEST_TOKEN)
+            contentType(ContentType.Application.Json)
+            setBody(ContactRequestDto("Анна", "8 900", ContactRoleDto.CLIENT))
+        }
+        assertThat(created.status).isEqualTo(HttpStatusCode.Created)
+        val contactId = created.body<ContactCreatedDto>().id
+
+        val shown = client.authedGet("/api/objects/$objectId").body<ObjectDetailsDto>().contacts
+        assertThat(shown.map { it.name to it.role }).containsExactly("Анна" to ContactRoleDto.CLIENT)
+
+        val updated = client.put("/api/contacts/$contactId") {
+            bearerAuth(TEST_TOKEN)
+            contentType(ContentType.Application.Json)
+            setBody(ContactRequestDto("Анна П.", null, ContactRoleDto.EXECUTOR))
+        }
+        assertThat(updated.status).isEqualTo(HttpStatusCode.NoContent)
+        assertThat(client.authedGet("/api/objects/$objectId").body<ObjectDetailsDto>().contacts.single().name)
+            .isEqualTo("Анна П.")
+
+        val deleted = client.delete("/api/contacts/$contactId") { bearerAuth(TEST_TOKEN) }
+        assertThat(deleted.status).isEqualTo(HttpStatusCode.NoContent)
+        assertThat(client.authedGet("/api/objects/$objectId").body<ObjectDetailsDto>().contacts).isEmpty()
+    }
+
+    @Test
+    fun `a contact without a name is 400 and of an unknown object is 404`() = server { client ->
+        val objectId = client.create("Тверская, 5")
+
+        val invalid = client.post("/api/objects/$objectId/contacts") {
+            bearerAuth(TEST_TOKEN)
+            contentType(ContentType.Application.Json)
+            setBody(ContactRequestDto(" "))
+        }
+        val missing = client.post("/api/objects/${UUID.randomUUID()}/contacts") {
+            bearerAuth(TEST_TOKEN)
+            contentType(ContentType.Application.Json)
+            setBody(ContactRequestDto("Анна"))
+        }
+
+        assertThat(invalid.status).isEqualTo(HttpStatusCode.BadRequest)
+        assertThat(missing.status).isEqualTo(HttpStatusCode.NotFound)
+    }
+
+    @Test
+    fun `the chat link is saved, read back, and a bad one is 400`() = server { client ->
+        val id = client.post("/api/objects") {
+            bearerAuth(TEST_TOKEN)
+            contentType(ContentType.Application.Json)
+            setBody(
+                ObjectRequestDto(
+                    address = "Тверская, 5",
+                    status = ObjectStatusDto.IN_PROGRESS,
+                    chatLink = "https://t.me/example",
+                ),
+            )
+        }.body<ObjectCreatedDto>().id
+
+        assertThat(client.authedGet("/api/objects/$id").body<ObjectDetailsDto>().chatLink)
+            .isEqualTo("https://t.me/example")
+
+        val bad = client.post("/api/objects") {
+            bearerAuth(TEST_TOKEN)
+            contentType(ContentType.Application.Json)
+            setBody(ObjectRequestDto(address = "x", status = ObjectStatusDto.IN_PROGRESS, chatLink = "ftp://x"))
+        }
+        assertThat(bad.status).isEqualTo(HttpStatusCode.BadRequest)
+        assertThat(bad.body<ErrorDto>().fieldErrors)
+            .containsExactly(FieldErrorDto(ObjectFieldDto.CHAT_LINK, FieldProblemDto.INVALID))
     }
 }

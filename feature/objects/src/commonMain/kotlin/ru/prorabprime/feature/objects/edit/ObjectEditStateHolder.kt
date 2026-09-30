@@ -50,10 +50,19 @@ internal class ObjectEditStateHolder(
     override fun setField(field: ObjectField, value: String) = _state.update {
         val form = when (field) {
             ObjectField.TITLE -> it.form.copy(title = value)
+
             ObjectField.ADDRESS -> it.form.copy(address = value)
+
             ObjectField.CLIENT_NAME -> it.form.copy(clientName = value)
+
             ObjectField.CLIENT_PHONE -> it.form.copy(clientPhone = value)
+
             ObjectField.NOTES -> it.form.copy(notes = value)
+
+            ObjectField.CHAT_LINK -> it.form.copy(chatLink = value)
+
+            // Contacts are edited on the object card, not in this form.
+            ObjectField.CONTACT_NAME, ObjectField.CONTACT_PHONE -> it.form
         }
         it.copy(form = form, fieldErrors = (it.fieldErrors - field).toImmutableMap())
     }

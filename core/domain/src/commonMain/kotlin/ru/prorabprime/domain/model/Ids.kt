@@ -11,3 +11,8 @@ value class ObjectId(
 value class PhotoId(
     val value: String,
 )
+
+@JvmInline
+value class ContactId(
+    val value: String,
+)

@@ -20,17 +20,22 @@ import ru.prorabprime.contract.ApiMultipart
 import ru.prorabprime.contract.ApiParams
 import ru.prorabprime.contract.ApiPaths
 import ru.prorabprime.contract.ApiQuery
+import ru.prorabprime.contract.ContactCreatedDto
 import ru.prorabprime.contract.ObjectCreatedDto
 import ru.prorabprime.contract.ObjectDetailsDto
 import ru.prorabprime.contract.ObjectSummaryDto
 import ru.prorabprime.contract.PhotoDto
 import ru.prorabprime.contract.SetCoverRequestDto
 import ru.prorabprime.data.mapper.toDomain
+import ru.prorabprime.data.mapper.toDto
 import ru.prorabprime.data.mapper.toQuery
 import ru.prorabprime.data.mapper.toRequestDto
 import ru.prorabprime.data.network.SERVER_BASE
 import ru.prorabprime.data.network.apiCall
+import ru.prorabprime.domain.model.AttachmentKind
 import ru.prorabprime.domain.model.CompressedImage
+import ru.prorabprime.domain.model.ContactDraft
+import ru.prorabprime.domain.model.ContactId
 import ru.prorabprime.domain.model.ObjectDetails
 import ru.prorabprime.domain.model.ObjectDraft
 import ru.prorabprime.domain.model.ObjectId
@@ -75,9 +80,13 @@ internal class ServerApi(
         client.delete(url(ApiPaths.OBJECT, id.value))
     }.map { }
 
-    suspend fun uploadPhoto(objectId: ObjectId, image: CompressedImage): Result<Photo> = apiCall {
+    suspend fun uploadPhoto(
+        objectId: ObjectId,
+        image: CompressedImage,
+        kind: AttachmentKind,
+    ): Result<Photo> = apiCall {
         client.submitFormWithBinaryData(
-            url = url(ApiPaths.OBJECT_PHOTOS, objectId.value),
+            url = url(ApiPaths.OBJECT_PHOTOS, objectId.value) + "?${ApiQuery.KIND}=${kind.toDto().name}",
             formData = formData {
                 append(
                     ApiMultipart.FILE,

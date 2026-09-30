@@ -7,6 +7,8 @@ object ApiPaths {
     const val OBJECT = "/api/objects/{id}"
     const val OBJECT_PHOTOS = "/api/objects/{id}/photos"
     const val OBJECT_COVER = "/api/objects/{id}/cover"
+    const val OBJECT_CONTACTS = "/api/objects/{id}/contacts"
+    const val CONTACT = "/api/contacts/{id}"
     const val PHOTO = "/api/photos/{id}"
     const val FILE = "/files/{objectId}/{fileName}"
 }
@@ -21,6 +23,7 @@ object ApiQuery {
     const val SEARCH = "search"
     const val SORT = "sort"
     const val ORDER = "order"
+    const val KIND = "kind"
 }
 
 object ApiMultipart {

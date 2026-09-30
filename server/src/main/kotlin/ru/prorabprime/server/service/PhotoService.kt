@@ -5,6 +5,7 @@ import java.util.UUID
 import kotlin.time.Clock
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
+import ru.prorabprime.contract.AttachmentKindDto
 import ru.prorabprime.contract.PhotoLimits
 import ru.prorabprime.server.db.Transactor
 import ru.prorabprime.server.error.ServiceError
@@ -29,7 +30,11 @@ class PhotoService(
     private val clock: Clock,
     private val newId: () -> UUID = UUID::randomUUID,
 ) {
-    suspend fun upload(objectId: UUID, bytes: ByteArray): Result<PhotoRecord> {
+    suspend fun upload(
+        objectId: UUID,
+        bytes: ByteArray,
+        kind: AttachmentKindDto = AttachmentKindDto.PHOTO,
+    ): Result<PhotoRecord> {
         if (bytes.size > PhotoLimits.MAX_UPLOAD_BYTES) {
             return ServiceError.TooLarge("A photo may be at most ${PhotoLimits.MAX_UPLOAD_BYTES} bytes").asFailure()
         }
@@ -55,10 +60,13 @@ class PhotoService(
                     height = image.height,
                     sortOrder = photos.nextSortOrder(objectId),
                     createdAt = now,
+                    kind = kind,
                 )
                 photos.insert(photo)
-                // The first photo of an object without a cover becomes the cover.
-                if (objects.find(objectId)?.coverPhotoId == null) objects.setCover(objectId, id)
+                // The first photo of an object without a cover becomes the cover; a receipt never does.
+                if (kind == AttachmentKindDto.PHOTO && objects.find(objectId)?.coverPhotoId == null) {
+                    objects.setCover(objectId, id)
+                }
                 objects.touch(objectId, now)
                 Result.success(photo)
             }
@@ -74,9 +82,9 @@ class PhotoService(
             if (wasCover) {
                 objects.setCover(
                     photo.objectId,
-                    photos.listByObject(photo.objectId).maxByOrNull {
-                        it.createdAt
-                    }?.id,
+                    photos.listByObject(photo.objectId)
+                        .filter { it.kind == AttachmentKindDto.PHOTO }
+                        .maxByOrNull { it.createdAt }?.id,
                 )
             }
             objects.touch(photo.objectId, clock.now())
@@ -92,6 +100,9 @@ class PhotoService(
         val photo = photos.find(photoId)
         if (photo == null || photo.objectId != objectId) {
             return ServiceError.Validation("Photo $photoId does not belong to object $objectId").asFailure()
+        }
+        if (photo.kind != AttachmentKindDto.PHOTO) {
+            return ServiceError.Validation("Receipt $photoId cannot be the cover").asFailure()
         }
         transactor.inTransaction {
             objects.setCover(objectId, photoId)

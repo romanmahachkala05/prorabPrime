@@ -2,6 +2,8 @@ package ru.prorabprime.server.repository
 
 import java.util.UUID
 import kotlin.time.Instant
+import ru.prorabprime.server.model.ContactFields
+import ru.prorabprime.server.model.ContactRecord
 import ru.prorabprime.server.model.ObjectFields
 import ru.prorabprime.server.model.ObjectListItem
 import ru.prorabprime.server.model.ObjectListQuery
@@ -44,5 +46,23 @@ interface PhotoRepository {
     suspend fun delete(id: UUID): Boolean
 
     /** One past the object's highest sort order, so a new photo goes to the end. */
+    suspend fun nextSortOrder(objectId: UUID): Int
+}
+
+interface ContactRepository {
+    /** In the order they were added. */
+    suspend fun listByObject(objectId: UUID): List<ContactRecord>
+
+    suspend fun find(id: UUID): ContactRecord?
+
+    suspend fun insert(contact: ContactRecord)
+
+    /** Returns false when there is no such contact. */
+    suspend fun update(id: UUID, fields: ContactFields): Boolean
+
+    /** Returns false when there is no such contact. */
+    suspend fun delete(id: UUID): Boolean
+
+    /** One past the object's highest sort order, so a new contact goes to the end. */
     suspend fun nextSortOrder(objectId: UUID): Int
 }

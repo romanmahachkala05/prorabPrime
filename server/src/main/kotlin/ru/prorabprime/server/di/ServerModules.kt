@@ -11,10 +11,13 @@ import org.koin.dsl.module
 import ru.prorabprime.server.config.AppConfig
 import ru.prorabprime.server.db.DbExecutor
 import ru.prorabprime.server.db.Transactor
+import ru.prorabprime.server.repository.ContactRepository
+import ru.prorabprime.server.repository.ExposedContactRepository
 import ru.prorabprime.server.repository.ExposedObjectRepository
 import ru.prorabprime.server.repository.ExposedPhotoRepository
 import ru.prorabprime.server.repository.ObjectRepository
 import ru.prorabprime.server.repository.PhotoRepository
+import ru.prorabprime.server.service.ContactService
 import ru.prorabprime.server.service.ObjectService
 import ru.prorabprime.server.service.PhotoService
 import ru.prorabprime.server.storage.FileStorage
@@ -40,9 +43,11 @@ fun databaseModule(database: Database): Module = module {
     single<Transactor> { get<DbExecutor>() }
     single<ObjectRepository> { ExposedObjectRepository(get()) }
     single<PhotoRepository> { ExposedPhotoRepository(get()) }
+    single<ContactRepository> { ExposedContactRepository(get()) }
 }
 
 val serviceModule: Module = module {
-    single { ObjectService(get(), get(), get(), get()) }
+    single { ObjectService(get(), get(), get(), get(), get()) }
+    single { ContactService(get(), get(), get()) }
     single { PhotoService(get(), get(), get(), get(), get(), get()) }
 }

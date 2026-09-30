@@ -10,8 +10,12 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.update
+import ru.prorabprime.data.remote.ContactsApi
 import ru.prorabprime.data.remote.ServerApi
+import ru.prorabprime.domain.model.AttachmentKind
 import ru.prorabprime.domain.model.CompressedImage
+import ru.prorabprime.domain.model.ContactDraft
+import ru.prorabprime.domain.model.ContactId
 import ru.prorabprime.domain.model.ObjectDetails
 import ru.prorabprime.domain.model.ObjectDraft
 import ru.prorabprime.domain.model.ObjectId
@@ -19,6 +23,7 @@ import ru.prorabprime.domain.model.ObjectQuery
 import ru.prorabprime.domain.model.ObjectSummary
 import ru.prorabprime.domain.model.Photo
 import ru.prorabprime.domain.model.PhotoId
+import ru.prorabprime.domain.repository.ContactsRepository
 import ru.prorabprime.domain.repository.ObjectsRepository
 import ru.prorabprime.domain.repository.PhotosRepository
 import ru.prorabprime.domain.repository.SettingsRepository
@@ -74,11 +79,30 @@ internal class PhotosRepositoryImpl(
     private val invalidator: Invalidator,
 ) : PhotosRepository {
 
-    override suspend fun upload(objectId: ObjectId, image: CompressedImage): Result<Photo> =
-        api.uploadPhoto(objectId, image).onSuccess { invalidator.invalidate() }
+    override suspend fun upload(
+        objectId: ObjectId,
+        image: CompressedImage,
+        kind: AttachmentKind,
+    ): Result<Photo> = api.uploadPhoto(objectId, image, kind).onSuccess { invalidator.invalidate() }
 
     override suspend fun delete(id: PhotoId): Result<Unit> = api.deletePhoto(id).onSuccess { invalidator.invalidate() }
 
     override suspend fun setCover(objectId: ObjectId, photoId: PhotoId): Result<Unit> =
         api.setCover(objectId, photoId).onSuccess { invalidator.invalidate() }
+}
+
+/** A contact shows on the object card, so every successful write invalidates. */
+internal class ContactsRepositoryImpl(
+    private val api: ContactsApi,
+    private val invalidator: Invalidator,
+) : ContactsRepository {
+
+    override suspend fun create(objectId: ObjectId, draft: ContactDraft): Result<ContactId> =
+        api.createContact(objectId, draft).onSuccess { invalidator.invalidate() }
+
+    override suspend fun update(id: ContactId, draft: ContactDraft): Result<Unit> =
+        api.updateContact(id, draft).onSuccess { invalidator.invalidate() }
+
+    override suspend fun delete(id: ContactId): Result<Unit> =
+        api.deleteContact(id).onSuccess { invalidator.invalidate() }
 }

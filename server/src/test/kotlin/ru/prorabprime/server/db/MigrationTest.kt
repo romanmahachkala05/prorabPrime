@@ -102,6 +102,50 @@ class MigrationTest {
     }
 
     @Test
+    fun `a contact needs a known role and goes with its object`() {
+        val objectId = UUID.randomUUID()
+        insertObject(objectId)
+        sql(
+            "INSERT INTO contacts (id, object_id, name, sort_order, created_at) " +
+                "VALUES ('${UUID.randomUUID()}', '$objectId', 'Анна', 1, now())",
+        )
+        assertThat(scalar("SELECT role FROM contacts")).isEqualTo("OTHER")
+        assertThrows(SQLException::class.java) {
+            sql(
+                "INSERT INTO contacts (id, object_id, name, role, sort_order, created_at) " +
+                    "VALUES ('${UUID.randomUUID()}', '$objectId', 'x', 'BOSS', 2, now())",
+            )
+        }
+
+        sql("DELETE FROM objects WHERE id = '$objectId'")
+
+        assertThat(scalar("SELECT count(*) FROM contacts")).isEqualTo(0L)
+    }
+
+    @Test
+    fun `a photo is a photo by default and only photos or receipts exist`() {
+        val objectId = UUID.randomUUID()
+        insertObject(objectId)
+        insertPhoto(UUID.randomUUID(), objectId)
+        assertThat(scalar("SELECT kind FROM photos")).isEqualTo("PHOTO")
+
+        assertThrows(SQLException::class.java) { sql("UPDATE photos SET kind = 'SELFIE'") }
+        sql("UPDATE photos SET kind = 'RECEIPT'")
+        assertThat(scalar("SELECT kind FROM photos")).isEqualTo("RECEIPT")
+    }
+
+    @Test
+    fun `an object may have a chat link`() {
+        val objectId = UUID.randomUUID()
+        insertObject(objectId)
+        assertThat(scalar("SELECT chat_link FROM objects")).isNull()
+
+        sql("UPDATE objects SET chat_link = 'https://t.me/x'")
+
+        assertThat(scalar("SELECT chat_link FROM objects")).isEqualTo("https://t.me/x")
+    }
+
+    @Test
     fun `the executor runs a query in a transaction`() = runTest {
         val executor = DbExecutor(Database.connect(dataSource), Dispatchers.IO)
 

@@ -1,6 +1,10 @@
 package ru.prorabprime.data.mapper
 
 import kotlinx.collections.immutable.toImmutableList
+import ru.prorabprime.contract.AttachmentKindDto
+import ru.prorabprime.contract.ContactDto
+import ru.prorabprime.contract.ContactRequestDto
+import ru.prorabprime.contract.ContactRoleDto
 import ru.prorabprime.contract.FieldProblemDto
 import ru.prorabprime.contract.ObjectDetailsDto
 import ru.prorabprime.contract.ObjectFieldDto
@@ -10,6 +14,11 @@ import ru.prorabprime.contract.ObjectSummaryDto
 import ru.prorabprime.contract.PhotoDto
 import ru.prorabprime.contract.SortFieldDto
 import ru.prorabprime.contract.SortOrderDto
+import ru.prorabprime.domain.model.AttachmentKind
+import ru.prorabprime.domain.model.Contact
+import ru.prorabprime.domain.model.ContactDraft
+import ru.prorabprime.domain.model.ContactId
+import ru.prorabprime.domain.model.ContactRole
 import ru.prorabprime.domain.model.FieldProblem
 import ru.prorabprime.domain.model.ObjectDetails
 import ru.prorabprime.domain.model.ObjectDraft
@@ -42,7 +51,9 @@ internal fun ObjectDetailsDto.toDomain() = ObjectDetails(
     clientName = clientName,
     clientPhone = clientPhone,
     notes = notes,
+    chatLink = chatLink,
     coverPhotoId = coverPhotoId?.let(::PhotoId),
+    contacts = contacts.map { it.toDomain() }.toImmutableList(),
     photos = photos.map { it.toDomain() }.toImmutableList(),
     createdAt = createdAt,
     updatedAt = updatedAt,
@@ -55,6 +66,7 @@ internal fun PhotoDto.toDomain() = Photo(
     width = width,
     height = height,
     createdAt = createdAt,
+    kind = kind.toDomain(),
 )
 
 internal fun ObjectDraft.toRequestDto() = ObjectRequestDto(
@@ -64,6 +76,7 @@ internal fun ObjectDraft.toRequestDto() = ObjectRequestDto(
     clientName = clientName,
     clientPhone = clientPhone,
     notes = notes,
+    chatLink = chatLink,
 )
 
 internal fun ObjectStatusDto.toDomain(): ObjectStatus = when (this) {
@@ -86,6 +99,9 @@ internal fun ObjectFieldDto.toDomain(): ObjectField = when (this) {
     ObjectFieldDto.CLIENT_NAME -> ObjectField.CLIENT_NAME
     ObjectFieldDto.CLIENT_PHONE -> ObjectField.CLIENT_PHONE
     ObjectFieldDto.NOTES -> ObjectField.NOTES
+    ObjectFieldDto.CONTACT_NAME -> ObjectField.CONTACT_NAME
+    ObjectFieldDto.CONTACT_PHONE -> ObjectField.CONTACT_PHONE
+    ObjectFieldDto.CHAT_LINK -> ObjectField.CHAT_LINK
 }
 
 internal fun FieldProblemDto.toDomain(): FieldProblem = when (this) {

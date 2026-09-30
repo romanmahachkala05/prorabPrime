@@ -6,6 +6,8 @@ import ru.prorabprime.ui.toUiText
 
 internal interface IObjectsListErrorHandler {
     suspend fun onLoadFailure(error: AppError)
+
+    suspend fun onUploadFailure(error: AppError)
 }
 
 internal class ObjectsListErrorHandler(
@@ -17,6 +19,8 @@ internal class ObjectsListErrorHandler(
      * A failed reload keeps the list already on screen and says so in a Snackbar; only with
      * nothing to show does the failure take over the screen.
      */
+    override suspend fun onUploadFailure(error: AppError) = notifier.showMessage(error.toUiText())
+
     override suspend fun onLoadFailure(error: AppError) {
         val shown = stateHolder.state.value
         if (shown.status == ObjectsListStatus.Content) {

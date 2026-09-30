@@ -5,14 +5,22 @@ import kotlinx.collections.immutable.persistentListOf
 import org.junit.Rule
 import org.junit.Test
 import ru.prorabprime.domain.model.AppError
+import ru.prorabprime.domain.model.Contact
+import ru.prorabprime.domain.model.ContactDraft
+import ru.prorabprime.domain.model.ContactId
+import ru.prorabprime.domain.model.ContactRole
+import ru.prorabprime.domain.model.FieldProblem
 import ru.prorabprime.domain.model.LocalImageRef
+import ru.prorabprime.domain.model.ObjectField
 import ru.prorabprime.domain.model.ObjectId
 import ru.prorabprime.domain.model.PhotoId
 import ru.prorabprime.domain.model.PhotoRejection
+import ru.prorabprime.domain.usecase.DeleteContactUseCase
 import ru.prorabprime.domain.usecase.DeleteObjectUseCase
 import ru.prorabprime.domain.usecase.DeletePhotoUseCase
 import ru.prorabprime.domain.usecase.ObserveObjectUseCase
 import ru.prorabprime.domain.usecase.RefreshObjectsUseCase
+import ru.prorabprime.domain.usecase.SaveContactUseCase
 import ru.prorabprime.domain.usecase.SetCoverPhotoUseCase
 import ru.prorabprime.domain.usecase.UploadPhotoUseCase
 import ru.prorabprime.feature.objects.resources.Res
@@ -20,6 +28,7 @@ import ru.prorabprime.feature.objects.resources.objectdetails_cover_set
 import ru.prorabprime.feature.objects.resources.objectdetails_deleted
 import ru.prorabprime.feature.objects.resources.objectdetails_error_gone
 import ru.prorabprime.feature.objects.resources.objectdetails_upload_unreadable
+import ru.prorabprime.testing.FakeContactsRepository
 import ru.prorabprime.testing.FakeImageCompressor
 import ru.prorabprime.testing.FakeObjectsRepository
 import ru.prorabprime.testing.FakePhotosRepository
@@ -38,6 +47,7 @@ class ObjectDetailsViewModelTest {
 
     private val objects = FakeObjectsRepository()
     private val photos = FakePhotosRepository()
+    private val contacts = FakeContactsRepository()
     private val compressor = FakeImageCompressor()
     private val notifier = FakeSnackbarNotifier()
     private val id = ObjectId("o1")
@@ -55,6 +65,8 @@ class ObjectDetailsViewModelTest {
                 uploadPhoto = UploadPhotoUseCase(compressor, photos),
                 deletePhoto = DeletePhotoUseCase(photos),
                 setCoverPhoto = SetCoverPhotoUseCase(photos),
+                saveContact = SaveContactUseCase(contacts),
+                deleteContact = DeleteContactUseCase(contacts),
             ),
             notifier = notifier,
         )
@@ -229,5 +241,73 @@ class ObjectDetailsViewModelTest {
         viewModel.onEvent(ObjectDetailsEvent.Retry)
 
         assertThat(objects.refreshCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `adding a contact opens an empty form, and saving creates it and closes the form`() {
+        withObject()
+
+        viewModel.onEvent(ObjectDetailsEvent.AddContactClicked)
+        assertThat(state.contactEditor).isEqualTo(ContactEditorUi())
+        viewModel.onEvent(ObjectDetailsEvent.ContactNameChanged(" Анна "))
+        viewModel.onEvent(ObjectDetailsEvent.ContactPhoneChanged("+7 900"))
+        viewModel.onEvent(ObjectDetailsEvent.ContactRoleChanged(ContactRole.CLIENT))
+        viewModel.onEvent(ObjectDetailsEvent.ContactSaveClicked)
+
+        assertThat(contacts.created).containsExactly(id to ContactDraft("Анна", "+7 900", ContactRole.CLIENT))
+        assertThat(state.contactEditor).isNull()
+    }
+
+    @Test
+    fun `an invalid contact stays open with the field marked`() {
+        withObject()
+        viewModel.onEvent(ObjectDetailsEvent.AddContactClicked)
+
+        viewModel.onEvent(ObjectDetailsEvent.ContactSaveClicked)
+
+        assertThat(contacts.created).isEmpty()
+        assertThat(state.contactEditor?.errors).containsExactly(ObjectField.CONTACT_NAME, FieldProblem.REQUIRED)
+        assertThat(state.contactEditor?.isSaving).isFalse()
+
+        viewModel.onEvent(ObjectDetailsEvent.ContactNameChanged("А"))
+        assertThat(state.contactEditor?.errors).isEmpty()
+    }
+
+    @Test
+    fun `editing fills the form from the contact and saving updates it`() {
+        objects.details.value = mapOf(
+            id to anObjectDetails(id = "o1").copy(
+                contacts = persistentListOf(Contact(ContactId("c1"), "Анна", "123", ContactRole.EXECUTOR)),
+            ),
+        )
+
+        viewModel.onEvent(ObjectDetailsEvent.EditContactClicked("c1"))
+        assertThat(state.contactEditor)
+            .isEqualTo(ContactEditorUi("c1", "Анна", "123", ContactRole.EXECUTOR))
+        viewModel.onEvent(ObjectDetailsEvent.ContactNameChanged("Анна П."))
+        viewModel.onEvent(ObjectDetailsEvent.ContactSaveClicked)
+
+        assertThat(contacts.updated)
+            .containsExactly(ContactId("c1") to ContactDraft("Анна П.", "123", ContactRole.EXECUTOR))
+        assertThat(state.contactEditor).isNull()
+    }
+
+    @Test
+    fun `deleting a contact asks first, then deletes it`() {
+        objects.details.value = mapOf(
+            id to anObjectDetails(id = "o1").copy(
+                contacts = persistentListOf(Contact(ContactId("c1"), "Анна", null, ContactRole.OTHER)),
+            ),
+        )
+
+        viewModel.onEvent(ObjectDetailsEvent.EditContactClicked("c1"))
+        viewModel.onEvent(ObjectDetailsEvent.DeleteContactClicked("c1"))
+        assertThat(state.contactEditor).isNull()
+        assertThat(state.pendingAction).isEqualTo(ObjectDetailsAction.DeleteContact("c1"))
+        assertThat(contacts.deleted).isEmpty()
+
+        viewModel.onEvent(ObjectDetailsEvent.DialogConfirmed)
+
+        assertThat(contacts.deleted).containsExactly(ContactId("c1"))
     }
 }

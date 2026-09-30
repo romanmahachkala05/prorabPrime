@@ -29,6 +29,7 @@ internal data class ObjectForm(
     val clientName: String = "",
     val clientPhone: String = "",
     val notes: String = "",
+    val chatLink: String = "",
 )
 
 @Immutable

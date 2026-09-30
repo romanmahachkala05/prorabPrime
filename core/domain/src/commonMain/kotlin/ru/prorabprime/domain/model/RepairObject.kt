@@ -2,6 +2,7 @@ package ru.prorabprime.domain.model
 
 import kotlin.time.Instant
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 
 enum class ObjectStatus {
     PLANNED,
@@ -34,13 +35,21 @@ data class ObjectDetails(
     val clientName: String?,
     val clientPhone: String?,
     val notes: String?,
+    val chatLink: String? = null,
     val coverPhotoId: PhotoId?,
+    val contacts: ImmutableList<Contact> = persistentListOf(),
     /** In carousel order. */
     val photos: ImmutableList<Photo>,
     val createdAt: Instant,
     val updatedAt: Instant,
 ) {
     val displayTitle: String get() = title ?: address
+}
+
+/** Which folder of the object a file is in. */
+enum class AttachmentKind {
+    PHOTO,
+    RECEIPT,
 }
 
 data class Photo(
@@ -50,4 +59,5 @@ data class Photo(
     val width: Int,
     val height: Int,
     val createdAt: Instant,
+    val kind: AttachmentKind = AttachmentKind.PHOTO,
 )

@@ -35,9 +35,11 @@ val objectsModule = module {
             refreshObjects = get(),
             observeObjectSort = get(),
             saveObjectSort = get(),
+            uploadPhoto = get(),
+            notifier = get(),
         )
     }
-    factory { ObjectDetailsActions(get(), get(), get(), get(), get(), get()) }
+    factory { ObjectDetailsActions(get(), get(), get(), get(), get(), get(), get(), get()) }
     viewModel { (objectId: ObjectId) ->
         val stateHolder: IObjectDetailsStateHolder = ObjectDetailsStateHolder()
         ObjectDetailsViewModel(

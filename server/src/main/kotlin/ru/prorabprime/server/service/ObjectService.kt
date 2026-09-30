@@ -11,6 +11,7 @@ import ru.prorabprime.server.model.ObjectDetails
 import ru.prorabprime.server.model.ObjectListItem
 import ru.prorabprime.server.model.ObjectListQuery
 import ru.prorabprime.server.model.ObjectRecord
+import ru.prorabprime.server.repository.ContactRepository
 import ru.prorabprime.server.repository.ObjectRepository
 import ru.prorabprime.server.repository.PhotoRepository
 import ru.prorabprime.server.storage.FileStorage
@@ -18,6 +19,7 @@ import ru.prorabprime.server.storage.FileStorage
 class ObjectService(
     private val objects: ObjectRepository,
     private val photos: PhotoRepository,
+    private val contacts: ContactRepository,
     private val storage: FileStorage,
     private val clock: Clock,
     private val newId: () -> UUID = UUID::randomUUID,
@@ -26,7 +28,7 @@ class ObjectService(
 
     suspend fun get(id: UUID): Result<ObjectDetails> {
         val record = objects.find(id) ?: return notFound(id)
-        return Result.success(ObjectDetails(record, photos.listByObject(id)))
+        return Result.success(ObjectDetails(record, contacts.listByObject(id), photos.listByObject(id)))
     }
 
     suspend fun create(request: ObjectRequestDto): Result<ObjectRecord> {

@@ -22,6 +22,8 @@ import org.koin.ktor.ext.inject
 import ru.prorabprime.contract.ApiMultipart
 import ru.prorabprime.contract.ApiParams
 import ru.prorabprime.contract.ApiPaths
+import ru.prorabprime.contract.ApiQuery
+import ru.prorabprime.contract.AttachmentKindDto
 import ru.prorabprime.contract.PhotoLimits
 import ru.prorabprime.contract.SetCoverRequestDto
 import ru.prorabprime.server.error.ServiceError
@@ -35,7 +37,7 @@ fun Route.photoRoutes() {
     post(ApiPaths.OBJECT_PHOTOS) {
         val objectId = call.uuidParam(ApiParams.ID)
         val bytes = call.receiveUploadedFile()
-        val photo = service.upload(objectId, bytes).getOrThrow()
+        val photo = service.upload(objectId, bytes, call.attachmentKind()).getOrThrow()
         call.respond(HttpStatusCode.Created, photo.toDto())
     }
     delete(ApiPaths.PHOTO) {
@@ -81,6 +83,12 @@ private suspend fun RoutingCall.receiveUploadedFile(): ByteArray {
         part.release()
     }
     return bytes ?: throw ServiceException(ServiceError.Validation("Expected a multipart '${ApiMultipart.FILE}' part"))
+}
+
+private fun RoutingCall.attachmentKind(): AttachmentKindDto {
+    val raw = request.queryParameters[ApiQuery.KIND] ?: return AttachmentKindDto.PHOTO
+    return AttachmentKindDto.entries.find { it.name.equals(raw, ignoreCase = true) }
+        ?: throw ServiceException(ServiceError.Validation("Unknown ${ApiQuery.KIND}: $raw"))
 }
 
 private fun String.toUuidOrNull(): UUID? = runCatching { UUID.fromString(this) }.getOrNull()

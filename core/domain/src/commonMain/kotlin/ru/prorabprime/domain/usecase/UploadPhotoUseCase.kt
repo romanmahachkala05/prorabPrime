@@ -1,6 +1,7 @@
 package ru.prorabprime.domain.usecase
 
 import ru.prorabprime.domain.ImageCompressor
+import ru.prorabprime.domain.model.AttachmentKind
 import ru.prorabprime.domain.model.LocalImageRef
 import ru.prorabprime.domain.model.ObjectId
 import ru.prorabprime.domain.model.Photo
@@ -11,8 +12,12 @@ class UploadPhotoUseCase(
     private val compressor: ImageCompressor,
     private val repository: PhotosRepository,
 ) {
-    suspend operator fun invoke(objectId: ObjectId, image: LocalImageRef): Result<Photo> {
+    suspend operator fun invoke(
+        objectId: ObjectId,
+        image: LocalImageRef,
+        kind: AttachmentKind = AttachmentKind.PHOTO,
+    ): Result<Photo> {
         val compressed = compressor.compress(image).getOrElse { return Result.failure(it) }
-        return repository.upload(objectId, compressed)
+        return repository.upload(objectId, compressed, kind)
     }
 }

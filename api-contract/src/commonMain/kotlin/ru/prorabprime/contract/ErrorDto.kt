@@ -34,6 +34,9 @@ enum class ObjectFieldDto {
     CLIENT_NAME,
     CLIENT_PHONE,
     NOTES,
+    CONTACT_NAME,
+    CONTACT_PHONE,
+    CHAT_LINK,
 }
 
 @Serializable
