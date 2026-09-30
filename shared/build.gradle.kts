@@ -18,6 +18,7 @@ kotlin {
             implementation(project(":core:designsystem"))
             implementation(project(":feature:objects"))
             implementation(project(":feature:settings"))
+            implementation(project(":feature:finance"))
 
             implementation(libs.koin.compose)
             implementation(libs.androidx.navigation3.runtime)

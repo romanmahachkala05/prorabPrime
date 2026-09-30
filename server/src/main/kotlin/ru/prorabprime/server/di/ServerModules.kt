@@ -13,12 +13,21 @@ import ru.prorabprime.server.db.DbExecutor
 import ru.prorabprime.server.db.Transactor
 import ru.prorabprime.server.repository.ContactRepository
 import ru.prorabprime.server.repository.ExposedContactRepository
+import ru.prorabprime.server.repository.ExposedExtraWorkRepository
+import ru.prorabprime.server.repository.ExposedFinanceTermsRepository
 import ru.prorabprime.server.repository.ExposedObjectRepository
+import ru.prorabprime.server.repository.ExposedPaymentRepository
 import ru.prorabprime.server.repository.ExposedPhotoRepository
+import ru.prorabprime.server.repository.ExtraWorkRepository
+import ru.prorabprime.server.repository.FinanceTermsRepository
 import ru.prorabprime.server.repository.ObjectRepository
+import ru.prorabprime.server.repository.PaymentRepository
 import ru.prorabprime.server.repository.PhotoRepository
 import ru.prorabprime.server.service.ContactService
+import ru.prorabprime.server.service.ExtraWorkService
+import ru.prorabprime.server.service.FinanceService
 import ru.prorabprime.server.service.ObjectService
+import ru.prorabprime.server.service.PaymentService
 import ru.prorabprime.server.service.PhotoService
 import ru.prorabprime.server.storage.FileStorage
 import ru.prorabprime.server.storage.ImageProcessor
@@ -44,10 +53,16 @@ fun databaseModule(database: Database): Module = module {
     single<ObjectRepository> { ExposedObjectRepository(get()) }
     single<PhotoRepository> { ExposedPhotoRepository(get()) }
     single<ContactRepository> { ExposedContactRepository(get()) }
+    single<FinanceTermsRepository> { ExposedFinanceTermsRepository(get()) }
+    single<PaymentRepository> { ExposedPaymentRepository(get()) }
+    single<ExtraWorkRepository> { ExposedExtraWorkRepository(get()) }
 }
 
 val serviceModule: Module = module {
     single { ObjectService(get(), get(), get(), get(), get()) }
     single { ContactService(get(), get(), get()) }
+    single { FinanceService(get(), get(), get(), get(), get()) }
+    single { PaymentService(get(), get(), get(), get()) }
+    single { ExtraWorkService(get(), get(), get()) }
     single { PhotoService(get(), get(), get(), get(), get(), get()) }
 }

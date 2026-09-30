@@ -4,10 +4,16 @@ import java.util.UUID
 import kotlin.time.Instant
 import ru.prorabprime.server.model.ContactFields
 import ru.prorabprime.server.model.ContactRecord
+import ru.prorabprime.server.model.ExtraWorkFields
+import ru.prorabprime.server.model.ExtraWorkRecord
+import ru.prorabprime.server.model.FinanceTerms
 import ru.prorabprime.server.model.ObjectFields
 import ru.prorabprime.server.model.ObjectListItem
 import ru.prorabprime.server.model.ObjectListQuery
 import ru.prorabprime.server.model.ObjectRecord
+import ru.prorabprime.server.model.PaymentFields
+import ru.prorabprime.server.model.PaymentRecord
+import ru.prorabprime.server.model.PaymentRevisionRecord
 import ru.prorabprime.server.model.PhotoRecord
 
 interface ObjectRepository {
@@ -65,4 +71,45 @@ interface ContactRepository {
 
     /** One past the object's highest sort order, so a new contact goes to the end. */
     suspend fun nextSortOrder(objectId: UUID): Int
+}
+
+interface FinanceTermsRepository {
+    /** Nothing agreed yet reads as empty terms. */
+    suspend fun find(objectId: UUID): FinanceTerms
+
+    suspend fun save(objectId: UUID, terms: FinanceTerms)
+}
+
+interface PaymentRepository {
+    /** Oldest payment day first, ties in the order they were entered. */
+    suspend fun listByObject(objectId: UUID): List<PaymentRecord>
+
+    suspend fun find(id: UUID): PaymentRecord?
+
+    suspend fun insert(payment: PaymentRecord)
+
+    /** Returns false when there is no such payment. */
+    suspend fun update(id: UUID, fields: PaymentFields): Boolean
+
+    /** Returns false when there is no such payment. */
+    suspend fun delete(id: UUID): Boolean
+
+    suspend fun addRevision(revision: PaymentRevisionRecord)
+
+    /** Newest first. */
+    suspend fun revisionsOf(objectId: UUID): List<PaymentRevisionRecord>
+}
+
+interface ExtraWorkRepository {
+    suspend fun listByObject(objectId: UUID): List<ExtraWorkRecord>
+
+    suspend fun find(id: UUID): ExtraWorkRecord?
+
+    suspend fun insert(work: ExtraWorkRecord)
+
+    /** Returns false when there is no such work. */
+    suspend fun update(id: UUID, fields: ExtraWorkFields): Boolean
+
+    /** Returns false when there is no such work. */
+    suspend fun delete(id: UUID): Boolean
 }

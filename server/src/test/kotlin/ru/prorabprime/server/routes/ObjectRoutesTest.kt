@@ -37,6 +37,7 @@ import ru.prorabprime.server.fakes.FakeObjectRepository
 import ru.prorabprime.server.fakes.FakePhotoRepository
 import ru.prorabprime.server.fakes.FixedClock
 import ru.prorabprime.server.fakes.aPhotoRecord
+import ru.prorabprime.server.fakes.financeFakes
 import ru.prorabprime.server.repository.ContactRepository
 import ru.prorabprime.server.repository.ObjectRepository
 import ru.prorabprime.server.repository.PhotoRepository
@@ -54,7 +55,7 @@ class ObjectRoutesTest {
     }
 
     private fun server(block: suspend (HttpClient) -> Unit) =
-        testServer(koinModules = listOf(fakes, serviceModule)) { client -> block(client) }
+        testServer(koinModules = listOf(fakes, financeFakes(), serviceModule)) { client -> block(client) }
 
     private suspend fun HttpClient.create(address: String, title: String? = null): String = post("/api/objects") {
         bearerAuth(TEST_TOKEN)

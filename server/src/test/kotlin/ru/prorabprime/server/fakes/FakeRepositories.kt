@@ -9,13 +9,22 @@ import ru.prorabprime.contract.SortOrderDto
 import ru.prorabprime.server.db.Transactor
 import ru.prorabprime.server.model.ContactFields
 import ru.prorabprime.server.model.ContactRecord
+import ru.prorabprime.server.model.ExtraWorkFields
+import ru.prorabprime.server.model.ExtraWorkRecord
+import ru.prorabprime.server.model.FinanceTerms
 import ru.prorabprime.server.model.ObjectFields
 import ru.prorabprime.server.model.ObjectListItem
 import ru.prorabprime.server.model.ObjectListQuery
 import ru.prorabprime.server.model.ObjectRecord
+import ru.prorabprime.server.model.PaymentFields
+import ru.prorabprime.server.model.PaymentRecord
+import ru.prorabprime.server.model.PaymentRevisionRecord
 import ru.prorabprime.server.model.PhotoRecord
 import ru.prorabprime.server.repository.ContactRepository
+import ru.prorabprime.server.repository.ExtraWorkRepository
+import ru.prorabprime.server.repository.FinanceTermsRepository
 import ru.prorabprime.server.repository.ObjectRepository
+import ru.prorabprime.server.repository.PaymentRepository
 import ru.prorabprime.server.repository.PhotoRepository
 import ru.prorabprime.server.repository.searchTextOf
 
@@ -130,6 +139,69 @@ class FakeContactRepository : ContactRepository {
         (records.values.filter { it.objectId == objectId }.maxOfOrNull { it.sortOrder } ?: 0) + 1
 }
 
+class FakeFinanceTermsRepository : FinanceTermsRepository {
+
+    val saved = mutableMapOf<UUID, FinanceTerms>()
+
+    override suspend fun find(objectId: UUID): FinanceTerms = saved[objectId] ?: FinanceTerms()
+
+    override suspend fun save(objectId: UUID, terms: FinanceTerms) {
+        saved[objectId] = terms
+    }
+}
+
+class FakePaymentRepository : PaymentRepository {
+
+    val records = linkedMapOf<UUID, PaymentRecord>()
+    val revisions = mutableListOf<PaymentRevisionRecord>()
+
+    override suspend fun listByObject(objectId: UUID): List<PaymentRecord> =
+        records.values.filter { it.objectId == objectId }.sortedBy { it.fields.paidOn }
+
+    override suspend fun find(id: UUID): PaymentRecord? = records[id]
+
+    override suspend fun insert(payment: PaymentRecord) {
+        records[payment.id] = payment
+    }
+
+    override suspend fun update(id: UUID, fields: PaymentFields): Boolean {
+        val record = records[id] ?: return false
+        records[id] = record.copy(fields = fields)
+        return true
+    }
+
+    override suspend fun delete(id: UUID): Boolean = records.remove(id) != null
+
+    override suspend fun addRevision(revision: PaymentRevisionRecord) {
+        revisions += revision
+    }
+
+    override suspend fun revisionsOf(objectId: UUID): List<PaymentRevisionRecord> =
+        revisions.filter { it.objectId == objectId }.sortedByDescending { it.at }
+}
+
+class FakeExtraWorkRepository : ExtraWorkRepository {
+
+    val records = linkedMapOf<UUID, ExtraWorkRecord>()
+
+    override suspend fun listByObject(objectId: UUID): List<ExtraWorkRecord> =
+        records.values.filter { it.objectId == objectId }.sortedBy { it.createdAt }
+
+    override suspend fun find(id: UUID): ExtraWorkRecord? = records[id]
+
+    override suspend fun insert(work: ExtraWorkRecord) {
+        records[work.id] = work
+    }
+
+    override suspend fun update(id: UUID, fields: ExtraWorkFields): Boolean {
+        val record = records[id] ?: return false
+        records[id] = record.copy(fields = fields)
+        return true
+    }
+
+    override suspend fun delete(id: UUID): Boolean = records.remove(id) != null
+}
+
 /** Runs the block directly; the fakes have no transactions to join. */
 object ImmediateTransactor : Transactor {
     override suspend fun <T> inTransaction(block: suspend () -> T): T = block()
@@ -154,3 +226,11 @@ fun aPhotoRecord(
     createdAt = createdAt,
     kind = kind,
 )
+
+/** The finance repositories as fakes, for route tests that start the whole service module. */
+fun financeFakes(): org.koin.core.module.Module = org.koin.dsl.module {
+    single<FinanceTermsRepository> { FakeFinanceTermsRepository() }
+    single<PaymentRepository> { FakePaymentRepository() }
+    single<ExtraWorkRepository> { FakeExtraWorkRepository() }
+    single<ru.prorabprime.server.db.Transactor> { ImmediateTransactor }
+}

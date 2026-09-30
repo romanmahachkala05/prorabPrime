@@ -93,16 +93,11 @@ internal fun ObjectStatus.toDto(): ObjectStatusDto = when (this) {
     ObjectStatus.PAUSED -> ObjectStatusDto.PAUSED
 }
 
-internal fun ObjectFieldDto.toDomain(): ObjectField = when (this) {
-    ObjectFieldDto.TITLE -> ObjectField.TITLE
-    ObjectFieldDto.ADDRESS -> ObjectField.ADDRESS
-    ObjectFieldDto.CLIENT_NAME -> ObjectField.CLIENT_NAME
-    ObjectFieldDto.CLIENT_PHONE -> ObjectField.CLIENT_PHONE
-    ObjectFieldDto.NOTES -> ObjectField.NOTES
-    ObjectFieldDto.CONTACT_NAME -> ObjectField.CONTACT_NAME
-    ObjectFieldDto.CONTACT_PHONE -> ObjectField.CONTACT_PHONE
-    ObjectFieldDto.CHAT_LINK -> ObjectField.CHAT_LINK
-}
+/**
+ * By name: the two enums list the same fields and grow together, which `MappersTest` checks, so a
+ * `when` here would only be a third list to keep in step.
+ */
+internal fun ObjectFieldDto.toDomain(): ObjectField = ObjectField.valueOf(name)
 
 internal fun FieldProblemDto.toDomain(): FieldProblem = when (this) {
     FieldProblemDto.REQUIRED -> FieldProblem.REQUIRED

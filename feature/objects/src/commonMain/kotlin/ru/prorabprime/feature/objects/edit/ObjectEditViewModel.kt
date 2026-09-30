@@ -145,5 +145,5 @@ internal fun ObjectForm.valueOf(field: ObjectField): String = when (field) {
     ObjectField.CLIENT_PHONE -> clientPhone
     ObjectField.NOTES -> notes
     ObjectField.CHAT_LINK -> chatLink
-    ObjectField.CONTACT_NAME, ObjectField.CONTACT_PHONE -> ""
+    else -> ""
 }

@@ -9,6 +9,13 @@ object ApiPaths {
     const val OBJECT_COVER = "/api/objects/{id}/cover"
     const val OBJECT_CONTACTS = "/api/objects/{id}/contacts"
     const val CONTACT = "/api/contacts/{id}"
+    const val OBJECT_FINANCE = "/api/objects/{id}/finance"
+    const val OBJECT_FINANCE_TERMS = "/api/objects/{id}/finance/terms"
+    const val OBJECT_PAYMENTS = "/api/objects/{id}/payments"
+    const val OBJECT_PAYMENT_HISTORY = "/api/objects/{id}/payments/history"
+    const val PAYMENT = "/api/payments/{id}"
+    const val OBJECT_EXTRA_WORKS = "/api/objects/{id}/extra-works"
+    const val EXTRA_WORK = "/api/extra-works/{id}"
     const val PHOTO = "/api/photos/{id}"
     const val FILE = "/files/{objectId}/{fileName}"
 }

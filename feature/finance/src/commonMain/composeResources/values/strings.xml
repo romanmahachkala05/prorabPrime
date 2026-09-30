@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="finance_title">Финансы</string>
+    <string name="finance_back">Назад</string>
+    <string name="finance_history">История платежей</string>
+    <string name="finance_history_empty">Изменений пока нет</string>
+    <string name="finance_history_close">Закрыть</string>
+    <string name="finance_history_created">Добавлен</string>
+    <string name="finance_history_updated">Изменён</string>
+    <string name="finance_history_deleted">Удалён</string>
+
+    <string name="finance_client">Заказчик</string>
+    <string name="finance_crew">Бригада</string>
+    <string name="finance_agreed">Договорённость</string>
+    <string name="finance_paid_client">Получено</string>
+    <string name="finance_paid_crew">Выплачено</string>
+    <string name="finance_remaining">Осталось</string>
+    <string name="finance_overpaid">Переплата</string>
+    <string name="finance_not_set">не указана</string>
+    <string name="finance_edit_totals">Изменить суммы</string>
+
+    <string name="finance_payments">Платежи</string>
+    <string name="finance_no_payments">Платежей пока нет</string>
+    <string name="finance_add_payment">Добавить платёж</string>
+    <string name="finance_edit_payment">Платёж</string>
+    <string name="finance_payment_amount">Сумма, ₽ *</string>
+    <string name="finance_payment_date">Дата передачи *</string>
+    <string name="finance_payment_method">Способ</string>
+    <string name="finance_payment_note">Заметка</string>
+    <string name="finance_method_cash">Наличные</string>
+    <string name="finance_method_transfer">Перевод</string>
+    <string name="finance_method_card">Карта</string>
+    <string name="finance_method_other">Другое</string>
+
+    <string name="finance_extras">Дополнительные работы</string>
+    <string name="finance_no_extras">Дополнительных работ пока нет</string>
+    <string name="finance_add_extra">Добавить работу</string>
+    <string name="finance_edit_extra">Дополнительная работа</string>
+    <string name="finance_extra_title">Вид работ *</string>
+    <string name="finance_extra_amount">Сумма, ₽ *</string>
+    <string name="finance_extra_status">Статус</string>
+    <string name="finance_status_agreed">Согласовано</string>
+    <string name="finance_status_not_agreed">Не согласовано</string>
+    <string name="finance_extras_total_agreed">Согласовано на %1$s</string>
+    <string name="finance_extras_total_pending">Ждёт согласования: %1$s</string>
+
+    <string name="finance_totals_title">Договорённые суммы</string>
+    <string name="finance_total_client">Сумма с заказчика, ₽</string>
+    <string name="finance_total_crew">Сумма для бригады, ₽</string>
+
+    <string name="finance_save">Сохранить</string>
+    <string name="finance_cancel">Отмена</string>
+    <string name="finance_delete">Удалить</string>
+    <string name="finance_pick_date">Выбрать</string>
+    <string name="finance_delete_payment_title">Удалить платёж?</string>
+    <string name="finance_delete_payment_message">Платёж исчезнет из расчётов, но останется в истории.</string>
+    <string name="finance_delete_extra_title">Удалить работу?</string>
+    <string name="finance_delete_extra_message">Работа исчезнет из расчётов.</string>
+    <string name="finance_error_gone">Этот объект удалён.</string>
+    <string name="finance_error_required">Обязательное поле</string>
+    <string name="finance_error_too_long">Слишком длинное значение</string>
+    <string name="finance_error_invalid">Неверное значение</string>
+</resources>

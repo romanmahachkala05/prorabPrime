@@ -2,6 +2,7 @@ package ru.prorabprime.server.repository
 
 import org.jetbrains.exposed.v1.core.Table
 import org.jetbrains.exposed.v1.core.java.javaUUID
+import org.jetbrains.exposed.v1.javatime.date
 import org.jetbrains.exposed.v1.javatime.timestamp
 
 /** Mirrors `V1__init.sql` and later migrations; Flyway owns the schema, these only read and write it. */
@@ -45,6 +46,53 @@ object ContactsTable : Table("contacts") {
     val phone = varchar("phone", 50).nullable()
     val role = varchar("role", 20)
     val sortOrder = integer("sort_order")
+    val createdAt = timestamp("created_at")
+
+    override val primaryKey = PrimaryKey(id)
+}
+
+object FinanceTermsTable : Table("finance_terms") {
+    val objectId = javaUUID("object_id")
+    val clientTotalKopecks = long("client_total_kopecks").nullable()
+    val crewTotalKopecks = long("crew_total_kopecks").nullable()
+
+    override val primaryKey = PrimaryKey(objectId)
+}
+
+object PaymentsTable : Table("payments") {
+    val id = javaUUID("id")
+    val objectId = javaUUID("object_id")
+    val side = varchar("side", 10)
+    val amountKopecks = long("amount_kopecks")
+    val method = varchar("method", 10)
+    val paidOn = date("paid_on")
+    val note = varchar("note", 500).nullable()
+    val createdAt = timestamp("created_at")
+
+    override val primaryKey = PrimaryKey(id)
+}
+
+object PaymentHistoryTable : Table("payment_history") {
+    val id = javaUUID("id")
+    val objectId = javaUUID("object_id")
+    val paymentId = javaUUID("payment_id")
+    val action = varchar("action", 10)
+    val side = varchar("side", 10)
+    val amountKopecks = long("amount_kopecks")
+    val method = varchar("method", 10)
+    val paidOn = date("paid_on")
+    val note = varchar("note", 500).nullable()
+    val at = timestamp("at")
+
+    override val primaryKey = PrimaryKey(id)
+}
+
+object ExtraWorksTable : Table("extra_works") {
+    val id = javaUUID("id")
+    val objectId = javaUUID("object_id")
+    val title = varchar("title", 200)
+    val amountKopecks = long("amount_kopecks")
+    val status = varchar("status", 12)
     val createdAt = timestamp("created_at")
 
     override val primaryKey = PrimaryKey(id)

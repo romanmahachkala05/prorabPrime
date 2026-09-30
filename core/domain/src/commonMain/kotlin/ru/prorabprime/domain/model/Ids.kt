@@ -16,3 +16,13 @@ value class PhotoId(
 value class ContactId(
     val value: String,
 )
+
+@JvmInline
+value class PaymentId(
+    val value: String,
+)
+
+@JvmInline
+value class ExtraWorkId(
+    val value: String,
+)

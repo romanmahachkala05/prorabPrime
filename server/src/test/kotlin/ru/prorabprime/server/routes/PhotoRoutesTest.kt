@@ -41,6 +41,7 @@ import ru.prorabprime.server.fakes.FakeObjectRepository
 import ru.prorabprime.server.fakes.FakePhotoRepository
 import ru.prorabprime.server.fakes.FixedClock
 import ru.prorabprime.server.fakes.ImmediateTransactor
+import ru.prorabprime.server.fakes.financeFakes
 import ru.prorabprime.server.model.ObjectFields
 import ru.prorabprime.server.model.ObjectRecord
 import ru.prorabprime.server.repository.ContactRepository
@@ -77,7 +78,7 @@ class PhotoRoutesTest {
             single<Clock> { FixedClock() }
             single<FileStorage> { LocalFileStorage(folder.root.toPath(), Dispatchers.IO) }
         }
-        testServer(koinModules = listOf(fakes, serviceModule)) { client -> block(client) }
+        testServer(koinModules = listOf(fakes, financeFakes(), serviceModule)) { client -> block(client) }
     }
 
     private suspend fun HttpClient.upload(

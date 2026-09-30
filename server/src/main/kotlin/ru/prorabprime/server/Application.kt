@@ -24,6 +24,7 @@ import ru.prorabprime.server.di.serviceModule
 import ru.prorabprime.server.error.installErrorHandling
 import ru.prorabprime.server.routes.contactRoutes
 import ru.prorabprime.server.routes.fileRoutes
+import ru.prorabprime.server.routes.financeRoutes
 import ru.prorabprime.server.routes.healthRoutes
 import ru.prorabprime.server.routes.objectRoutes
 import ru.prorabprime.server.routes.photoRoutes
@@ -66,6 +67,7 @@ fun Application.configure(config: AppConfig, koinModules: List<Module>) {
             objectRoutes()
             photoRoutes()
             contactRoutes()
+            financeRoutes()
             fileRoutes()
         }
     }

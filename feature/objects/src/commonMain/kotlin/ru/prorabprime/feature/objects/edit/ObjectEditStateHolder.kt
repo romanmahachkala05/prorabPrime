@@ -61,8 +61,8 @@ internal class ObjectEditStateHolder(
 
             ObjectField.CHAT_LINK -> it.form.copy(chatLink = value)
 
-            // Contacts are edited on the object card, not in this form.
-            ObjectField.CONTACT_NAME, ObjectField.CONTACT_PHONE -> it.form
+            // Every other field belongs to a form of its own (contacts, finance), not to this one.
+            else -> it.form
         }
         it.copy(form = form, fieldErrors = (it.fieldErrors - field).toImmutableMap())
     }

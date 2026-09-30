@@ -18,6 +18,8 @@ import androidx.navigation3.ui.NavDisplay
 import androidx.savedstate.serialization.SavedStateConfiguration
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
+import ru.prorabprime.feature.finance.FinanceNavKey
+import ru.prorabprime.feature.finance.FinanceScreen
 import ru.prorabprime.feature.objects.details.ObjectDetailsNavKey
 import ru.prorabprime.feature.objects.details.ObjectDetailsScreen
 import ru.prorabprime.feature.objects.edit.ObjectEditNavKey
@@ -66,9 +68,11 @@ fun AppNavDisplay(notifier: SnackbarNotifier, modifier: Modifier = Modifier) {
                         objectId = key.objectId,
                         onEdit = { backStack.add(ObjectEditNavKey(key.objectId)) },
                         onOpenPhoto = { backStack.add(PhotoViewerNavKey(key.objectId, it)) },
+                        onOpenFinance = { backStack.add(FinanceNavKey(key.objectId)) },
                         onClose = { backStack.pop() },
                     )
                 }
+                entry<FinanceNavKey> { key -> FinanceScreen(objectId = key.objectId, onBack = { backStack.pop() }) }
                 entry<PhotoViewerNavKey> { key ->
                     PhotoViewerScreen(objectId = key.objectId, photoId = key.photoId, onBack = { backStack.pop() })
                 }
@@ -107,6 +111,7 @@ private val NAV_KEYS = SavedStateConfiguration {
             subclass(ObjectEditNavKey::class, ObjectEditNavKey.serializer())
             subclass(PhotoViewerNavKey::class, PhotoViewerNavKey.serializer())
             subclass(SettingsNavKey::class, SettingsNavKey.serializer())
+            subclass(FinanceNavKey::class, FinanceNavKey.serializer())
         }
     }
 }

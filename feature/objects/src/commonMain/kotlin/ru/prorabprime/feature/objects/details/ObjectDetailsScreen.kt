@@ -59,6 +59,7 @@ import ru.prorabprime.feature.objects.resources.objectdetails_back
 import ru.prorabprime.feature.objects.resources.objectdetails_client
 import ru.prorabprime.feature.objects.resources.objectdetails_delete
 import ru.prorabprime.feature.objects.resources.objectdetails_edit
+import ru.prorabprime.feature.objects.resources.objectdetails_finance
 import ru.prorabprime.feature.objects.resources.objectdetails_notes
 import ru.prorabprime.feature.objects.resources.objectdetails_open_chat
 import ru.prorabprime.feature.objects.resources.objectdetails_phone
@@ -74,17 +75,19 @@ fun ObjectDetailsScreen(
     objectId: String,
     onEdit: () -> Unit,
     onOpenPhoto: (photoId: String) -> Unit,
+    onOpenFinance: () -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val viewModel: ObjectDetailsViewModel = koinViewModel(key = objectId) { parametersOf(ObjectId(objectId)) }
-    ObjectDetailsScreen(onEdit, onOpenPhoto, onClose, modifier, viewModel)
+    ObjectDetailsScreen(onEdit, onOpenPhoto, onOpenFinance, onClose, modifier, viewModel)
 }
 
 @Composable
 private fun ObjectDetailsScreen(
     onEdit: () -> Unit,
     onOpenPhoto: (photoId: String) -> Unit,
+    onOpenFinance: () -> Unit,
     onClose: () -> Unit,
     modifier: Modifier,
     viewModel: ObjectDetailsViewModel,
@@ -104,6 +107,7 @@ private fun ObjectDetailsScreen(
         onEdit = onEdit,
         onBack = onClose,
         onOpenPhoto = onOpenPhoto,
+        onOpenFinance = onOpenFinance,
         onTakePhoto = { sourcesFor(it).takePhoto() },
         onPickPhotos = { sourcesFor(it).pickFromGallery() },
         modifier = modifier,
@@ -119,6 +123,7 @@ internal fun ObjectDetailsContent(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     onOpenPhoto: (photoId: String) -> Unit = {},
+    onOpenFinance: () -> Unit = {},
     onTakePhoto: (AttachmentKind) -> Unit = {},
     onPickPhotos: (AttachmentKind) -> Unit = {},
 ) {
@@ -132,7 +137,7 @@ internal fun ObjectDetailsContent(
             if (state.isDeleting) LinearProgressIndicator(Modifier.fillMaxWidth())
             when (val status = state.status) {
                 ObjectDetailsStatus.Content -> state.details?.let { details ->
-                    DetailsBody(details, state, onEvent, onOpenPhoto, onAdd = { choosingSourceFor = it })
+                    DetailsBody(details, state, onEvent, onOpenPhoto, onOpenFinance, onAdd = { choosingSourceFor = it })
                 }
 
                 ObjectDetailsStatus.Loading -> LoadingBox()
@@ -223,6 +228,7 @@ private fun DetailsBody(
     state: ObjectDetailsState,
     onEvent: (ObjectDetailsEvent) -> Unit,
     onOpenPhoto: (photoId: String) -> Unit,
+    onOpenFinance: () -> Unit,
     onAdd: (AttachmentKind) -> Unit,
 ) {
     Column(
@@ -254,6 +260,10 @@ private fun DetailsBody(
             addLabel = Res.string.objectdetails_add_receipt,
         )
         DetailsFields(details)
+        OutlinedButton(
+            onClick = onOpenFinance,
+            modifier = Modifier.padding(horizontal = Spacing.m),
+        ) { Text(stringResource(Res.string.objectdetails_finance)) }
         ContactsSection(
             contacts = details.contacts,
             onAdd = { onEvent(ObjectDetailsEvent.AddContactClicked) },

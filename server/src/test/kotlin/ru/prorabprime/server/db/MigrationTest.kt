@@ -146,6 +146,50 @@ class MigrationTest {
     }
 
     @Test
+    fun `a payment needs a positive amount and a known side, and its history outlives it`() {
+        val objectId = UUID.randomUUID()
+        val paymentId = UUID.randomUUID()
+        insertObject(objectId)
+        val insert = { amount: Long, side: String ->
+            sql(
+                "INSERT INTO payments (id, object_id, side, amount_kopecks, method, paid_on, created_at) " +
+                    "VALUES ('$paymentId', '$objectId', '$side', $amount, 'CASH', '2026-09-25', now())",
+            )
+        }
+        assertThrows(SQLException::class.java) { insert(0, "CLIENT") }
+        assertThrows(SQLException::class.java) { insert(100, "BOSS") }
+        insert(100, "CLIENT")
+        sql(
+            "INSERT INTO payment_history (id, object_id, payment_id, action, side, amount_kopecks, method, " +
+                "paid_on, at) VALUES ('${UUID.randomUUID()}', '$objectId', '$paymentId', 'CREATED', 'CLIENT', " +
+                "100, 'CASH', '2026-09-25', now())",
+        )
+
+        sql("DELETE FROM payments WHERE id = '$paymentId'")
+        assertThat(scalar("SELECT count(*) FROM payment_history")).isEqualTo(1L)
+
+        sql("DELETE FROM objects WHERE id = '$objectId'")
+        assertThat(scalar("SELECT count(*) FROM payment_history")).isEqualTo(0L)
+    }
+
+    @Test
+    fun `an extra work defaults to not agreed and rejects a negative amount`() {
+        val objectId = UUID.randomUUID()
+        insertObject(objectId)
+        sql(
+            "INSERT INTO extra_works (id, object_id, title, amount_kopecks, created_at) " +
+                "VALUES ('${UUID.randomUUID()}', '$objectId', 'Балкон', 0, now())",
+        )
+        assertThat(scalar("SELECT status FROM extra_works")).isEqualTo("NOT_AGREED")
+        assertThrows(SQLException::class.java) {
+            sql(
+                "INSERT INTO extra_works (id, object_id, title, amount_kopecks, created_at) " +
+                    "VALUES ('${UUID.randomUUID()}', '$objectId', 'x', -1, now())",
+            )
+        }
+    }
+
+    @Test
     fun `the executor runs a query in a transaction`() = runTest {
         val executor = DbExecutor(Database.connect(dataSource), Dispatchers.IO)
 
