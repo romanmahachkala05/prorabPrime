@@ -165,4 +165,39 @@ class ExposedPhotoRepositoryTest {
         assertThat(photos.find(photo.id)).isNull()
         assertThat(objects.find(objectId)?.coverPhotoId).isNull()
     }
+
+    @Test
+    fun `a trashed photo is out of the object, found in the trash, and restored`() = runTest {
+        val keep = photo(sortOrder = 1)
+        val drop = photo(sortOrder = 2)
+        photos.insert(keep)
+        photos.insert(drop)
+
+        assertThat(photos.trash(drop.id, base + 3.minutes)).isTrue()
+        assertThat(photos.trash(drop.id, base)).isFalse()
+
+        assertThat(photos.listByObject(objectId).map { it.id }).containsExactly(keep.id)
+        assertThat(photos.find(drop.id)).isNull()
+        assertThat(photos.findAny(drop.id)).isNotNull()
+        assertThat(photos.findTrashed(drop.id)).isNotNull()
+        assertThat(photos.findTrashed(keep.id)).isNull()
+        val trashed = photos.listTrashed().single()
+        assertThat(trashed.photo.id).isEqualTo(drop.id)
+        assertThat(trashed.deletedAt).isEqualTo(base + 3.minutes)
+        assertThat(trashed.objectAddress).isEqualTo("Тверская, 5")
+
+        assertThat(photos.restore(drop.id)).isTrue()
+        assertThat(photos.restore(drop.id)).isFalse()
+        assertThat(photos.listByObject(objectId).map { it.id }).containsExactly(keep.id, drop.id)
+    }
+
+    @Test
+    fun `the photos of a trashed object are not listed in the trash on their own`() = runTest {
+        val drop = photo(sortOrder = 1)
+        photos.insert(drop)
+        photos.trash(drop.id, base)
+        objects.trash(objectId, base)
+
+        assertThat(photos.listTrashed()).isEmpty()
+    }
 }

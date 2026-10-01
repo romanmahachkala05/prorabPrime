@@ -27,6 +27,8 @@ import ru.prorabprime.server.model.ReceiptData
 import ru.prorabprime.server.model.TaskFields
 import ru.prorabprime.server.model.TaskQuery
 import ru.prorabprime.server.model.TaskRecord
+import ru.prorabprime.server.model.TrashedObject
+import ru.prorabprime.server.model.TrashedPhoto
 import ru.prorabprime.server.repository.ContactRepository
 import ru.prorabprime.server.repository.ExtraWorkRepository
 import ru.prorabprime.server.repository.FinanceTermsRepository
@@ -52,16 +54,26 @@ class FakeObjectRepository(
 
     val records = linkedMapOf<UUID, ObjectRecord>()
 
+    /** When each object in the trash was put there. */
+    val trashedAt = linkedMapOf<UUID, Instant>()
+
+    init {
+        photos.objects = this
+    }
+
     override suspend fun list(query: ObjectListQuery): List<ObjectListItem> {
         val search = query.search?.trim()?.lowercase()?.takeIf { it.isNotEmpty() }
-        val matching = records.values.filter { search == null || search in searchTextOf(it.fields) }
+        val matching = records.values.filter {
+            it.id !in trashedAt &&
+                (search == null || search in searchTextOf(it.fields))
+        }
         val sorted = when (query.sort) {
             SortFieldDto.ADDRESS -> matching.sortedBy { it.fields.address }
             SortFieldDto.CREATED -> matching.sortedBy { it.createdAt }
             SortFieldDto.UPDATED -> matching.sortedBy { it.updatedAt }
         }.let { if (query.order == SortOrderDto.DESC) it.reversed() else it }
         return sorted.map { record ->
-            val objectPhotos = photos.records.values.filter { it.objectId == record.id }
+            val objectPhotos = photos.records.values.filter { it.objectId == record.id && it.id !in photos.trashedAt }
             ObjectListItem(
                 record = record,
                 coverThumbFileName = objectPhotos.find { it.id == record.coverPhotoId }?.thumbFileName,
@@ -70,7 +82,32 @@ class FakeObjectRepository(
         }
     }
 
-    override suspend fun find(id: UUID): ObjectRecord? = records[id]
+    override suspend fun find(id: UUID): ObjectRecord? = records[id]?.takeIf { id !in trashedAt }
+
+    override suspend fun findAny(id: UUID): ObjectRecord? = records[id]
+
+    override suspend fun trash(id: UUID, at: Instant): Boolean {
+        if (id !in records || id in trashedAt) return false
+        trashedAt[id] = at
+        return true
+    }
+
+    override suspend fun restore(id: UUID): Boolean = trashedAt.remove(id) != null
+
+    override suspend fun findTrashed(id: UUID): ObjectRecord? = records[id]?.takeIf { id in trashedAt }
+
+    override suspend fun listTrashed(): List<TrashedObject> = trashedAt.entries.sortedByDescending {
+        it.value
+    }.map { (id, at) ->
+        val objectPhotos = photos.records.values.filter { it.objectId == id && it.id !in photos.trashedAt }
+        val record = records.getValue(id)
+        TrashedObject(
+            record = record,
+            coverThumbFileName = objectPhotos.find { it.id == record.coverPhotoId }?.thumbFileName,
+            photoCount = objectPhotos.count { it.kind == AttachmentKindDto.PHOTO },
+            deletedAt = at,
+        )
+    }
 
     override suspend fun insert(record: ObjectRecord) {
         records[record.id] = record
@@ -88,6 +125,7 @@ class FakeObjectRepository(
 
     override suspend fun delete(id: UUID): Boolean {
         photos.records.values.removeAll { it.objectId == id }
+        trashedAt.remove(id)
         return records.remove(id) != null
     }
 
@@ -108,20 +146,48 @@ class FakePhotoRepository : PhotoRepository {
 
     val records = linkedMapOf<UUID, PhotoRecord>()
 
+    /** When each photo in the trash was put there. */
+    val trashedAt = linkedMapOf<UUID, Instant>()
+
+    /** Set by the object repository that shares this one, so a trashed photo can say where it came from. */
+    var objects: FakeObjectRepository? = null
+
     /** When set, [insert] throws it, as a failed database write would. */
     var insertFailure: Exception? = null
 
     override suspend fun listByObject(objectId: UUID): List<PhotoRecord> =
-        records.values.filter { it.objectId == objectId }.sortedBy { it.sortOrder }
+        records.values.filter { it.objectId == objectId && it.id !in trashedAt }.sortedBy { it.sortOrder }
 
-    override suspend fun find(id: UUID): PhotoRecord? = records[id]
+    override suspend fun find(id: UUID): PhotoRecord? = records[id]?.takeIf { id !in trashedAt }
+
+    override suspend fun findAny(id: UUID): PhotoRecord? = records[id]
+
+    override suspend fun trash(id: UUID, at: Instant): Boolean {
+        if (id !in records || id in trashedAt) return false
+        trashedAt[id] = at
+        return true
+    }
+
+    override suspend fun restore(id: UUID): Boolean = trashedAt.remove(id) != null
+
+    override suspend fun findTrashed(id: UUID): PhotoRecord? = records[id]?.takeIf { id in trashedAt }
+
+    override suspend fun listTrashed(): List<TrashedPhoto> = trashedAt.entries.sortedByDescending { it.value }
+        .mapNotNull { (id, at) ->
+            val photo = records.getValue(id)
+            val owner = objects?.find(photo.objectId) ?: return@mapNotNull null
+            TrashedPhoto(photo, owner.fields.title, owner.fields.address, at)
+        }
 
     override suspend fun insert(photo: PhotoRecord) {
         insertFailure?.let { throw it }
         records[photo.id] = photo
     }
 
-    override suspend fun delete(id: UUID): Boolean = records.remove(id) != null
+    override suspend fun delete(id: UUID): Boolean {
+        trashedAt.remove(id)
+        return records.remove(id) != null
+    }
 
     override suspend fun setNote(id: UUID, note: String?): Boolean {
         val record = records[id] ?: return false

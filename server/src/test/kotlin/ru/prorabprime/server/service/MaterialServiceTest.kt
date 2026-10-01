@@ -26,7 +26,7 @@ class MaterialServiceTest {
     private val repository = FakeMaterialRepository()
     private val clock = FixedClock()
     private val objectService =
-        ObjectService(objects, FakePhotoRepository(), FakeContactRepository(), FakeFileStorage(), clock)
+        ObjectService(objects, FakePhotoRepository(), FakeContactRepository(), clock)
     private val service = MaterialService(objects, repository, clock)
 
     private suspend fun anObject(): UUID = objectService

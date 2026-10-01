@@ -334,15 +334,16 @@ class PhotoRoutesTest {
     }
 
     @Test
-    fun `deleting a photo answers 204 and removes its file`() = server { client ->
-        val photo = client.upload(TestImages.jpeg(10, 10)).body<PhotoDto>()
+    fun `deleting a photo answers 204 and takes it out of the object, its file waiting in the trash`() =
+        server { client ->
+            val photo = client.upload(TestImages.jpeg(10, 10)).body<PhotoDto>()
 
-        val response = client.delete("/api/photos/${photo.id}") { bearerAuth(TEST_TOKEN) }
+            val response = client.delete("/api/photos/${photo.id}") { bearerAuth(TEST_TOKEN) }
 
-        assertThat(response.status).isEqualTo(HttpStatusCode.NoContent)
-        assertThat(client.get(photo.url) { bearerAuth(TEST_TOKEN) }.status).isEqualTo(HttpStatusCode.NotFound)
-        assertThat(client.details().photos).isEmpty()
-    }
+            assertThat(response.status).isEqualTo(HttpStatusCode.NoContent)
+            assertThat(client.details().photos).isEmpty()
+            assertThat(photos.trashedAt.keys.map { it.toString() }).containsExactly(photo.id)
+        }
 
     @Test
     fun `a receipt is uploaded with the kind parameter and does not count as the cover`() = server { client ->

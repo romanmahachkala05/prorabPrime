@@ -22,6 +22,9 @@ object ObjectsTable : Table("objects") {
     val createdAt = timestamp("created_at")
     val updatedAt = timestamp("updated_at")
 
+    /** Set while the object waits in the trash. */
+    val deletedAt = timestamp("deleted_at").nullable()
+
     override val primaryKey = PrimaryKey(id)
 }
 
@@ -41,6 +44,9 @@ object PhotosTable : Table("photos") {
     val receiptAt = varchar("receipt_at", 20).nullable()
     val receiptQr = text("receipt_qr").nullable()
     val createdAt = timestamp("created_at")
+
+    /** Set while the photo waits in the trash. */
+    val deletedAt = timestamp("deleted_at").nullable()
 
     override val primaryKey = PrimaryKey(id)
 }

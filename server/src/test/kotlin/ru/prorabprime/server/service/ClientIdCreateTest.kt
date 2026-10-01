@@ -37,7 +37,7 @@ class ClientIdCreateTest {
     private val extraRepo = FakeExtraWorkRepository()
     private val taskRepo = FakeTaskRepository()
 
-    private val objectService = ObjectService(objects, FakePhotoRepository(), contactRepo, FakeFileStorage(), clock)
+    private val objectService = ObjectService(objects, FakePhotoRepository(), contactRepo, clock)
     private val contacts = ContactService(objects, contactRepo, clock)
     private val materials = MaterialService(objects, materialRepo, clock)
     private val payments = PaymentService(objects, paymentRepo, ImmediateTransactor, clock)

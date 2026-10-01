@@ -197,4 +197,62 @@ class ExposedObjectRepositoryTest {
         repository.setCoordinates(record.id, null)
         assertThat(repository.find(record.id)?.coordinates).isNull()
     }
+
+    @Test
+    fun `a trashed object is left out of the list and of find, and is found in the trash`() = runTest {
+        val kept = insert("Арбат, 3")
+        val gone = insert("Тверская, 5")
+        val photoId = UUID.randomUUID()
+        insertPhoto(photoId, gone.id, sortOrder = 1)
+
+        assertThat(repository.trash(gone.id, base + 5.minutes)).isTrue()
+
+        assertThat(repository.list(ObjectListQuery()).map { it.record.id }).containsExactly(kept.id)
+        assertThat(repository.list(ObjectListQuery(search = "Тверская"))).isEmpty()
+        assertThat(repository.find(gone.id)).isNull()
+        assertThat(repository.findAny(gone.id)).isNotNull()
+        assertThat(repository.findTrashed(gone.id)).isNotNull()
+        assertThat(repository.findTrashed(kept.id)).isNull()
+        val trashed = repository.listTrashed().single()
+        assertThat(trashed.record.id).isEqualTo(gone.id)
+        assertThat(trashed.deletedAt).isEqualTo(base + 5.minutes)
+        assertThat(trashed.photoCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `trashing twice, or an unknown object, reports false, and restoring brings the object back`() = runTest {
+        val record = insert("Тверская, 5")
+        assertThat(repository.trash(record.id, base)).isTrue()
+        assertThat(repository.trash(record.id, base)).isFalse()
+        assertThat(repository.trash(UUID.randomUUID(), base)).isFalse()
+
+        assertThat(repository.restore(record.id)).isTrue()
+        assertThat(repository.restore(record.id)).isFalse()
+
+        assertThat(repository.find(record.id)).isNotNull()
+        assertThat(repository.listTrashed()).isEmpty()
+    }
+
+    @Test
+    fun `the trash lists the most recently deleted first`() = runTest {
+        val first = insert("А")
+        val second = insert("Б")
+        repository.trash(first.id, base + 1.minutes)
+        repository.trash(second.id, base + 9.minutes)
+
+        assertThat(repository.listTrashed().map { it.record.id }).containsExactly(second.id, first.id).inOrder()
+    }
+
+    @Test
+    fun `a trashed photo does not count in the list or come up as the photos of the object`() = runTest {
+        val record = insert("Тверская, 5")
+        val live = UUID.randomUUID()
+        val dead = UUID.randomUUID()
+        insertPhoto(live, record.id, sortOrder = 1)
+        insertPhoto(dead, record.id, sortOrder = 2)
+        photos.trash(dead, base)
+
+        assertThat(repository.list(ObjectListQuery()).single().photoCount).isEqualTo(1)
+        assertThat(photos.listByObject(record.id).map { it.id }).containsExactly(live)
+    }
 }

@@ -28,7 +28,6 @@ class ObjectGeocodingTest {
         objects,
         FakePhotoRepository(),
         FakeContactRepository(),
-        FakeFileStorage(),
         FixedClock(),
         geocoder,
         newId = { id },

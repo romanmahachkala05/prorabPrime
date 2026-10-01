@@ -1,11 +1,16 @@
 package ru.prorabprime.server.repository
 
 import java.util.UUID
+import kotlin.time.Instant
 import kotlin.time.toJavaInstant
 import kotlin.time.toKotlinInstant
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.SortOrder
+import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.inList
+import org.jetbrains.exposed.v1.core.isNotNull
+import org.jetbrains.exposed.v1.core.isNull
 import org.jetbrains.exposed.v1.core.max
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insert
@@ -16,20 +21,68 @@ import ru.prorabprime.contract.AttachmentKindDto
 import ru.prorabprime.server.db.DbExecutor
 import ru.prorabprime.server.model.PhotoRecord
 import ru.prorabprime.server.model.ReceiptData
+import ru.prorabprime.server.model.TrashedPhoto
 
+@Suppress("TooManyFunctions") // The interface's, see there.
 class ExposedPhotoRepository(
     private val db: DbExecutor,
 ) : PhotoRepository {
 
     override suspend fun listByObject(objectId: UUID): List<PhotoRecord> = db.query {
         PhotosTable.selectAll()
-            .where { PhotosTable.objectId eq objectId }
+            .where { (PhotosTable.objectId eq objectId) and PhotosTable.deletedAt.isNull() }
             .orderBy(PhotosTable.sortOrder to SortOrder.ASC)
             .map { it.toPhotoRecord() }
     }
 
     override suspend fun find(id: UUID): PhotoRecord? = db.query {
+        PhotosTable.selectAll()
+            .where { (PhotosTable.id eq id) and PhotosTable.deletedAt.isNull() }
+            .singleOrNull()?.toPhotoRecord()
+    }
+
+    override suspend fun findAny(id: UUID): PhotoRecord? = db.query {
         PhotosTable.selectAll().where { PhotosTable.id eq id }.singleOrNull()?.toPhotoRecord()
+    }
+
+    override suspend fun trash(id: UUID, at: Instant): Boolean = db.query {
+        PhotosTable.update({ (PhotosTable.id eq id) and PhotosTable.deletedAt.isNull() }) {
+            it[deletedAt] = at.toJavaInstant()
+        } > 0
+    }
+
+    override suspend fun restore(id: UUID): Boolean = db.query {
+        PhotosTable.update({ (PhotosTable.id eq id) and PhotosTable.deletedAt.isNotNull() }) {
+            it[deletedAt] = null
+        } > 0
+    }
+
+    override suspend fun findTrashed(id: UUID): PhotoRecord? = db.query {
+        PhotosTable.selectAll()
+            .where { (PhotosTable.id eq id) and PhotosTable.deletedAt.isNotNull() }
+            .singleOrNull()?.toPhotoRecord()
+    }
+
+    override suspend fun listTrashed(): List<TrashedPhoto> = db.query {
+        val rows = PhotosTable.selectAll()
+            .where { PhotosTable.deletedAt.isNotNull() }
+            .orderBy(PhotosTable.deletedAt to SortOrder.DESC, PhotosTable.id to SortOrder.ASC)
+            .toList()
+        val owners = ObjectsTable.select(ObjectsTable.id, ObjectsTable.title, ObjectsTable.address)
+            .where {
+                (ObjectsTable.id inList rows.map { it[PhotosTable.objectId] }.distinct()) and
+                    ObjectsTable.deletedAt.isNull()
+            }
+            .associateBy { it[ObjectsTable.id] }
+        rows.mapNotNull { row ->
+            val owner = owners[row[PhotosTable.objectId]] ?: return@mapNotNull null
+            TrashedPhoto(
+                photo = row.toPhotoRecord(),
+                objectTitle = owner[ObjectsTable.title],
+                objectAddress = owner[ObjectsTable.address],
+                deletedAt = checkNotNull(row[PhotosTable.deletedAt]).toKotlinInstant(),
+            )
+        }
     }
 
     override suspend fun insert(photo: PhotoRecord) {

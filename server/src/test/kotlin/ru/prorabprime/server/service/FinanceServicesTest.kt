@@ -39,7 +39,7 @@ class FinanceServicesTest {
     private val extraRepo = FakeExtraWorkRepository()
     private val clock = FixedClock()
     private val objectService =
-        ObjectService(objects, FakePhotoRepository(), FakeContactRepository(), FakeFileStorage(), clock)
+        ObjectService(objects, FakePhotoRepository(), FakeContactRepository(), clock)
     private val finance = FinanceService(objects, termsRepo, paymentRepo, extraRepo, clock)
     private val payments = PaymentService(objects, paymentRepo, ImmediateTransactor, clock)
     private val extras = ExtraWorkService(objects, extraRepo, clock)

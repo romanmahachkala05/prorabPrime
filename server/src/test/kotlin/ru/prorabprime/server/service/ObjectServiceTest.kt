@@ -16,6 +16,7 @@ import ru.prorabprime.server.fakes.FakeObjectRepository
 import ru.prorabprime.server.fakes.FakePhotoRepository
 import ru.prorabprime.server.fakes.FixedClock
 import ru.prorabprime.server.fakes.aPhotoRecord
+import ru.prorabprime.server.model.ObjectListQuery
 
 class ObjectServiceTest {
 
@@ -24,7 +25,7 @@ class ObjectServiceTest {
     private val clock = FixedClock()
     private val id = UUID.fromString("00000000-0000-0000-0000-000000000001")
     private val storage = FakeFileStorage()
-    private val service = ObjectService(objects, photos, FakeContactRepository(), storage, clock, newId = { id })
+    private val service = ObjectService(objects, photos, FakeContactRepository(), clock, newId = { id })
 
     private val request = ObjectRequestDto(address = "Тверская, 5", status = ObjectStatusDto.IN_PROGRESS)
 
@@ -97,22 +98,35 @@ class ObjectServiceTest {
     }
 
     @Test
-    fun `deleting removes the object and its files`() = runTest {
+    fun `deleting puts the object in the trash with its files, and the object is no longer found`() = runTest {
         service.create(request)
         storage.write(id, "a.jpg", byteArrayOf(1))
 
         assertThat(service.delete(id).isSuccess).isTrue()
-        assertThat(objects.records).isEmpty()
-        assertThat(storage.files).isEmpty()
+
+        assertThat(objects.trashedAt).containsKey(id)
+        assertThat(objects.records).containsKey(id)
+        assertThat(storage.files).isNotEmpty()
+        assertThat(service.get(id).serviceError()).isInstanceOf(ServiceError.NotFound::class.java)
+        assertThat(service.list(ObjectListQuery())).isEmpty()
     }
 
     @Test
-    fun `files that cannot be deleted do not fail the request`() = runTest {
+    fun `deleting an object already in the trash is not found`() = runTest {
         service.create(request)
-        storage.failDeletes = true
+        service.delete(id)
 
-        assertThat(service.delete(id).isSuccess).isTrue()
-        assertThat(objects.records).isEmpty()
+        assertThat(service.delete(id).serviceError()).isInstanceOf(ServiceError.NotFound::class.java)
+    }
+
+    @Test
+    fun `an object cannot be created again with the id of one in the trash`() = runTest {
+        service.create(request.copy(id = id.toString()))
+        service.delete(id)
+
+        // A retried create finds what it made instead of failing on the key.
+        assertThat(service.create(request.copy(id = id.toString())).isSuccess).isTrue()
+        assertThat(objects.records).hasSize(1)
     }
 
     @Test

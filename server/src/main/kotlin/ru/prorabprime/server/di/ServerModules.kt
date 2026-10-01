@@ -39,6 +39,7 @@ import ru.prorabprime.server.service.PaymentService
 import ru.prorabprime.server.service.PhotoService
 import ru.prorabprime.server.service.ReceiptService
 import ru.prorabprime.server.service.TaskService
+import ru.prorabprime.server.service.TrashService
 import ru.prorabprime.server.storage.FileStorage
 import ru.prorabprime.server.storage.ImageProcessor
 import ru.prorabprime.server.storage.JavaImageProcessor
@@ -75,7 +76,8 @@ fun databaseModule(database: Database): Module = module {
 }
 
 val serviceModule: Module = module {
-    single { ObjectService(get(), get(), get(), get(), get(), geocoder = get()) }
+    single { ObjectService(get(), get(), get(), get(), geocoder = get()) }
+    single { TrashService(get(), get(), get(), get(), get()) }
     single { ContactService(get(), get(), get()) }
     single { FinanceService(get(), get(), get(), get(), get()) }
     single { PaymentService(get(), get(), get(), get()) }
