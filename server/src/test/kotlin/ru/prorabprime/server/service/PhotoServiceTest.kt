@@ -207,6 +207,60 @@ class PhotoServiceTest {
         assertThat(service.delete(UUID.randomUUID()).serviceError()).isInstanceOf(ServiceError.NotFound::class.java)
     }
 
+    // --- rotate ---
+
+    @Test
+    fun `rotating swaps the files for ones named after the rotation and removes the old`() = runTest {
+        val id = upload()
+        val rotation = UUID.randomUUID()
+
+        val photo = service.rotate(id, 1, rotation).getOrThrow()
+
+        assertThat(photo.fileName).isEqualTo("$rotation.jpg")
+        assertThat(photos.records.getValue(id).thumbFileName).isEqualTo("${rotation}_thumb.jpg")
+        assertThat(storage.namesOf(objectId)).containsExactly("$rotation.jpg", "${rotation}_thumb.jpg")
+        assertThat(images.turned).containsExactly(1)
+        assertThat(storage.files["$objectId/$rotation.jpg"]).isEqualTo(bytes + FakeImageProcessor.ROTATED_MARK)
+    }
+
+    @Test
+    fun `the same rotation sent again turns nothing`() = runTest {
+        val id = upload()
+        val rotation = UUID.randomUUID()
+        service.rotate(id, 1, rotation).getOrThrow()
+
+        assertThat(service.rotate(id, 1, rotation).isSuccess).isTrue()
+
+        assertThat(images.turned).containsExactly(1)
+    }
+
+    @Test
+    fun `a failed write while rotating leaves the old files and the old row`() = runTest {
+        val id = upload()
+        storage.failWritesEndingWith = "_thumb.jpg"
+
+        runCatching { service.rotate(id, 1, UUID.randomUUID()) }
+
+        assertThat(photos.records.getValue(id).fileName).isEqualTo("$id.jpg")
+        assertThat(storage.namesOf(objectId)).containsExactly("$id.jpg", "${id}_thumb.jpg")
+    }
+
+    @Test
+    fun `rotating by no turns, or by four, is refused`() = runTest {
+        val id = upload()
+
+        assertThat(service.rotate(id, 0, UUID.randomUUID()).serviceError())
+            .isInstanceOf(ServiceError.Validation::class.java)
+        assertThat(service.rotate(id, 4, UUID.randomUUID()).serviceError())
+            .isInstanceOf(ServiceError.Validation::class.java)
+    }
+
+    @Test
+    fun `rotating an unknown photo is not found`() = runTest {
+        assertThat(service.rotate(UUID.randomUUID(), 1, UUID.randomUUID()).serviceError())
+            .isInstanceOf(ServiceError.NotFound::class.java)
+    }
+
     // --- cover ---
 
     @Test

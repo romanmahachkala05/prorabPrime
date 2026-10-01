@@ -25,6 +25,7 @@ import ru.prorabprime.contract.ApiPaths
 import ru.prorabprime.contract.ApiQuery
 import ru.prorabprime.contract.AttachmentKindDto
 import ru.prorabprime.contract.PhotoLimits
+import ru.prorabprime.contract.RotatePhotoRequestDto
 import ru.prorabprime.contract.SetCoverRequestDto
 import ru.prorabprime.server.error.ServiceError
 import ru.prorabprime.server.error.ServiceException
@@ -45,6 +46,13 @@ fun Route.photoRoutes() {
     delete(ApiPaths.PHOTO) {
         service.delete(call.uuidParam(ApiParams.ID)).getOrThrow()
         call.respond(HttpStatusCode.NoContent)
+    }
+    post(ApiPaths.PHOTO_ROTATE) {
+        val request = call.receive<RotatePhotoRequestDto>()
+        val rotationId = parseClientId(request.rotationId).getOrThrow()
+            ?: throw ServiceException(ServiceError.Validation("rotationId is required"))
+        val photo = service.rotate(call.uuidParam(ApiParams.ID), request.quarterTurns, rotationId).getOrThrow()
+        call.respond(HttpStatusCode.OK, photo.toDto())
     }
     put(ApiPaths.OBJECT_COVER) {
         val objectId = call.uuidParam(ApiParams.ID)

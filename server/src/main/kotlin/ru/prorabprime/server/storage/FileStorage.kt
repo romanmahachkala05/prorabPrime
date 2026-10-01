@@ -7,6 +7,7 @@ import kotlin.io.path.createDirectories
 import kotlin.io.path.deleteIfExists
 import kotlin.io.path.deleteRecursively
 import kotlin.io.path.isRegularFile
+import kotlin.io.path.readBytes
 import kotlin.io.path.writeBytes
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
@@ -18,6 +19,9 @@ interface FileStorage {
         fileName: String,
         bytes: ByteArray,
     )
+
+    /** The file's bytes, or null when there is no such file. */
+    suspend fun read(objectId: UUID, fileName: String): ByteArray?
 
     /** Returns false when there was no such file. */
     suspend fun delete(objectId: UUID, fileName: String): Boolean
@@ -51,6 +55,10 @@ class LocalFileStorage(
         partial.writeBytes(bytes)
         Files.move(partial, target, java.nio.file.StandardCopyOption.ATOMIC_MOVE)
         Unit
+    }
+
+    override suspend fun read(objectId: UUID, fileName: String): ByteArray? = withContext(dispatcher) {
+        pathOf(objectId, fileName).takeIf { it.isRegularFile() }?.readBytes()
     }
 
     override suspend fun delete(objectId: UUID, fileName: String): Boolean = withContext(dispatcher) {

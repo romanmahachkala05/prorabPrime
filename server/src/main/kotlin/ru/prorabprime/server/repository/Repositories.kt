@@ -60,6 +60,9 @@ interface PhotoRepository {
     /** Returns false when there is no such photo. */
     suspend fun delete(id: UUID): Boolean
 
+    /** Points the photo at its new files (after a turn); everything else about it stays. */
+    suspend fun replaceFiles(photo: PhotoRecord)
+
     /** One past the object's highest sort order, so a new photo goes to the end. */
     suspend fun nextSortOrder(objectId: UUID): Int
 }

@@ -14,6 +14,7 @@ import ru.prorabprime.server.model.PhotoRecord
 import ru.prorabprime.server.repository.ObjectRepository
 import ru.prorabprime.server.repository.PhotoRepository
 import ru.prorabprime.server.storage.FileStorage
+import ru.prorabprime.server.storage.ImageFormat
 import ru.prorabprime.server.storage.ImageProcessor
 import ru.prorabprime.server.storage.ProcessedImage
 
@@ -119,6 +120,47 @@ class PhotoService(
         return Result.success(Unit)
     }
 
+    /**
+     * Turns the picture clockwise and keeps it that way: new files named after [rotationId], the old
+     * ones removed once the row points at the new. A repeat of the same turn finds the work done.
+     */
+    suspend fun rotate(
+        photoId: UUID,
+        quarterTurns: Int,
+        rotationId: UUID,
+    ): Result<PhotoRecord> {
+        if (quarterTurns !in MIN_TURNS..MAX_TURNS) {
+            return ServiceError.Validation("quarterTurns must be $MIN_TURNS to $MAX_TURNS").asFailure()
+        }
+        val photo = photos.find(photoId) ?: return ServiceError.NotFound("No photo $photoId").asFailure()
+        val fileName = "$rotationId.${ImageFormat.JPEG.extension}"
+        if (photo.fileName == fileName) return Result.success(photo)
+        val original = storage.read(photo.objectId, photo.fileName)
+            ?: return ServiceError.NotFound("The file of photo $photoId is missing").asFailure()
+        val turned = images.rotate(original, quarterTurns).getOrElse { return Result.failure(it) }
+        val image = images.process(turned).getOrElse { return Result.failure(it) }
+        val thumbFileName = "${rotationId}_thumb.jpg"
+        val updated = photo.copy(
+            fileName = fileName,
+            thumbFileName = thumbFileName,
+            contentType = image.format.contentType,
+            sizeBytes = turned.size.toLong(),
+            width = image.width,
+            height = image.height,
+        )
+        withFilesCompensated(photo.objectId, listOf(fileName, thumbFileName)) {
+            storage.write(photo.objectId, fileName, turned)
+            storage.write(photo.objectId, thumbFileName, image.thumbnail)
+            transactor.inTransaction {
+                photos.replaceFiles(updated)
+                objects.touch(photo.objectId, clock.now())
+            }
+            Result.success(Unit)
+        }
+        deleteFilesQuietly(photo.objectId, listOf(photo.fileName, photo.thumbFileName))
+        return Result.success(updated)
+    }
+
     suspend fun setCover(objectId: UUID, photoId: UUID): Result<Unit> {
         if (objects.find(objectId) == null) return objectNotFound(objectId)
         val photo = photos.find(photoId)
@@ -162,6 +204,8 @@ class PhotoService(
     private fun <T> objectNotFound(id: UUID): Result<T> = ServiceError.NotFound("No object $id").asFailure()
 
     private companion object {
+        const val MIN_TURNS = 1
+        const val MAX_TURNS = 3
         val log = KtorSimpleLogger(PhotoService::class.qualifiedName!!)
     }
 }

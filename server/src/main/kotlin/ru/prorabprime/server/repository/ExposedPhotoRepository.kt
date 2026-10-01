@@ -11,6 +11,7 @@ import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.update
 import ru.prorabprime.contract.AttachmentKindDto
 import ru.prorabprime.server.db.DbExecutor
 import ru.prorabprime.server.model.PhotoRecord
@@ -50,6 +51,19 @@ class ExposedPhotoRepository(
 
     override suspend fun delete(id: UUID): Boolean = db.query {
         PhotosTable.deleteWhere { PhotosTable.id eq id } > 0
+    }
+
+    override suspend fun replaceFiles(photo: PhotoRecord) {
+        db.query {
+            PhotosTable.update({ PhotosTable.id eq photo.id }) {
+                it[fileName] = photo.fileName
+                it[thumbFileName] = photo.thumbFileName
+                it[contentType] = photo.contentType
+                it[sizeBytes] = photo.sizeBytes
+                it[width] = photo.width
+                it[height] = photo.height
+            }
+        }
     }
 
     override suspend fun nextSortOrder(objectId: UUID): Int = db.query {

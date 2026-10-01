@@ -42,6 +42,9 @@ const val THUMBNAIL_SIZE = 400
 interface ImageProcessor {
     /** Fails with [ServiceError.UnsupportedMedia] for anything that is not a readable JPEG, PNG or WebP. */
     suspend fun process(bytes: ByteArray): Result<ProcessedImage>
+
+    /** The picture turned clockwise by [quarterTurns] quarter turns, upright first, as a JPEG. */
+    suspend fun rotate(bytes: ByteArray, quarterTurns: Int): Result<ByteArray>
 }
 
 class JavaImageProcessor(
@@ -53,6 +56,12 @@ class JavaImageProcessor(
         val decoded = decode(bytes) ?: return@withContext unsupported("The image could not be read")
         val oriented = orient(decoded, readOrientation(bytes))
         Result.success(ProcessedImage(format, oriented.width, oriented.height, thumbnailOf(oriented)))
+    }
+
+    override suspend fun rotate(bytes: ByteArray, quarterTurns: Int): Result<ByteArray> = withContext(dispatcher) {
+        val decoded = decode(bytes) ?: return@withContext unsupported("The image could not be read")
+        val upright = orient(decoded, readOrientation(bytes))
+        Result.success(encodeJpeg(onWhite(turn(upright, quarterTurns)), ROTATED_QUALITY))
     }
 
     /** Reads the size first, so a small file that decodes to a huge bitmap is refused before decoding. */
@@ -83,10 +92,10 @@ class JavaImageProcessor(
             drawImage(image, 0, 0, width, height, null)
             dispose()
         }
-        return encodeJpeg(thumbnail)
+        return encodeJpeg(thumbnail, THUMBNAIL_QUALITY)
     }
 
-    private fun encodeJpeg(image: BufferedImage): ByteArray {
+    private fun encodeJpeg(image: BufferedImage, quality: Float): ByteArray {
         val writer = ImageIO.getImageWritersByFormatName("jpeg").next()
         val output = ByteArrayOutputStream()
         try {
@@ -94,7 +103,7 @@ class JavaImageProcessor(
                 writer.output = stream
                 val params = writer.defaultWriteParam.apply {
                     compressionMode = ImageWriteParam.MODE_EXPLICIT
-                    compressionQuality = THUMBNAIL_QUALITY
+                    compressionQuality = quality
                 }
                 writer.write(null, IIOImage(image, null, null), params)
             }
@@ -108,6 +117,7 @@ class JavaImageProcessor(
 
     private companion object {
         const val THUMBNAIL_QUALITY = 0.85f
+        const val ROTATED_QUALITY = 0.92f
 
         /** 50 megapixels: well above any phone camera, far below what would exhaust the heap. */
         const val MAX_PIXELS = 50_000_000L
@@ -215,3 +225,39 @@ private val ORIENTATION_TRANSFORMS: Map<Int, (w: Double, h: Double) -> AffineTra
         }
     },
 )
+
+/** Turns the picture clockwise by [quarterTurns] quarter turns. */
+internal fun turn(image: BufferedImage, quarterTurns: Int): BufferedImage {
+    val turns = Math.floorMod(quarterTurns, FULL_TURN_IN_QUARTERS)
+    if (turns == 0) return image
+    val sideways = turns % 2 == 1
+    val result = BufferedImage(
+        if (sideways) image.height else image.width,
+        if (sideways) image.width else image.height,
+        BufferedImage.TYPE_INT_ARGB,
+    )
+    val transform = AffineTransform().apply {
+        translate(result.width / 2.0, result.height / 2.0)
+        rotate(Math.PI / 2 * turns)
+        translate(-image.width / 2.0, -image.height / 2.0)
+    }
+    result.createGraphics().apply {
+        drawImage(image, transform, null)
+        dispose()
+    }
+    return result
+}
+
+/** JPEG has no alpha; transparent areas become white rather than black. */
+internal fun onWhite(image: BufferedImage): BufferedImage {
+    val result = BufferedImage(image.width, image.height, BufferedImage.TYPE_INT_RGB)
+    result.createGraphics().apply {
+        color = Color.WHITE
+        fillRect(0, 0, image.width, image.height)
+        drawImage(image, 0, 0, null)
+        dispose()
+    }
+    return result
+}
+
+private const val FULL_TURN_IN_QUARTERS = 4
