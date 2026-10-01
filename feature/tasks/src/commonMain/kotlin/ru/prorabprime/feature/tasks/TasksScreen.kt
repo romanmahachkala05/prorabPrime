@@ -81,7 +81,11 @@ internal fun TasksContent(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { onEvent(TaskEditorEvent.Add) }) {
+            FloatingActionButton(
+                onClick = { onEvent(TaskEditorEvent.Add) },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+            ) {
                 Icon(Icons.Default.Add, stringResource(Res.string.tasks_add))
             }
         },

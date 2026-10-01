@@ -6,7 +6,7 @@
     <string name="objectslist_map">Карта объектов</string>
     <string name="objectslist_settings">Настройки</string>
     <string name="objectslist_add">Добавить объект</string>
-    <string name="objectslist_search">Поиск по адресу или названию</string>
+    <string name="objectslist_search">Адрес или название</string>
     <string name="objectslist_clear_search">Очистить поиск</string>
     <string name="objectslist_sort_address_asc">Адрес А–Я</string>
     <string name="objectslist_sort_address_desc">Адрес Я–А</string>

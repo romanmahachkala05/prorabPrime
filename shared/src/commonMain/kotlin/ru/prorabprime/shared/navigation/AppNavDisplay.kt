@@ -1,13 +1,18 @@
 package ru.prorabprime.shared.navigation
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
@@ -55,19 +60,24 @@ fun AppNavDisplay(notifier: SnackbarNotifier, modifier: Modifier = Modifier) {
 
     val backStack = rememberNavBackStack(NAV_KEYS, ObjectsListNavKey)
     Scaffold(modifier = modifier, snackbarHost = { SnackbarHost(snackbarHostState) }) {
-        // No padding from this Scaffold: each screen has its own, with its own top bar.
-        NavDisplay(
-            backStack = backStack,
-            onBack = { backStack.pop() },
-            entryDecorators = listOf(
-                rememberSaveableStateHolderNavEntryDecorator(),
-                rememberViewModelStoreNavEntryDecorator(),
-            ),
-            entryProvider = appEntries(backStack),
-            modifier = Modifier.fillMaxSize(),
-        )
+        // No padding from this Scaffold: each screen has its own, with its own top bar. On a wide
+        // screen (the web client) the app stays a phone-shaped column in the middle.
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+            NavDisplay(
+                backStack = backStack,
+                onBack = { backStack.pop() },
+                entryDecorators = listOf(
+                    rememberSaveableStateHolderNavEntryDecorator(),
+                    rememberViewModelStoreNavEntryDecorator(),
+                ),
+                entryProvider = appEntries(backStack),
+                modifier = Modifier.widthIn(max = MAX_CONTENT_WIDTH).fillMaxHeight(),
+            )
+        }
     }
 }
+
+private val MAX_CONTENT_WIDTH = 840.dp
 
 /** Every screen of the app, with the callbacks that move between them. */
 private fun appEntries(backStack: NavBackStack<NavKey>) = entryProvider<NavKey> {

@@ -4,10 +4,12 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
+import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 // Dark pine and graphite: heavy, quiet colors for a working tool. Every role is set, so no
@@ -74,6 +76,16 @@ object Corners {
     val l = 12.dp
 }
 
+private val BaseTypography = Typography()
+
+/** Headings and buttons a weight heavier than the default, so a screen's structure is easy to see. */
+private val ProrabTypography = Typography(
+    titleLarge = BaseTypography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
+    titleMedium = BaseTypography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+    titleSmall = BaseTypography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+    labelLarge = BaseTypography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
+)
+
 private val ProrabShapes = Shapes(
     extraSmall = RoundedCornerShape(Corners.m),
     small = RoundedCornerShape(Corners.m),
@@ -87,6 +99,7 @@ fun ProrabTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable
     MaterialTheme(
         colorScheme = if (darkTheme) DarkColors else LightColors,
         shapes = ProrabShapes,
+        typography = ProrabTypography,
         content = content,
     )
 }
