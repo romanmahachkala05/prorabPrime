@@ -37,6 +37,7 @@ import ru.prorabprime.contract.RotatePhotoRequestDto
 import ru.prorabprime.contract.SetCoverRequestDto
 import ru.prorabprime.contract.TaskDto
 import ru.prorabprime.contract.TaskRequestDto
+import ru.prorabprime.contract.TrashDto
 import ru.prorabprime.data.network.SERVER_BASE
 import ru.prorabprime.data.network.apiCall
 
@@ -173,6 +174,22 @@ internal class RemoteApi(
     suspend fun updateTask(id: String, request: TaskRequestDto): Result<Unit> = put(url(ApiPaths.TASK, id), request)
 
     suspend fun deleteTask(id: String): Result<Unit> = delete(url(ApiPaths.TASK, id))
+
+    // --- The trash: asked for each time, never copied to the phone.
+
+    suspend fun trash(): Result<TrashDto> = apiCall { client.get(SERVER_BASE + ApiPaths.TRASH).body() }
+
+    suspend fun restoreTrashedObject(id: String): Result<Unit> =
+        apiCall<HttpResponse> { client.post(url(ApiPaths.TRASH_OBJECT_RESTORE, id)) }.map { }
+
+    suspend fun restoreTrashedPhoto(id: String): Result<Unit> =
+        apiCall<HttpResponse> { client.post(url(ApiPaths.TRASH_PHOTO_RESTORE, id)) }.map { }
+
+    suspend fun purgeTrashedObject(id: String): Result<Unit> = delete(url(ApiPaths.TRASH_OBJECT, id))
+
+    suspend fun purgeTrashedPhoto(id: String): Result<Unit> = delete(url(ApiPaths.TRASH_PHOTO, id))
+
+    suspend fun emptyTrash(): Result<Unit> = delete(SERVER_BASE + ApiPaths.TRASH)
 
     /** Asks the server to look the address of an object up on the map again. */
     suspend fun geocodeObject(id: String): Result<Unit> =
