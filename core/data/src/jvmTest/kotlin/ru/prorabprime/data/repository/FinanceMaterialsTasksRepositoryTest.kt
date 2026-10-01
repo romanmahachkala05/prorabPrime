@@ -136,6 +136,21 @@ class FinanceMaterialsTasksRepositoryTest {
     }
 
     @Test
+    fun `a range holds the tasks of its days, done or not, and nothing outside them`() = runTest {
+        offlineAndSynced()
+        phone.tasks.add(TaskDraft("До", today.plusDays(-1))).getOrThrow()
+        phone.tasks.add(TaskDraft("Сделано", today, done = true)).getOrThrow()
+        phone.tasks.add(TaskDraft("Последний", today.plusDays(2))).getOrThrow()
+        phone.tasks.add(TaskDraft("После", today.plusDays(3))).getOrThrow()
+
+        val range = phone.tasks.observeRange(today, today.plusDays(2)).first().getOrThrow().map { it.title }
+
+        assertThat(range).containsExactly("Сделано", "Позвонить", "Последний")
+        assertThat(range).doesNotContain("До")
+        assertThat(range).doesNotContain("После")
+    }
+
+    @Test
     fun `a done task is not overdue or open, and a task that never left the phone is forgotten when deleted`() =
         runTest {
             offlineAndSynced()

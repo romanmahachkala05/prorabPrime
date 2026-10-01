@@ -33,6 +33,13 @@ value class LocalDay(
     /** Monday is 1, Sunday is 7. */
     val dayOfWeek: Int get() = (epochDay + THURSDAY_OFFSET).mod(DAYS_IN_WEEK) + 1
 
+    val year: Int get() = civil().first
+
+    /** 1 to 12. */
+    val month: Int get() = civil().second
+
+    val dayOfMonth: Int get() = civil().third
+
     private fun civil(): Triple<Int, Int, Int> {
         // Howard Hinnant's civil_from_days.
         val z = epochDay + DAYS_FROM_CIVIL_SHIFT
@@ -89,7 +96,7 @@ value class LocalDay(
             day: Int,
         ): Boolean = yearText.length == YEAR_DIGITS && month in 1..12 && day in 1..daysInMonth(year, month)
 
-        private fun daysInMonth(year: Int, month: Int): Int = when (month) {
+        fun daysInMonth(year: Int, month: Int): Int = when (month) {
             2 -> if (isLeap(year)) FEB_LEAP else FEB
             4, 6, 9, 11 -> SHORT_MONTH
             else -> LONG_MONTH

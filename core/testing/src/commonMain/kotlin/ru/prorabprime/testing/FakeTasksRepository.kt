@@ -35,6 +35,9 @@ class FakeTasksRepository : TasksRepository {
 
     override fun observeOverdue(day: LocalDay): Flow<Result<ImmutableList<Task>>> = observe { it.day < day && !it.done }
 
+    override fun observeRange(from: LocalDay, to: LocalDay): Flow<Result<ImmutableList<Task>>> =
+        observe { it.day >= from && it.day <= to }
+
     override fun observeOpenFrom(from: LocalDay): Flow<Result<ImmutableList<Task>>> =
         observe { it.day >= from && !it.done }
 
