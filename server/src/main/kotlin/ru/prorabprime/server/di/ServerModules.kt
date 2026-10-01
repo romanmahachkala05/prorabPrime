@@ -37,6 +37,7 @@ import ru.prorabprime.server.service.NominatimGeocoder
 import ru.prorabprime.server.service.ObjectService
 import ru.prorabprime.server.service.PaymentService
 import ru.prorabprime.server.service.PhotoService
+import ru.prorabprime.server.service.ReceiptService
 import ru.prorabprime.server.service.TaskService
 import ru.prorabprime.server.storage.FileStorage
 import ru.prorabprime.server.storage.ImageProcessor
@@ -82,4 +83,5 @@ val serviceModule: Module = module {
     single { MaterialService(get(), get(), get()) }
     single { TaskService(get(), get()) }
     single { PhotoService(get(), get(), get(), get(), get(), get(), get()) }
+    single { ReceiptService(get(), get(), get(), get()) }
 }

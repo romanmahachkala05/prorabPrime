@@ -26,16 +26,19 @@ import ru.prorabprime.contract.ApiQuery
 import ru.prorabprime.contract.AttachmentKindDto
 import ru.prorabprime.contract.PhotoLimits
 import ru.prorabprime.contract.PhotoNoteRequestDto
+import ru.prorabprime.contract.ReceiptRequestDto
 import ru.prorabprime.contract.RotatePhotoRequestDto
 import ru.prorabprime.contract.SetCoverRequestDto
 import ru.prorabprime.server.error.ServiceError
 import ru.prorabprime.server.error.ServiceException
 import ru.prorabprime.server.service.PhotoService
+import ru.prorabprime.server.service.ReceiptService
 import ru.prorabprime.server.service.parseClientId
 import ru.prorabprime.server.storage.FileStorage
 
 fun Route.photoRoutes() {
     val service by inject<PhotoService>()
+    val receipts by inject<ReceiptService>()
 
     post(ApiPaths.OBJECT_PHOTOS) {
         val objectId = call.uuidParam(ApiParams.ID)
@@ -50,6 +53,10 @@ fun Route.photoRoutes() {
     }
     put(ApiPaths.PHOTO_NOTE) {
         service.setNote(call.uuidParam(ApiParams.ID), call.receive<PhotoNoteRequestDto>().note).getOrThrow()
+        call.respond(HttpStatusCode.NoContent)
+    }
+    put(ApiPaths.PHOTO_RECEIPT) {
+        receipts.set(call.uuidParam(ApiParams.ID), call.receive<ReceiptRequestDto>()).getOrThrow()
         call.respond(HttpStatusCode.NoContent)
     }
     post(ApiPaths.PHOTO_ROTATE) {

@@ -78,6 +78,18 @@ class ExposedPhotoRepositoryTest {
     }
 
     @Test
+    fun `a receipt's sum is set later and cleared`() = runTest {
+        val photo = photo(sortOrder = 1).copy(kind = AttachmentKindDto.RECEIPT)
+        photos.insert(photo)
+
+        assertThat(photos.setReceipt(photo.id, ReceiptData(5_000, "2026-10-01", ""))).isTrue()
+        assertThat(photos.find(photo.id)?.receipt?.amountKopecks).isEqualTo(5_000L)
+        assertThat(photos.setReceipt(photo.id, null)).isTrue()
+        assertThat(photos.find(photo.id)?.receipt).isNull()
+        assertThat(photos.setReceipt(UUID.randomUUID(), null)).isFalse()
+    }
+
+    @Test
     fun `a note is stored, read back, and cleared`() = runTest {
         val photo = photo(sortOrder = 1).copy(note = "Розетка слева")
         photos.insert(photo)

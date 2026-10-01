@@ -23,6 +23,7 @@ import ru.prorabprime.server.model.PaymentFields
 import ru.prorabprime.server.model.PaymentRecord
 import ru.prorabprime.server.model.PaymentRevisionRecord
 import ru.prorabprime.server.model.PhotoRecord
+import ru.prorabprime.server.model.ReceiptData
 import ru.prorabprime.server.model.TaskFields
 import ru.prorabprime.server.model.TaskQuery
 import ru.prorabprime.server.model.TaskRecord
@@ -125,6 +126,12 @@ class FakePhotoRepository : PhotoRepository {
     override suspend fun setNote(id: UUID, note: String?): Boolean {
         val record = records[id] ?: return false
         records[id] = record.copy(note = note)
+        return true
+    }
+
+    override suspend fun setReceipt(id: UUID, receipt: ReceiptData?): Boolean {
+        val record = records[id] ?: return false
+        records[id] = record.copy(receipt = receipt)
         return true
     }
 

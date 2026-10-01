@@ -68,6 +68,16 @@ data class PhotoDto(
     val receipt: ReceiptDto? = null,
 )
 
+/**
+ * Body of `PUT /api/photos/{id}/receipt`, for a receipt whose code could not be read or was read wrong.
+ * No [amountKopecks] clears what is known. [purchasedAt] is `yyyy-MM-dd`, or `yyyy-MM-ddTHH:mm`.
+ */
+@Serializable
+data class ReceiptRequestDto(
+    val amountKopecks: Long? = null,
+    val purchasedAt: String? = null,
+)
+
 @Serializable
 data class ReceiptDto(
     val amountKopecks: Long,

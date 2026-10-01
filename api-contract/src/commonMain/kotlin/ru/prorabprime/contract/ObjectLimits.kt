@@ -20,4 +20,7 @@ object ContactLimits {
 object PhotoLimits {
     const val MAX_UPLOAD_BYTES = 15L * 1024 * 1024
     const val NOTE = 1_000
+
+    /** A receipt is for less than a billion rubles, in kopecks. */
+    const val MAX_RECEIPT_KOPECKS = 100_000_000_000L
 }
