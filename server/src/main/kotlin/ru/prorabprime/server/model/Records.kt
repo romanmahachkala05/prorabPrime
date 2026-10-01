@@ -19,12 +19,19 @@ data class ObjectFields(
     val chatLink: String? = null,
 )
 
+/** A point on the map. */
+data class Coordinates(
+    val latitude: Double,
+    val longitude: Double,
+)
+
 data class ObjectRecord(
     val id: UUID,
     val fields: ObjectFields,
     val coverPhotoId: UUID?,
     val createdAt: Instant,
     val updatedAt: Instant,
+    val coordinates: Coordinates? = null,
 )
 
 /** A row of the objects list, with what the list shows about the object's photos. */

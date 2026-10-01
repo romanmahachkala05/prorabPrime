@@ -26,4 +26,7 @@ interface ObjectsRepository {
     suspend fun update(id: ObjectId, draft: ObjectDraft): Result<Unit>
 
     suspend fun delete(id: ObjectId): Result<Unit>
+
+    /** Asks the server to find the object's address on the map again. */
+    suspend fun geocode(id: ObjectId): Result<Unit>
 }

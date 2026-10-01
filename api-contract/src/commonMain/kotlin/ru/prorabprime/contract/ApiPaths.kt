@@ -7,6 +7,7 @@ object ApiPaths {
     const val OBJECT = "/api/objects/{id}"
     const val OBJECT_PHOTOS = "/api/objects/{id}/photos"
     const val OBJECT_COVER = "/api/objects/{id}/cover"
+    const val OBJECT_GEOCODE = "/api/objects/{id}/geocode"
     const val OBJECT_CONTACTS = "/api/objects/{id}/contacts"
     const val CONTACT = "/api/contacts/{id}"
     const val OBJECT_FINANCE = "/api/objects/{id}/finance"

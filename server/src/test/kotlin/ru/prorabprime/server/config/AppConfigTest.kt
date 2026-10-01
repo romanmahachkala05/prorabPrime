@@ -25,6 +25,16 @@ class AppConfigTest {
     }
 
     @Test
+    fun `the geocoder is the public Nominatim unless set, and off switches it off`() {
+        assertThat(AppConfig.from(config()).geocoderUrl).isEqualTo(AppConfig.DEFAULT_GEOCODER_URL)
+        assertThat(AppConfig.from(config().apply { put("prorab.geocoder.url", "http://localhost:8088") }).geocoderUrl)
+            .isEqualTo("http://localhost:8088")
+        assertThat(AppConfig.from(config().apply { put("prorab.geocoder.url", " OFF ") }).geocoderUrl).isNull()
+        assertThat(AppConfig.from(config().apply { put("prorab.geocoder.url", "") }).geocoderUrl)
+            .isEqualTo(AppConfig.DEFAULT_GEOCODER_URL)
+    }
+
+    @Test
     fun `a missing token names the variable to set`() {
         val error = assertThrows(IllegalStateException::class.java) { AppConfig.from(config(token = null)) }
 

@@ -20,6 +20,8 @@ import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import ru.prorabprime.feature.finance.FinanceNavKey
 import ru.prorabprime.feature.finance.FinanceScreen
+import ru.prorabprime.feature.map.MapNavKey
+import ru.prorabprime.feature.map.MapScreen
 import ru.prorabprime.feature.materials.MaterialsNavKey
 import ru.prorabprime.feature.materials.MaterialsScreen
 import ru.prorabprime.feature.objects.details.ObjectDetailsNavKey
@@ -63,6 +65,7 @@ fun AppNavDisplay(notifier: SnackbarNotifier, modifier: Modifier = Modifier) {
                         onOpenObject = { backStack.add(ObjectDetailsNavKey(it)) },
                         onCreateObject = { backStack.add(ObjectEditNavKey()) },
                         onOpenSettings = { backStack.add(SettingsNavKey) },
+                        onOpenMap = { backStack.add(MapNavKey) },
                     )
                 }
                 entry<ObjectDetailsNavKey> { key ->
@@ -76,6 +79,9 @@ fun AppNavDisplay(notifier: SnackbarNotifier, modifier: Modifier = Modifier) {
                     )
                 }
                 entry<FinanceNavKey> { key -> FinanceScreen(objectId = key.objectId, onBack = { backStack.pop() }) }
+                entry<MapNavKey> {
+                    MapScreen(onOpenObject = { backStack.add(ObjectDetailsNavKey(it)) }, onBack = { backStack.pop() })
+                }
                 entry<MaterialsNavKey> { key -> MaterialsScreen(objectId = key.objectId, onBack = { backStack.pop() }) }
                 entry<PhotoViewerNavKey> { key ->
                     PhotoViewerScreen(objectId = key.objectId, photoId = key.photoId, onBack = { backStack.pop() })
@@ -117,6 +123,7 @@ private val NAV_KEYS = SavedStateConfiguration {
             subclass(SettingsNavKey::class, SettingsNavKey.serializer())
             subclass(FinanceNavKey::class, FinanceNavKey.serializer())
             subclass(MaterialsNavKey::class, MaterialsNavKey.serializer())
+            subclass(MapNavKey::class, MapNavKey.serializer())
         }
     }
 }

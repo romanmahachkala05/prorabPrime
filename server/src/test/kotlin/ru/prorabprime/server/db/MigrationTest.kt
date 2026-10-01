@@ -207,6 +207,18 @@ class MigrationTest {
     }
 
     @Test
+    fun `an object may have coordinates, but only on the globe`() {
+        val objectId = UUID.randomUUID()
+        insertObject(objectId)
+        assertThat(scalar("SELECT latitude FROM objects")).isNull()
+
+        sql("UPDATE objects SET latitude = 55.75, longitude = 37.61")
+        assertThat(scalar("SELECT longitude FROM objects")).isEqualTo(37.61)
+        assertThrows(SQLException::class.java) { sql("UPDATE objects SET latitude = 91") }
+        assertThrows(SQLException::class.java) { sql("UPDATE objects SET longitude = -181") }
+    }
+
+    @Test
     fun `the executor runs a query in a transaction`() = runTest {
         val executor = DbExecutor(Database.connect(dataSource), Dispatchers.IO)
 

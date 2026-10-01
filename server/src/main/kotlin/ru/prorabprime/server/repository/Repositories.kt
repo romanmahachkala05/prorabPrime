@@ -4,6 +4,7 @@ import java.util.UUID
 import kotlin.time.Instant
 import ru.prorabprime.server.model.ContactFields
 import ru.prorabprime.server.model.ContactRecord
+import ru.prorabprime.server.model.Coordinates
 import ru.prorabprime.server.model.ExtraWorkFields
 import ru.prorabprime.server.model.ExtraWorkRecord
 import ru.prorabprime.server.model.FinanceTerms
@@ -37,6 +38,9 @@ interface ObjectRepository {
 
     /** The database rejects a photo of another object (composite foreign key). */
     suspend fun setCover(id: UUID, photoId: UUID?)
+
+    /** Where the object is, or null when that is not known (any more). */
+    suspend fun setCoordinates(id: UUID, coordinates: Coordinates?)
 
     /** Moves `updated_at`: a change to an object's photos is a change to the object. */
     suspend fun touch(id: UUID, at: Instant)

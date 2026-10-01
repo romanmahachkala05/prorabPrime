@@ -21,6 +21,8 @@ fun ObjectListItem.toSummaryDto() = ObjectSummaryDto(
     clientName = record.fields.clientName,
     coverThumbUrl = coverThumbFileName?.let { fileUrl(record.id, it) },
     photoCount = photoCount,
+    latitude = record.coordinates?.latitude,
+    longitude = record.coordinates?.longitude,
     createdAt = record.createdAt,
     updatedAt = record.updatedAt,
 )
@@ -34,6 +36,8 @@ fun ObjectDetails.toDetailsDto() = ObjectDetailsDto(
     clientPhone = record.fields.clientPhone,
     notes = record.fields.notes,
     chatLink = record.fields.chatLink,
+    latitude = record.coordinates?.latitude,
+    longitude = record.coordinates?.longitude,
     coverPhotoId = record.coverPhotoId?.toString(),
     contacts = contacts.map { it.toDto() },
     photos = photos.map { it.toDto() },

@@ -28,7 +28,10 @@ import ru.prorabprime.server.repository.PhotoRepository
 import ru.prorabprime.server.service.ContactService
 import ru.prorabprime.server.service.ExtraWorkService
 import ru.prorabprime.server.service.FinanceService
+import ru.prorabprime.server.service.Geocoder
 import ru.prorabprime.server.service.MaterialService
+import ru.prorabprime.server.service.NoGeocoder
+import ru.prorabprime.server.service.NominatimGeocoder
 import ru.prorabprime.server.service.ObjectService
 import ru.prorabprime.server.service.PaymentService
 import ru.prorabprime.server.service.PhotoService
@@ -46,6 +49,7 @@ fun configModule(config: AppConfig): Module = module {
     single<Clock> { Clock.System }
     single<FileStorage> { LocalFileStorage(Path.of(config.storageDir), get(IO)) }
     single<ImageProcessor> { JavaImageProcessor(get(IO)) }
+    single<Geocoder> { config.geocoderUrl?.let { NominatimGeocoder(it, get(IO)) } ?: NoGeocoder }
 }
 
 /** The Exposed implementations; route tests replace this module with fakes. */
@@ -63,7 +67,7 @@ fun databaseModule(database: Database): Module = module {
 }
 
 val serviceModule: Module = module {
-    single { ObjectService(get(), get(), get(), get(), get()) }
+    single { ObjectService(get(), get(), get(), get(), get(), geocoder = get()) }
     single { ContactService(get(), get(), get()) }
     single { FinanceService(get(), get(), get(), get(), get()) }
     single { PaymentService(get(), get(), get(), get()) }

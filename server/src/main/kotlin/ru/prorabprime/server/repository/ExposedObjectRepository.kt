@@ -23,6 +23,7 @@ import ru.prorabprime.contract.ObjectStatusDto
 import ru.prorabprime.contract.SortFieldDto
 import ru.prorabprime.contract.SortOrderDto
 import ru.prorabprime.server.db.DbExecutor
+import ru.prorabprime.server.model.Coordinates
 import ru.prorabprime.server.model.ObjectFields
 import ru.prorabprime.server.model.ObjectListItem
 import ru.prorabprime.server.model.ObjectListQuery
@@ -107,6 +108,15 @@ class ExposedObjectRepository(
         db.query { ObjectsTable.update({ ObjectsTable.id eq id }) { it[coverPhotoId] = photoId } }
     }
 
+    override suspend fun setCoordinates(id: UUID, coordinates: Coordinates?) {
+        db.query {
+            ObjectsTable.update({ ObjectsTable.id eq id }) {
+                it[latitude] = coordinates?.latitude
+                it[longitude] = coordinates?.longitude
+            }
+        }
+    }
+
     override suspend fun touch(id: UUID, at: Instant) {
         db.query { ObjectsTable.update({ ObjectsTable.id eq id }) { it[updatedAt] = at.toJavaInstant() } }
     }
@@ -147,4 +157,7 @@ private fun ResultRow.toObjectRecord() = ObjectRecord(
     coverPhotoId = this[ObjectsTable.coverPhotoId],
     createdAt = this[ObjectsTable.createdAt].toKotlinInstant(),
     updatedAt = this[ObjectsTable.updatedAt].toKotlinInstant(),
+    coordinates = this[ObjectsTable.latitude]?.let { lat ->
+        this[ObjectsTable.longitude]?.let { lon -> Coordinates(lat, lon) }
+    },
 )

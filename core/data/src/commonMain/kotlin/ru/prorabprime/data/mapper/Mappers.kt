@@ -41,6 +41,8 @@ internal fun ObjectSummaryDto.toDomain() = ObjectSummary(
     photoCount = photoCount,
     createdAt = createdAt,
     updatedAt = updatedAt,
+    latitude = latitude,
+    longitude = longitude,
 )
 
 internal fun ObjectDetailsDto.toDomain() = ObjectDetails(

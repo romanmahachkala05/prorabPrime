@@ -226,4 +226,28 @@ class ObjectRoutesTest {
         assertThat(bad.body<ErrorDto>().fieldErrors)
             .containsExactly(FieldErrorDto(ObjectFieldDto.CHAT_LINK, FieldProblemDto.INVALID))
     }
+
+    @Test
+    fun `an object is geocoded when created and again on request`() {
+        val geocoder = ru.prorabprime.server.fakes.FakeGeocoder(
+            mutableMapOf("Тверская, 5" to ru.prorabprime.server.model.Coordinates(55.76, 37.61)),
+        )
+        val withGeocoder = module { single<ru.prorabprime.server.service.Geocoder> { geocoder } }
+        testServer(koinModules = listOf(fakes, financeFakes(), serviceModule, withGeocoder)) { client ->
+            val found = client.create("Тверская, 5")
+            val lost = client.create("Деревня Гадюкино")
+
+            val summaries = client.authedGet("/api/objects").body<List<ObjectSummaryDto>>()
+            assertThat(summaries.single { it.id == found }.latitude).isEqualTo(55.76)
+            assertThat(summaries.single { it.id == lost }.latitude).isNull()
+
+            geocoder.known["Деревня Гадюкино"] = ru.prorabprime.server.model.Coordinates(60.0, 30.0)
+            val again = client.post("/api/objects/$lost/geocode") { bearerAuth(TEST_TOKEN) }
+            assertThat(again.status).isEqualTo(HttpStatusCode.OK)
+            assertThat(again.body<ObjectDetailsDto>().longitude).isEqualTo(30.0)
+
+            val missing = client.post("/api/objects/${UUID.randomUUID()}/geocode") { bearerAuth(TEST_TOKEN) }
+            assertThat(missing.status).isEqualTo(HttpStatusCode.NotFound)
+        }
+    }
 }

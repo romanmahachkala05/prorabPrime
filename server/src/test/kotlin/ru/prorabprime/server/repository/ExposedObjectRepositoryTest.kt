@@ -16,6 +16,7 @@ import ru.prorabprime.contract.SortFieldDto
 import ru.prorabprime.contract.SortOrderDto
 import ru.prorabprime.server.db.DbExecutor
 import ru.prorabprime.server.db.TestPostgres
+import ru.prorabprime.server.model.Coordinates
 import ru.prorabprime.server.model.ObjectFields
 import ru.prorabprime.server.model.ObjectListQuery
 import ru.prorabprime.server.model.ObjectRecord
@@ -181,5 +182,19 @@ class ExposedObjectRepositoryTest {
         insertPhoto(first, record.id, sortOrder = 1)
 
         assertThat(photos.listByObject(record.id).map { it.id }).containsExactly(first, second).inOrder()
+    }
+
+    @Test
+    fun `coordinates are saved, read back in the record, and cleared`() = runTest {
+        val record = insert("Тверская, 5")
+        assertThat(repository.find(record.id)?.coordinates).isNull()
+
+        repository.setCoordinates(record.id, Coordinates(55.76, 37.61))
+        assertThat(repository.find(record.id)?.coordinates).isEqualTo(Coordinates(55.76, 37.61))
+        assertThat(repository.list(ObjectListQuery()).single().record.coordinates)
+            .isEqualTo(Coordinates(55.76, 37.61))
+
+        repository.setCoordinates(record.id, null)
+        assertThat(repository.find(record.id)?.coordinates).isNull()
     }
 }

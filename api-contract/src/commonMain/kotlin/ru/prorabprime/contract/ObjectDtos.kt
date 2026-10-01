@@ -21,6 +21,8 @@ data class ObjectSummaryDto(
     val clientName: String? = null,
     val coverThumbUrl: String? = null,
     val photoCount: Int,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
     val createdAt: Instant,
     val updatedAt: Instant,
 )
@@ -35,6 +37,8 @@ data class ObjectDetailsDto(
     val clientPhone: String? = null,
     val notes: String? = null,
     val chatLink: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
     val coverPhotoId: String? = null,
     val contacts: List<ContactDto> = emptyList(),
     val photos: List<PhotoDto>,

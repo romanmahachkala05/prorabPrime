@@ -11,6 +11,12 @@ enum class ObjectStatus {
     PAUSED,
 }
 
+/** A point on the globe, in degrees. */
+data class GeoPoint(
+    val latitude: Double,
+    val longitude: Double,
+)
+
 /** One row of the objects list. */
 data class ObjectSummary(
     val id: ObjectId,
@@ -22,7 +28,12 @@ data class ObjectSummary(
     val photoCount: Int,
     val createdAt: Instant,
     val updatedAt: Instant,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
 ) {
+    /** Where the object is on the map; null while its address has not been located. */
+    val point: GeoPoint? get() = if (latitude != null && longitude != null) GeoPoint(latitude, longitude) else null
+
     /** What the list shows as the heading: the title, or the address when there is none. */
     val displayTitle: String get() = title ?: address
 }

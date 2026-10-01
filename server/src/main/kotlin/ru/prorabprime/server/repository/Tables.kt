@@ -15,6 +15,8 @@ object ObjectsTable : Table("objects") {
     val clientPhone = varchar("client_phone", 50).nullable()
     val notes = text("notes").nullable()
     val chatLink = varchar("chat_link", 500).nullable()
+    val latitude = double("latitude").nullable()
+    val longitude = double("longitude").nullable()
     val coverPhotoId = javaUUID("cover_photo_id").nullable()
     val searchText = text("search_text")
     val createdAt = timestamp("created_at")

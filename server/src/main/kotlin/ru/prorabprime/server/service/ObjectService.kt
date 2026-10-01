@@ -22,6 +22,7 @@ class ObjectService(
     private val contacts: ContactRepository,
     private val storage: FileStorage,
     private val clock: Clock,
+    private val geocoder: Geocoder = NoGeocoder,
     private val newId: () -> UUID = UUID::randomUUID,
 ) {
     suspend fun list(query: ObjectListQuery): List<ObjectListItem> = objects.list(query)
@@ -36,13 +37,35 @@ class ObjectService(
         val now = clock.now()
         val record = ObjectRecord(id = newId(), fields = fields, coverPhotoId = null, createdAt = now, updatedAt = now)
         objects.insert(record)
+        locate(record.id, fields.address)
         return Result.success(record)
     }
 
     suspend fun update(id: UUID, request: ObjectRequestDto): Result<ObjectDetails> = validateObject(request).fold(
-        onSuccess = { fields -> if (objects.update(id, fields, clock.now())) get(id) else notFound(id) },
+        onSuccess = { fields ->
+            val before = objects.find(id)
+            if (objects.update(id, fields, clock.now())) {
+                // A new address is somewhere else: the old pin must not stay behind.
+                if (before != null && before.fields.address != fields.address) locate(id, fields.address)
+                get(id)
+            } else {
+                notFound(id)
+            }
+        },
         onFailure = { Result.failure(it) },
     )
+
+    /** Looks the address up again, as the map's "find it" asks; an address nobody knows leaves no pin. */
+    suspend fun geocode(id: UUID): Result<ObjectDetails> {
+        val record = objects.find(id) ?: return notFound(id)
+        locate(id, record.fields.address)
+        return get(id)
+    }
+
+    /** Best effort: a geocoder that is down or does not know the address must never fail a save. */
+    private suspend fun locate(id: UUID, address: String) {
+        objects.setCoordinates(id, geocoder.locate(address))
+    }
 
     /** The row (and, by cascade, its photo rows) first, then the files: an orphan file is harmless. */
     suspend fun delete(id: UUID): Result<Unit> {

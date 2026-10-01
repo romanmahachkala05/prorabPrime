@@ -76,6 +76,10 @@ internal class ServerApi(
         }
     }.map { }
 
+    suspend fun geocodeObject(id: ObjectId): Result<Unit> = apiCall {
+        client.post(url(ApiPaths.OBJECT_GEOCODE, id.value))
+    }.map { }
+
     suspend fun deleteObject(id: ObjectId): Result<Unit> = apiCall {
         client.delete(url(ApiPaths.OBJECT, id.value))
     }.map { }

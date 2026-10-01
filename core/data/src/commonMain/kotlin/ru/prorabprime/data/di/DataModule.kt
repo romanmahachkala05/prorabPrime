@@ -31,6 +31,7 @@ import ru.prorabprime.domain.usecase.DeleteMaterialUseCase
 import ru.prorabprime.domain.usecase.DeleteObjectUseCase
 import ru.prorabprime.domain.usecase.DeletePaymentUseCase
 import ru.prorabprime.domain.usecase.DeletePhotoUseCase
+import ru.prorabprime.domain.usecase.GeocodeObjectUseCase
 import ru.prorabprime.domain.usecase.ObserveFinanceUseCase
 import ru.prorabprime.domain.usecase.ObserveMaterialsUseCase
 import ru.prorabprime.domain.usecase.ObserveObjectSortUseCase
@@ -82,6 +83,7 @@ val dataModule: Module = module {
     factory { SetCoverPhotoUseCase(get()) }
     factory { SaveContactUseCase(get()) }
     factory { DeleteContactUseCase(get()) }
+    factory { GeocodeObjectUseCase(get()) }
     factory { ObserveFinanceUseCase(get()) }
     factory { ObservePaymentHistoryUseCase(get()) }
     factory { SaveFinanceTermsUseCase(get()) }

@@ -9,6 +9,7 @@ import ru.prorabprime.contract.SortOrderDto
 import ru.prorabprime.server.db.Transactor
 import ru.prorabprime.server.model.ContactFields
 import ru.prorabprime.server.model.ContactRecord
+import ru.prorabprime.server.model.Coordinates
 import ru.prorabprime.server.model.ExtraWorkFields
 import ru.prorabprime.server.model.ExtraWorkRecord
 import ru.prorabprime.server.model.FinanceTerms
@@ -91,6 +92,10 @@ class FakeObjectRepository(
 
     override suspend fun touch(id: UUID, at: Instant) {
         records[id]?.let { records[id] = it.copy(updatedAt = at) }
+    }
+
+    override suspend fun setCoordinates(id: UUID, coordinates: Coordinates?) {
+        records[id]?.let { records[id] = it.copy(coordinates = coordinates) }
     }
 }
 

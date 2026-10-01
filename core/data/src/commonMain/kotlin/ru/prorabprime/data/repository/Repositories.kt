@@ -71,6 +71,10 @@ internal class ObjectsRepositoryImpl(
     override suspend fun delete(id: ObjectId): Result<Unit> = api.deleteObject(id).onSuccess {
         invalidator.invalidate()
     }
+
+    override suspend fun geocode(id: ObjectId): Result<Unit> = api.geocodeObject(id).onSuccess {
+        invalidator.invalidate()
+    }
 }
 
 /** Every successful write changes a photo count, a cover or a carousel, so it invalidates. */
