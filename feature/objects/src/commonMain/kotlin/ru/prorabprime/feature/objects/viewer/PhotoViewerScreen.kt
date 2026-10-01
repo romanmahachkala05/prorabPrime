@@ -7,6 +7,7 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.calculatePan
 import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -45,6 +46,7 @@ import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -64,6 +66,10 @@ import ru.prorabprime.feature.objects.resources.photoviewer_note_edit
 import ru.prorabprime.feature.objects.resources.photoviewer_note_save
 import ru.prorabprime.feature.objects.resources.photoviewer_note_title
 import ru.prorabprime.feature.objects.resources.photoviewer_position
+import ru.prorabprime.feature.objects.resources.photoviewer_receipt_add
+import ru.prorabprime.feature.objects.resources.photoviewer_receipt_amount
+import ru.prorabprime.feature.objects.resources.photoviewer_receipt_date
+import ru.prorabprime.feature.objects.resources.photoviewer_receipt_title
 import ru.prorabprime.feature.objects.resources.photoviewer_rotate
 
 @Composable
@@ -82,6 +88,7 @@ fun PhotoViewerScreen(
         onBack,
         onRotate = viewModel::rotate,
         onSaveNote = viewModel::saveNote,
+        onSaveReceipt = viewModel::saveReceipt,
         modifier = modifier,
     )
 }
@@ -93,11 +100,12 @@ internal fun PhotoViewerContent(
     onBack: () -> Unit,
     onRotate: (String) -> Unit,
     onSaveNote: (String, String) -> Unit,
+    onSaveReceipt: (String, String, String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier.fillMaxSize().background(Color.Black)) {
         when (val status = state.status) {
-            PhotoViewerStatus.Content -> Pages(state, onBack, onRotate, onSaveNote)
+            PhotoViewerStatus.Content -> Pages(state, onBack, onRotate, onSaveNote, onSaveReceipt)
             PhotoViewerStatus.Loading -> LoadingBox()
             is PhotoViewerStatus.Error -> ErrorMessage(status.message, onRetry = onBack)
         }
@@ -111,6 +119,7 @@ private fun Pages(
     onBack: () -> Unit,
     onRotate: (String) -> Unit,
     onSaveNote: (String, String) -> Unit,
+    onSaveReceipt: (String, String, String) -> Unit,
 ) {
     val pager = rememberPagerState(initialPage = state.initialPage) { state.photos.size }
     // A zoomed photo takes the drag for panning; the pager only swipes at normal size.
@@ -151,9 +160,9 @@ private fun Pages(
         current?.let { photo ->
             key(photo.id) {
                 NoteBar(
-                    note = photo.note,
-                    receiptLine = photo.receiptLine,
-                    onSave = { onSaveNote(photo.id, it) },
+                    photo = photo,
+                    onSaveNote = { onSaveNote(photo.id, it) },
+                    onSaveReceipt = { amount, date -> onSaveReceipt(photo.id, amount, date) },
                     modifier = Modifier.align(Alignment.BottomCenter),
                 )
             }
@@ -161,50 +170,124 @@ private fun Pages(
     }
 }
 
-/** The photo's note over its bottom edge; a tap writes or changes it. */
+/** The photo's note over its bottom edge, and a receipt's sum above it; a tap on either writes or changes it. */
 @Composable
 private fun NoteBar(
-    note: String?,
-    receiptLine: String?,
-    onSave: (String) -> Unit,
+    photo: ViewerPhoto,
+    onSaveNote: (String) -> Unit,
+    onSaveReceipt: (String, String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // Whether the editor is open means nothing beyond this bar.
-    var editing by remember { mutableStateOf(false) }
-    Row(
+    // Which editor is open means nothing beyond this bar.
+    var editing by remember { mutableStateOf<Editor?>(null) }
+    Column(
         modifier = modifier
             .fillMaxWidth()
-            .background(BAR_SCRIM)
-            .clickable { editing = true }
-            .navigationBarsPadding()
+            .background(NOTE_SCRIM)
+            .navigationBarsPadding(),
+    ) {
+        if (photo.isReceipt) {
+            BarLine(
+                text = photo.receiptLine ?: stringResource(Res.string.photoviewer_receipt_add),
+                hint = photo.receiptLine == null,
+                bold = true,
+                description = Res.string.photoviewer_receipt_title,
+                onClick = { editing = Editor.Receipt },
+            )
+        }
+        BarLine(
+            text = photo.note ?: stringResource(Res.string.photoviewer_note_add),
+            hint = photo.note == null,
+            bold = false,
+            description = Res.string.photoviewer_note_edit,
+            onClick = { editing = Editor.Note },
+        )
+    }
+    when (editing) {
+        Editor.Note -> NoteDialog(photo.note.orEmpty(), onDismiss = { editing = null }, onSave = {
+            editing = null
+            onSaveNote(it)
+        })
+
+        Editor.Receipt -> ReceiptDialog(photo, onDismiss = { editing = null }, onSave = { amount, date ->
+            editing = null
+            onSaveReceipt(amount, date)
+        })
+
+        null -> Unit
+    }
+}
+
+private enum class Editor { Note, Receipt }
+
+@Composable
+private fun BarLine(
+    text: String,
+    hint: Boolean,
+    bold: Boolean,
+    description: StringResource,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
             .padding(horizontal = Spacing.m, vertical = Spacing.s),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(Modifier.weight(1f)) {
-            receiptLine?.let {
-                Text(it, color = Color.White, style = MaterialTheme.typography.titleSmall)
-            }
-            Text(
-                text = note ?: stringResource(Res.string.photoviewer_note_add),
-                color = if (note == null) Color.White.copy(alpha = HINT_ALPHA) else Color.White,
-                style = MaterialTheme.typography.bodyMedium,
-                maxLines = NOTE_PREVIEW_LINES,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
+        Text(
+            text = text,
+            color = if (hint) Color.White.copy(alpha = HINT_ALPHA) else Color.White,
+            style = if (bold) MaterialTheme.typography.titleSmall else MaterialTheme.typography.bodyMedium,
+            maxLines = NOTE_PREVIEW_LINES,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
         Icon(
             Icons.Default.Edit,
-            stringResource(Res.string.photoviewer_note_edit),
+            stringResource(description),
             tint = Color.White,
             modifier = Modifier.padding(start = Spacing.s),
         )
     }
-    if (editing) {
-        NoteDialog(note.orEmpty(), onDismiss = { editing = false }, onSave = {
-            editing = false
-            onSave(it)
-        })
-    }
+}
+
+@Composable
+private fun ReceiptDialog(
+    photo: ViewerPhoto,
+    onDismiss: () -> Unit,
+    onSave: (String, String) -> Unit,
+) {
+    var amount by remember { mutableStateOf(photo.amountInput) }
+    var date by remember { mutableStateOf(photo.dateInput) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(Res.string.photoviewer_receipt_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
+                OutlinedTextField(
+                    value = amount,
+                    onValueChange = { amount = it.take(AMOUNT_LIMIT) },
+                    label = { Text(stringResource(Res.string.photoviewer_receipt_amount)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = date,
+                    onValueChange = { date = it.take(DATE_LIMIT) },
+                    label = { Text(stringResource(Res.string.photoviewer_receipt_date)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onSave(amount, date) }) { Text(stringResource(Res.string.photoviewer_note_save)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(Res.string.photoviewer_note_cancel)) }
+        },
+    )
 }
 
 @Composable
@@ -288,4 +371,9 @@ private const val MAX_ZOOM = 5f
 private const val HINT_ALPHA = 0.7f
 private const val NOTE_PREVIEW_LINES = 3
 private const val DIALOG_NOTE_LINES = 6
+private const val AMOUNT_LIMIT = 14
+private const val DATE_LIMIT = 10
 private val BAR_SCRIM = Color(0x66000000)
+
+/** Darker than the top bar: it carries text over a picture that may be white, like a receipt. */
+private val NOTE_SCRIM = Color(0xCC000000)

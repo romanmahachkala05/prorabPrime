@@ -3,6 +3,7 @@
     <!-- objectslist -->
     <string name="objectslist_title">Объекты</string>
     <string name="objectslist_tasks">Дела на день</string>
+    <string name="objectslist_expenses">Расходы</string>
     <string name="objectslist_map">Карта объектов</string>
     <string name="objectslist_settings">Настройки</string>
     <string name="objectslist_add">Добавить объект</string>
@@ -85,6 +86,12 @@
     <string name="photoviewer_back">Назад</string>
     <string name="photoviewer_position">%1$d из %2$d</string>
     <string name="photoviewer_rotate">Повернуть</string>
+    <string name="photoviewer_receipt_add">Указать сумму и дату</string>
+    <string name="photoviewer_receipt_title">Сумма чека</string>
+    <string name="photoviewer_receipt_amount">Сумма, ₽</string>
+    <string name="photoviewer_receipt_date">Дата (дд.мм.гггг)</string>
+    <string name="photoviewer_receipt_bad_amount">Не получилось разобрать сумму: напишите число, например 790 или 790,50</string>
+    <string name="photoviewer_receipt_bad_date">Дату надо писать так: 01.10.2026</string>
     <string name="photoviewer_note_add">Добавить заметку</string>
     <string name="photoviewer_note_edit">Изменить заметку</string>
     <string name="photoviewer_note_title">Заметка</string>

@@ -136,6 +136,50 @@ class PhotosAndContactsRepositoryTest {
     }
 
     @Test
+    fun `a receipt's sum set by hand is kept at once, queued, sent, and clears again`() = runTest {
+        val server = phone.server
+        val receiptId = "66666666-6666-6666-6666-666666666666"
+        val dto = PhotoDto(
+            receiptId,
+            "/files/o/r.jpg",
+            "/files/o/r_thumb.jpg",
+            800,
+            600,
+            server.at,
+            kind = AttachmentKindDto.RECEIPT,
+        )
+        server.details = server.details.copy(photos = listOf(dto))
+        server.objects = listOf(server.details)
+        synced()
+        server.offline = true
+
+        phone.photos.setReceipt(PhotoId(receiptId), ReceiptInfo(125_050, "2026-10-01")).getOrThrow()
+        assertThat(shownPhoto().receipt).isEqualTo(ReceiptInfo(125_050, "2026-10-01"))
+        assertThat(phone.db.outbox.snapshot().single().operation)
+            .isEqualTo(Operation.SetReceipt(receiptId, 125_050, "2026-10-01"))
+
+        phone.photos.setReceipt(PhotoId(receiptId), null).getOrThrow()
+        assertThat(shownPhoto().receipt).isNull()
+
+        server.offline = false
+        phone.engine.sync()
+        assertThat(server.writes.map { it.url.encodedPath }).contains("/api/photos/$receiptId/receipt")
+        assertThat(phone.db.outbox.snapshot()).isEmpty()
+    }
+
+    @Test
+    fun `a sum cannot be set on a plain photo or on one that is not there`() = runTest {
+        val server = phone.server
+        val photoId = "77777777-7777-7777-7777-777777777777"
+        server.details = server.details.copy(photos = listOf(PhotoDto(photoId, "/a.jpg", "/a_t.jpg", 8, 6, server.at)))
+        server.objects = listOf(server.details)
+        synced()
+
+        assertThat(phone.photos.setReceipt(PhotoId(photoId), ReceiptInfo(1)).isFailure).isTrue()
+        assertThat(phone.photos.setReceipt(PhotoId("nope"), ReceiptInfo(1)).isFailure).isTrue()
+    }
+
+    @Test
     fun `a note for a picture that is not on the phone is not found`() = runTest {
         synced()
 

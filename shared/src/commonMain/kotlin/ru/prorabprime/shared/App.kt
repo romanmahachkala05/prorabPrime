@@ -5,6 +5,7 @@ import org.koin.compose.koinInject
 import org.koin.core.module.Module
 import ru.prorabprime.data.di.dataModule
 import ru.prorabprime.designsystem.theme.ProrabTheme
+import ru.prorabprime.feature.expenses.expensesModule
 import ru.prorabprime.feature.finance.financeModule
 import ru.prorabprime.feature.map.mapModule
 import ru.prorabprime.feature.materials.materialsModule
@@ -38,4 +39,5 @@ val appModules: List<Module> =
         mapModule,
         tasksModule,
         syncModule,
+        expensesModule,
     )

@@ -3,6 +3,7 @@ package ru.prorabprime.feature.objects.viewer
 import androidx.compose.runtime.Immutable
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
+import ru.prorabprime.domain.model.ReceiptInfo
 import ru.prorabprime.domain.model.ServerFilePath
 import ru.prorabprime.ui.UiText
 
@@ -34,6 +35,13 @@ internal data class ViewerPhoto(
     val note: String? = null,
     /** `790 ₽ · 01.10.2026 15:26`, for a receipt the server could read. */
     val receiptLine: String? = null,
+    /** A receipt, which can be given a sum and a day by hand. */
+    val isReceipt: Boolean = false,
+    /** The editor's starting values for a receipt, as typed: `790,50` and `01.10.2026`. */
+    val amountInput: String = "",
+    val dateInput: String = "",
+    /** What the receipt knows, for the editor to start from. */
+    val receipt: ReceiptInfo? = null,
 )
 
 internal data class PhotoViewerArgs(

@@ -18,6 +18,7 @@ import ru.prorabprime.server.model.PaymentFields
 import ru.prorabprime.server.model.PaymentRecord
 import ru.prorabprime.server.model.PaymentRevisionRecord
 import ru.prorabprime.server.model.PhotoRecord
+import ru.prorabprime.server.model.ReceiptData
 import ru.prorabprime.server.model.TaskFields
 import ru.prorabprime.server.model.TaskQuery
 import ru.prorabprime.server.model.TaskRecord
@@ -62,6 +63,9 @@ interface PhotoRepository {
 
     /** Returns false when there is no such photo. */
     suspend fun setNote(id: UUID, note: String?): Boolean
+
+    /** Returns false when there is no such photo. */
+    suspend fun setReceipt(id: UUID, receipt: ReceiptData?): Boolean
 
     /** Points the photo at its new files (after a turn); everything else about it stays. */
     suspend fun replaceFiles(photo: PhotoRecord)

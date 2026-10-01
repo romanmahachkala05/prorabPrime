@@ -37,6 +37,7 @@ import ru.prorabprime.contract.ObjectStatusDto
 import ru.prorabprime.contract.PhotoDto
 import ru.prorabprime.contract.PhotoLimits
 import ru.prorabprime.contract.PhotoNoteRequestDto
+import ru.prorabprime.contract.ReceiptRequestDto
 import ru.prorabprime.contract.RotatePhotoRequestDto
 import ru.prorabprime.contract.SetCoverRequestDto
 import ru.prorabprime.server.TEST_TOKEN
@@ -270,6 +271,31 @@ class PhotoRoutesTest {
         assertThat(receipt.receipt?.purchasedAt).isEqualTo("2026-10-01T15:26")
         assertThat(photo.receipt).isNull()
         assertThat(client.details().photos.first { it.id == receipt.id }.receipt?.amountKopecks).isEqualTo(79_000L)
+    }
+
+    @Test
+    fun `a receipt gets its sum by hand, and a plain photo refuses one`() = server { client ->
+        val receipt = client.upload(TestImages.jpeg(10, 10), query = "?kind=RECEIPT").body<PhotoDto>()
+        val photo = client.upload(TestImages.jpeg(10, 10), query = "?kind=PHOTO").body<PhotoDto>()
+
+        suspend fun put(id: String, body: ReceiptRequestDto) = client.put("/api/photos/$id/receipt") {
+            bearerAuth(TEST_TOKEN)
+            contentType(ContentType.Application.Json)
+            setBody(body)
+        }
+
+        assertThat(receipt.receipt).isNull()
+        assertThat(put(receipt.id, ReceiptRequestDto(125_050, "2026-10-01")).status).isEqualTo(HttpStatusCode.NoContent)
+        val stored = client.details().photos.first { it.id == receipt.id }.receipt
+        assertThat(stored?.amountKopecks).isEqualTo(125_050L)
+        assertThat(stored?.purchasedAt).isEqualTo("2026-10-01")
+
+        assertThat(put(receipt.id, ReceiptRequestDto(1, "yesterday")).status).isEqualTo(HttpStatusCode.BadRequest)
+        assertThat(put(photo.id, ReceiptRequestDto(1)).status).isEqualTo(HttpStatusCode.BadRequest)
+        assertThat(put(UUID.randomUUID().toString(), ReceiptRequestDto(1)).status).isEqualTo(HttpStatusCode.NotFound)
+
+        assertThat(put(receipt.id, ReceiptRequestDto()).status).isEqualTo(HttpStatusCode.NoContent)
+        assertThat(client.details().photos.first { it.id == receipt.id }.receipt).isNull()
     }
 
     @Test

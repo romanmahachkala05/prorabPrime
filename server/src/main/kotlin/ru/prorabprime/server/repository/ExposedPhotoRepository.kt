@@ -75,6 +75,14 @@ class ExposedPhotoRepository(
         PhotosTable.update({ PhotosTable.id eq id }) { it[PhotosTable.note] = note } > 0
     }
 
+    override suspend fun setReceipt(id: UUID, receipt: ReceiptData?): Boolean = db.query {
+        PhotosTable.update({ PhotosTable.id eq id }) {
+            it[receiptAmountKopecks] = receipt?.amountKopecks
+            it[receiptAt] = receipt?.purchasedAt
+            it[receiptQr] = receipt?.qr
+        } > 0
+    }
+
     override suspend fun nextSortOrder(objectId: UUID): Int = db.query {
         val max = PhotosTable.sortOrder.max()
         val highest = PhotosTable.select(max).where { PhotosTable.objectId eq objectId }.single()[max]

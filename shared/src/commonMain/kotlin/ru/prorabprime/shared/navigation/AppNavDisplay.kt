@@ -32,6 +32,8 @@ import ru.prorabprime.designsystem.components.AppSnackbarHost
 import ru.prorabprime.designsystem.components.show
 import ru.prorabprime.designsystem.components.topBarColor
 import ru.prorabprime.designsystem.theme.Spacing
+import ru.prorabprime.feature.expenses.ExpensesNavKey
+import ru.prorabprime.feature.expenses.ExpensesScreen
 import ru.prorabprime.feature.finance.FinanceNavKey
 import ru.prorabprime.feature.finance.FinanceScreen
 import ru.prorabprime.feature.map.MapNavKey
@@ -54,6 +56,7 @@ import ru.prorabprime.feature.sync.SyncStatusHost
 import ru.prorabprime.feature.tasks.TasksNavKey
 import ru.prorabprime.feature.tasks.TasksScreen
 import ru.prorabprime.ui.SnackbarNotifier
+import ru.prorabprime.ui.isWebClient
 import ru.prorabprime.ui.load
 
 /**
@@ -113,6 +116,8 @@ private fun appEntries(backStack: NavBackStack<NavKey>) = entryProvider<NavKey> 
             onOpenSettings = { backStack.add(SettingsNavKey) },
             onOpenMap = { backStack.add(MapNavKey) },
             onOpenTasks = { backStack.add(TasksNavKey) },
+            // The report is for the site, where there is room for it.
+            onOpenExpenses = if (isWebClient) ({ backStack.add(ExpensesNavKey) }) else null,
         )
     }
     entry<ObjectDetailsNavKey> { key ->
@@ -130,6 +135,13 @@ private fun appEntries(backStack: NavBackStack<NavKey>) = entryProvider<NavKey> 
         MapScreen(onOpenObject = { backStack.add(ObjectDetailsNavKey(it)) }, onBack = { backStack.pop() })
     }
     entry<TasksNavKey> { TasksScreen(onBack = { backStack.pop() }) }
+    entry<ExpensesNavKey> {
+        ExpensesScreen(
+            onOpenReceipt = { objectId, photoId -> backStack.add(PhotoViewerNavKey(objectId, photoId)) },
+            onOpenObject = { backStack.add(ObjectDetailsNavKey(it)) },
+            onBack = { backStack.pop() },
+        )
+    }
     entry<MaterialsNavKey> { key -> MaterialsScreen(objectId = key.objectId, onBack = { backStack.pop() }) }
     entry<PhotoViewerNavKey> { key ->
         PhotoViewerScreen(objectId = key.objectId, photoId = key.photoId, onBack = { backStack.pop() })
@@ -179,6 +191,7 @@ private val NAV_KEYS = SavedStateConfiguration {
             subclass(MapNavKey::class, MapNavKey.serializer())
             subclass(PlacePickerNavKey::class, PlacePickerNavKey.serializer())
             subclass(TasksNavKey::class, TasksNavKey.serializer())
+            subclass(ExpensesNavKey::class, ExpensesNavKey.serializer())
         }
     }
 }

@@ -20,6 +20,7 @@ import ru.prorabprime.data.remote.GeocodeApi
 import ru.prorabprime.data.remote.KtorConnectionChecker
 import ru.prorabprime.data.remote.RemoteApi
 import ru.prorabprime.data.repository.ContactsRepositoryImpl
+import ru.prorabprime.data.repository.ExpensesRepositoryImpl
 import ru.prorabprime.data.repository.FinanceRepositoryImpl
 import ru.prorabprime.data.repository.MaterialsRepositoryImpl
 import ru.prorabprime.data.repository.ObjectsRepositoryImpl
@@ -33,6 +34,7 @@ import ru.prorabprime.data.sync.SyncEngine
 import ru.prorabprime.domain.ConnectionChecker
 import ru.prorabprime.domain.model.PickedPlaceStore
 import ru.prorabprime.domain.repository.ContactsRepository
+import ru.prorabprime.domain.repository.ExpensesRepository
 import ru.prorabprime.domain.repository.FinanceRepository
 import ru.prorabprime.domain.repository.MaterialsRepository
 import ru.prorabprime.domain.repository.ObjectsRepository
@@ -55,6 +57,7 @@ import ru.prorabprime.domain.usecase.DiscardFailedChangeUseCase
 import ru.prorabprime.domain.usecase.FindAddressUseCase
 import ru.prorabprime.domain.usecase.GeocodeObjectUseCase
 import ru.prorabprime.domain.usecase.ObserveDayTasksUseCase
+import ru.prorabprime.domain.usecase.ObserveExpensesUseCase
 import ru.prorabprime.domain.usecase.ObserveFailedChangesUseCase
 import ru.prorabprime.domain.usecase.ObserveFinanceUseCase
 import ru.prorabprime.domain.usecase.ObserveMaterialsUseCase
@@ -78,6 +81,7 @@ import ru.prorabprime.domain.usecase.SaveServerSettingsUseCase
 import ru.prorabprime.domain.usecase.SaveTaskUseCase
 import ru.prorabprime.domain.usecase.SetCoverPhotoUseCase
 import ru.prorabprime.domain.usecase.SetPhotoNoteUseCase
+import ru.prorabprime.domain.usecase.SetReceiptUseCase
 import ru.prorabprime.domain.usecase.SyncNowUseCase
 import ru.prorabprime.domain.usecase.UpdateObjectUseCase
 import ru.prorabprime.domain.usecase.UploadPhotoUseCase
@@ -114,6 +118,7 @@ val dataModule: Module = module {
     single<FinanceRepository> { FinanceRepositoryImpl(get(), get()) }
     single<MaterialsRepository> { MaterialsRepositoryImpl(get(), get()) }
     single<TasksRepository> { TasksRepositoryImpl(get(), get()) }
+    single<ExpensesRepository> { ExpensesRepositoryImpl(get()) }
     single<ConnectionChecker> { KtorConnectionChecker(get()) }
 
     factory { ObserveObjectsUseCase(get()) }
@@ -127,6 +132,7 @@ val dataModule: Module = module {
     factory { SetCoverPhotoUseCase(get()) }
     factory { RotatePhotoUseCase(get()) }
     factory { SetPhotoNoteUseCase(get()) }
+    factory { SetReceiptUseCase(get()) }
     factory { SaveContactUseCase(get()) }
     factory { DeleteContactUseCase(get()) }
     factory { GeocodeObjectUseCase(get()) }
@@ -144,6 +150,7 @@ val dataModule: Module = module {
     factory { SaveExtraWorkUseCase(get()) }
     factory { DeleteExtraWorkUseCase(get()) }
     factory { ObserveMaterialsUseCase(get()) }
+    factory { ObserveExpensesUseCase(get()) }
     factory { SaveMaterialUseCase(get()) }
     factory { DeleteMaterialUseCase(get()) }
     factory { AddDefaultMaterialsUseCase(get()) }

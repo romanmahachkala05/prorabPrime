@@ -23,6 +23,7 @@ kotlin {
             implementation(project(":feature:map"))
             implementation(project(":feature:tasks"))
             implementation(project(":feature:sync"))
+            implementation(project(":feature:expenses"))
 
             implementation(libs.koin.compose)
             implementation(libs.androidx.navigation3.runtime)

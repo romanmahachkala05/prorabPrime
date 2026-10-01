@@ -40,6 +40,7 @@ import ru.prorabprime.domain.model.ObjectQuery
 import ru.prorabprime.domain.model.ObjectSummary
 import ru.prorabprime.domain.model.Photo
 import ru.prorabprime.domain.model.PhotoId
+import ru.prorabprime.domain.model.ReceiptInfo
 import ru.prorabprime.domain.model.asFailure
 import ru.prorabprime.domain.repository.ContactsRepository
 import ru.prorabprime.domain.repository.ObjectsRepository
@@ -241,6 +242,14 @@ internal class PhotosRepositoryImpl(
         }
         db.photos.remove(id.value)
         replaceCoverIfNeeded(row)
+        return Result.success(Unit)
+    }
+
+    override suspend fun setReceipt(id: PhotoId, receipt: ReceiptInfo?): Result<Unit> {
+        val row = db.photos.rows.value[id.value] ?: return AppError.NotFound.asFailure()
+        if (row.kind != AttachmentKindDto.RECEIPT) return AppError.NotFound.asFailure()
+        db.outbox.enqueue(Operation.SetReceipt(id.value, receipt?.amountKopecks, receipt?.purchasedAt))
+        db.photos.upsert(row.copy(receiptAmountKopecks = receipt?.amountKopecks, receiptAt = receipt?.purchasedAt))
         return Result.success(Unit)
     }
 

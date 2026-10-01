@@ -26,6 +26,7 @@ object ApiPaths {
     const val PHOTO = "/api/photos/{id}"
     const val PHOTO_ROTATE = "/api/photos/{id}/rotate"
     const val PHOTO_NOTE = "/api/photos/{id}/note"
+    const val PHOTO_RECEIPT = "/api/photos/{id}/receipt"
     const val FILE = "/files/{objectId}/{fileName}"
 }
 

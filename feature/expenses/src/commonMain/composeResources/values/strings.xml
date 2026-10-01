@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="expenses_title">Расходы</string>
+    <string name="expenses_back">Назад</string>
+    <string name="expenses_total">Всего</string>
+    <string name="expenses_this_month">В этом месяце</string>
+    <string name="expenses_materials">Материалы</string>
+    <string name="expenses_crew">Бригада</string>
+    <string name="expenses_without_amount">Чеков без суммы: %1$d. Откройте чек и впишите сумму, тогда он попадёт в итоги.</string>
+    <string name="expenses_by_object">По объектам</string>
+    <string name="expenses_by_month">По месяцам</string>
+    <string name="expenses_all">Все расходы</string>
+    <string name="expenses_filter_all">Все</string>
+    <string name="expenses_filter_materials">Материалы</string>
+    <string name="expenses_filter_crew">Бригада</string>
+    <string name="expenses_kind_receipt">Чек</string>
+    <string name="expenses_kind_crew">Выплата бригаде</string>
+    <string name="expenses_no_amount">сумма не указана</string>
+    <string name="expenses_entries">записей: %1$d</string>
+    <string name="expenses_empty">Расходов пока нет. Снимите чек или запишите выплату бригаде в финансах объекта.</string>
+</resources>

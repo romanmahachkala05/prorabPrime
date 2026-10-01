@@ -1,5 +1,6 @@
 package ru.prorabprime.feature.objects.viewer
 
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasSetTextAction
@@ -17,76 +18,111 @@ import ru.prorabprime.domain.model.ServerFilePath
 @OptIn(ExperimentalTestApi::class)
 class PhotoViewerContentTest {
 
-    private val saved = mutableListOf<Pair<String, String>>()
+    private val notes = mutableListOf<Pair<String, String>>()
+    private val receipts = mutableListOf<Triple<String, String, String>>()
     private val rotated = mutableListOf<String>()
 
-    private fun stateWith(note: String?) = PhotoViewerState(
+    private fun stateWith(
+        note: String? = null,
+        receiptLine: String? = null,
+        isReceipt: Boolean = false,
+        amountInput: String = "",
+        dateInput: String = "",
+    ) = PhotoViewerState(
         status = PhotoViewerStatus.Content,
-        photos = persistentListOf(ViewerPhoto("p1", ServerFilePath("/files/o/p1.jpg"), note = note)),
+        photos = persistentListOf(
+            ViewerPhoto(
+                id = "p1",
+                path = ServerFilePath("/files/o/p1.jpg"),
+                note = note,
+                receiptLine = receiptLine,
+                isReceipt = isReceipt,
+                amountInput = amountInput,
+                dateInput = dateInput,
+            ),
+        ),
     )
 
-    @Test
-    fun `the note is shown over the photo, or an invitation to write one`() = runComposeUiTest {
-        setContent {
-            ProrabTheme {
-                PhotoViewerContent(stateWith("Трещина над окном"), {}, { rotated += it }, { id, t ->
-                    saved +=
-                        id to t
-                })
-            }
+    @Composable
+    private fun show(state: PhotoViewerState) {
+        ProrabTheme {
+            PhotoViewerContent(
+                state = state,
+                onBack = {},
+                onRotate = { rotated += it },
+                onSaveNote = { id, text -> notes += id to text },
+                onSaveReceipt = { id, amount, date -> receipts += Triple(id, amount, date) },
+            )
         }
+    }
+
+    @Test
+    fun `the note is shown over the photo`() = runComposeUiTest {
+        setContent { show(stateWith(note = "Трещина над окном")) }
+
         onNodeWithText("Трещина над окном").assertIsDisplayed()
     }
 
     @Test
     fun `a receipt's sum and time are shown above the note`() = runComposeUiTest {
-        val state = PhotoViewerState(
-            status = PhotoViewerStatus.Content,
-            photos = persistentListOf(
-                ViewerPhoto("p1", ServerFilePath("/files/o/p1.jpg"), receiptLine = "790 ₽ · 01.10.2026 15:26"),
-            ),
-        )
-        setContent { ProrabTheme { PhotoViewerContent(state, {}, {}, { _, _ -> }) } }
+        setContent { show(stateWith(isReceipt = true, receiptLine = "790 ₽ · 01.10.2026 15:26")) }
 
         onNodeWithText("790 ₽ · 01.10.2026 15:26").assertIsDisplayed()
     }
 
     @Test
     fun `without a note the bar invites to add one`() = runComposeUiTest {
-        setContent { ProrabTheme { PhotoViewerContent(stateWith(null), {}, {}, { _, _ -> }) } }
+        setContent { show(stateWith()) }
 
         onNodeWithText("Добавить заметку").assertIsDisplayed()
     }
 
     @Test
     fun `a tap on the bar opens the editor, and saving sends the text for that photo`() = runComposeUiTest {
-        setContent {
-            ProrabTheme { PhotoViewerContent(stateWith(null), {}, {}, { id, text -> saved += id to text }) }
-        }
+        setContent { show(stateWith()) }
 
         onNodeWithText("Добавить заметку").performClick()
-        onNode(hasSetTextAction()).performTextInput("Заменить до пятницы")
+        onAllNodes(hasSetTextAction())[0].performTextInput("Заменить до пятницы")
         onNodeWithText("Сохранить").performClick()
 
-        assertThat(saved).containsExactly("p1" to "Заменить до пятницы")
+        assertThat(notes).containsExactly("p1" to "Заменить до пятницы")
     }
 
     @Test
     fun `cancelling the editor sends nothing`() = runComposeUiTest {
-        setContent { ProrabTheme { PhotoViewerContent(stateWith("была"), {}, {}, { id, t -> saved += id to t }) } }
+        setContent { show(stateWith(note = "была")) }
 
         onNodeWithText("была").performClick()
         onNodeWithText("Отмена").performClick()
 
-        assertThat(saved).isEmpty()
+        assertThat(notes).isEmpty()
     }
 
     @Test
     fun `the rotate button names the photo it turns`() = runComposeUiTest {
-        setContent { ProrabTheme { PhotoViewerContent(stateWith(null), {}, { rotated += it }, { _, _ -> }) } }
+        setContent { show(stateWith()) }
 
         onNodeWithContentDescription("Повернуть").performClick()
 
         assertThat(rotated).containsExactly("p1")
+    }
+
+    @Test
+    fun `a receipt without a sum invites to give one, and the editor sends the sum and the day`() = runComposeUiTest {
+        setContent { show(stateWith(isReceipt = true)) }
+
+        onNodeWithText("Указать сумму и дату").performClick()
+        onAllNodes(hasSetTextAction())[0].performTextInput("1250,50")
+        onAllNodes(hasSetTextAction())[1].performTextInput("01.10.2026")
+        onNodeWithText("Сохранить").performClick()
+
+        assertThat(receipts).containsExactly(Triple("p1", "1250,50", "01.10.2026"))
+    }
+
+    @Test
+    fun `a plain photo has no receipt row`() = runComposeUiTest {
+        setContent { show(stateWith()) }
+
+        onNodeWithText("Указать сумму и дату").assertDoesNotExist()
     }
 }
