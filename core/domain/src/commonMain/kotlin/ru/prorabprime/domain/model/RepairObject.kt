@@ -30,6 +30,8 @@ data class ObjectSummary(
     val updatedAt: Instant,
     val latitude: Double? = null,
     val longitude: Double? = null,
+    /** Made or changed on the phone and not yet accepted by the server. */
+    val isPending: Boolean = false,
 ) {
     /** Where the object is on the map; null while its address has not been located. */
     val point: GeoPoint? get() = if (latitude != null && longitude != null) GeoPoint(latitude, longitude) else null
@@ -55,6 +57,8 @@ data class ObjectDetails(
     val photos: ImmutableList<Photo>,
     val createdAt: Instant,
     val updatedAt: Instant,
+    /** Made or changed on the phone and not yet accepted by the server. */
+    val isPending: Boolean = false,
 ) {
     /** Where the object is on the map; null while its address has not been located. */
     val point: GeoPoint? get() = if (latitude != null && longitude != null) GeoPoint(latitude, longitude) else null
@@ -76,4 +80,6 @@ data class Photo(
     val height: Int,
     val createdAt: Instant,
     val kind: AttachmentKind = AttachmentKind.PHOTO,
+    /** Taken on the phone and not yet on the server; its paths are then files on the phone. */
+    val isPending: Boolean = false,
 )

@@ -16,6 +16,8 @@ data class Contact(
     val name: String,
     val phone: String?,
     val role: ContactRole,
+    /** Made or changed on the phone and not yet accepted by the server. */
+    val isPending: Boolean = false,
 )
 
 /** The editable fields of a contact, as the contact form submits them. */

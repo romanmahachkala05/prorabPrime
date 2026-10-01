@@ -18,8 +18,16 @@ import ru.prorabprime.domain.model.ServerSettings
 internal const val SERVER_HOST = "prorab-server.invalid"
 const val SERVER_BASE = "http://$SERVER_HOST"
 
-/** The URL the app's `HttpClient` — and so Coil — loads [this] file from. */
-fun ServerFilePath.toRequestUrl(): String = SERVER_BASE + value
+/**
+ * The URL the app's `HttpClient` — and so Coil — loads [this] file from: the server's, or, for a picture
+ * taken on the phone and not yet sent, its `file:` URI as it is.
+ */
+fun ServerFilePath.toRequestUrl(): String = if (value.startsWith(LOCAL_FILE_SCHEME)) value else SERVER_BASE + value
+
+/** What a picture waiting on the phone is called, as a [ServerFilePath], so every screen shows it like any other. */
+fun localFilePath(absolutePath: String): ServerFilePath = ServerFilePath(LOCAL_FILE_SCHEME + absolutePath)
+
+private const val LOCAL_FILE_SCHEME = "file://"
 
 class ServerAddressConfig {
     /** Read on every request, so a change in the settings applies to the very next one. */

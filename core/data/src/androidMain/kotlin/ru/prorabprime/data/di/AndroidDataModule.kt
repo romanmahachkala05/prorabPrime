@@ -12,6 +12,10 @@ import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.Module
 import org.koin.dsl.module
 import ru.prorabprime.data.image.AndroidImageCompressor
+import ru.prorabprime.data.local.BlobStore
+import ru.prorabprime.data.local.FileBlobStore
+import ru.prorabprime.data.local.FilePersistence
+import ru.prorabprime.data.local.Persistence
 import ru.prorabprime.data.reminders.AndroidReminderScheduler
 import ru.prorabprime.data.settings.DataStoreSettingsRepository
 import ru.prorabprime.domain.ImageCompressor
@@ -30,6 +34,8 @@ fun androidDataModule(defaults: ServerSettings): Module = module {
         }
     }
     single<SettingsRepository> { DataStoreSettingsRepository(get(), defaults) }
+    single<Persistence> { FilePersistence(androidContext().filesDir.resolve("offline")) }
+    single<BlobStore> { FileBlobStore(androidContext().filesDir.resolve("offline-blobs")) }
     single<ImageCompressor> { AndroidImageCompressor(androidContext(), Dispatchers.IO) }
     single<ReminderScheduler> { AndroidReminderScheduler(androidContext()) }
     factory { KeepRemindersUseCase(get(), get()) { LocalDay.ofInstant(Clock.System.now()) } }

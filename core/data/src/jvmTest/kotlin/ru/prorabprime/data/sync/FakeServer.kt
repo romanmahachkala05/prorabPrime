@@ -25,6 +25,11 @@ import ru.prorabprime.data.network.ApiJson
 
 /** A server with one object, whose answers the test can change between syncs. */
 class FakeServer {
+    /** The clock the phone uses too, fixed so the tests can say what time things happened. */
+    val clock: kotlin.time.Clock = object : kotlin.time.Clock {
+        override fun now() = at
+    }
+
     val at: Instant = Instant.parse("2026-10-01T10:00:00Z")
     val later: Instant = Instant.parse("2026-10-01T11:00:00Z")
     val objectId = "11111111-1111-1111-1111-111111111111"
@@ -45,6 +50,9 @@ class FakeServer {
 
     /** No signal at all. */
     var offline = false
+
+    /** Runs after every write the server accepts, so a test can make the server's data change with it. */
+    var afterWrite: (HttpRequestData) -> Unit = {}
 
     /** The status every write gets, when set. */
     var writeStatus: HttpStatusCode? = null
@@ -80,25 +88,33 @@ class FakeServer {
 
     private fun MockRequestHandleScope.answer(request: HttpRequestData): HttpResponseData {
         if (offline) throw IOException("no signal")
-        if (request.method != HttpMethod.Get) return respond("", writeStatus ?: HttpStatusCode.NoContent)
+        if (request.method != HttpMethod.Get) {
+            val status = writeStatus ?: HttpStatusCode.NoContent
+            if (status.value < HTTP_REDIRECT) afterWrite(request)
+            return respond("", status)
+        }
         val path = request.url.encodedPath
         return when {
             path == "/api/objects" -> body(ListSerializer(ObjectSummaryDto.serializer()), summaries())
-
-            path.startsWith("/api/objects/") && path.count { it == '/' } == 3 ->
-                objects.find { path.endsWith(it.id) }
-                    ?.let { body(ObjectDetailsDto.serializer(), it) }
-                    ?: respond("", HttpStatusCode.NotFound)
-
-            path.endsWith("/finance") -> body(FinanceDto.serializer(), finance)
-
-            path.endsWith("/payments/history") -> json("[]")
-
-            path.endsWith("/materials") -> body(ListSerializer(MaterialDto.serializer()), materials)
-
-            path == "/api/tasks" -> body(ListSerializer(TaskDto.serializer()), tasks)
-
-            else -> respond("", HttpStatusCode.NotFound)
+            path.startsWith("/api/objects/") && path.count { it == '/' } == OBJECT_PATH_SLASHES -> objectAt(path)
+            else -> childrenOf(path)
         }
+    }
+
+    private fun MockRequestHandleScope.objectAt(path: String): HttpResponseData =
+        objects.find { path.endsWith(it.id) }?.let { body(ObjectDetailsDto.serializer(), it) }
+            ?: respond("", HttpStatusCode.NotFound)
+
+    private fun MockRequestHandleScope.childrenOf(path: String): HttpResponseData = when {
+        path.endsWith("/finance") -> body(FinanceDto.serializer(), finance)
+        path.endsWith("/payments/history") -> json("[]")
+        path.endsWith("/materials") -> body(ListSerializer(MaterialDto.serializer()), materials)
+        path == "/api/tasks" -> body(ListSerializer(TaskDto.serializer()), tasks)
+        else -> respond("", HttpStatusCode.NotFound)
+    }
+
+    private companion object {
+        const val HTTP_REDIRECT = 300
+        const val OBJECT_PATH_SLASHES = 3
     }
 }

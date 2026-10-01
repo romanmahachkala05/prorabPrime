@@ -1,15 +1,26 @@
 package ru.prorabprime.data.di
 
+import kotlin.time.Clock
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import org.koin.core.module.Module
+import org.koin.core.qualifier.named
 import org.koin.dsl.module
+import ru.prorabprime.data.local.BlobStore
+import ru.prorabprime.data.local.IdFactory
+import ru.prorabprime.data.local.LocalDb
+import ru.prorabprime.data.local.MemoryBlobStore
+import ru.prorabprime.data.local.MemoryPersistence
+import ru.prorabprime.data.local.Persistence
+import ru.prorabprime.data.local.RandomIds
 import ru.prorabprime.data.network.createHttpClient
-import ru.prorabprime.data.remote.ContactsApi
 import ru.prorabprime.data.remote.FinanceApi
 import ru.prorabprime.data.remote.GeocodeApi
 import ru.prorabprime.data.remote.KtorConnectionChecker
 import ru.prorabprime.data.remote.MaterialsApi
-import ru.prorabprime.data.remote.ServerApi
+import ru.prorabprime.data.remote.RemoteApi
 import ru.prorabprime.data.remote.TasksApi
 import ru.prorabprime.data.repository.ContactsRepositoryImpl
 import ru.prorabprime.data.repository.FinanceRepositoryImpl
@@ -19,6 +30,9 @@ import ru.prorabprime.data.repository.ObjectsRepositoryImpl
 import ru.prorabprime.data.repository.PhotosRepositoryImpl
 import ru.prorabprime.data.repository.PlacesRepositoryImpl
 import ru.prorabprime.data.repository.TasksRepositoryImpl
+import ru.prorabprime.data.sync.OperationRunner
+import ru.prorabprime.data.sync.SyncCoordinator
+import ru.prorabprime.data.sync.SyncEngine
 import ru.prorabprime.domain.ConnectionChecker
 import ru.prorabprime.domain.model.PickedPlaceStore
 import ru.prorabprime.domain.repository.ContactsRepository
@@ -73,14 +87,25 @@ val dataModule: Module = module {
         createHttpClient(engine = get()) { settings.serverSettings.first() }
     }
     single { Invalidator() }
-    single { ServerApi(get()) }
-    single { ContactsApi(get()) }
+    single { RemoteApi(get()) }
+    single { LocalDb(get(), get()) }
+    single { OperationRunner(get(), get<LocalDb>().blobs) }
+    single {
+        val settings = get<SettingsRepository>()
+        SyncEngine(get(), get(), get(), serverKey = { settings.serverSettings.first().baseUrl })
+    }
+    single<IdFactory> { RandomIds }
+    single(named(SYNC_SCOPE)) { CoroutineScope(SupervisorJob() + Dispatchers.Default) }
+    // Started with the app: it loads the phone's copy and keeps it in step with the server.
+    single(createdAtStart = true) {
+        SyncCoordinator(get(), get(), get(), get(named(SYNC_SCOPE))).also { it.start() }
+    }
     single { GeocodeApi(get()) }
     single { FinanceApi(get()) }
     single { MaterialsApi(get()) }
     single { TasksApi(get()) }
-    single<ObjectsRepository> { ObjectsRepositoryImpl(get(), get(), get()) }
-    single<PhotosRepository> { PhotosRepositoryImpl(get(), get()) }
+    single<ObjectsRepository> { ObjectsRepositoryImpl(get(), get(), get(), Clock.System, get()) }
+    single<PhotosRepository> { PhotosRepositoryImpl(get(), Clock.System, get()) }
     single<ContactsRepository> { ContactsRepositoryImpl(get(), get()) }
     single<PlacesRepository> { PlacesRepositoryImpl(get()) }
     single { PickedPlaceStore() }
@@ -123,3 +148,11 @@ val dataModule: Module = module {
     factory { ObserveObjectSortUseCase(get()) }
     factory { SaveObjectSortUseCase(get()) }
 }
+
+/** A copy of the data that lives as long as the process: the browser's, and the tests'. */
+val memoryStorageModule: Module = module {
+    single<Persistence> { MemoryPersistence() }
+    single<BlobStore> { MemoryBlobStore() }
+}
+
+private const val SYNC_SCOPE = "sync-scope"
