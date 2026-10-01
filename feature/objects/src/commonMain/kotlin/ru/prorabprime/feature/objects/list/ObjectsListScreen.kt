@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -33,7 +32,6 @@ import androidx.compose.material3.LargeFloatingActionButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -55,6 +53,7 @@ import kotlinx.collections.immutable.persistentListOf
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
+import ru.prorabprime.designsystem.components.CompactTextField
 import ru.prorabprime.designsystem.components.EmptyMessage
 import ru.prorabprime.designsystem.components.ErrorMessage
 import ru.prorabprime.designsystem.components.LoadingBox
@@ -198,10 +197,12 @@ internal fun ObjectsListContent(
             )
         },
         floatingActionButton = {
-            // Left: a photo of the object, right: a receipt. The kind is chosen by the button.
-            Row(Modifier.fillMaxWidth().padding(start = Spacing.l), verticalAlignment = Alignment.CenterVertically) {
+            // Side by side under the thumb: a photo of the object, then a receipt. The button sets the kind.
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(Spacing.m),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 CameraButton(onOpenPhotoCamera, ProrabIcons.Camera, Res.string.objectslist_camera_photo)
-                Spacer(Modifier.weight(1f))
                 CameraButton(onOpenReceiptCamera, ProrabIcons.Receipt, Res.string.objectslist_camera_receipt)
             }
         },
@@ -389,12 +390,10 @@ private fun CaptureSheet(
             }
             Text(stringResource(title), style = MaterialTheme.typography.titleMedium)
             // One line: the sheet is for choosing an object, the note is a side thing.
-            OutlinedTextField(
+            CompactTextField(
                 value = capture.note,
                 onValueChange = { onEvent(ObjectsListEvent.CaptureNoteChanged(it.take(PHOTO_NOTE_LIMIT))) },
-                placeholder = { Text(stringResource(Res.string.objectslist_capture_note)) },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
+                placeholder = stringResource(Res.string.objectslist_capture_note),
             )
             // The same two-column tiles as the main screen, so choosing an object needs little scrolling.
             LazyVerticalGrid(
