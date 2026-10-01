@@ -85,6 +85,16 @@ internal sealed interface Operation {
         override val touched get() = listOf(Keys.photo(photoId))
     }
 
+    /** [rotationId] names the file the server makes, so a repeat of a turn it already made changes nothing. */
+    @Serializable
+    data class RotatePhoto(
+        val photoId: String,
+        val quarterTurns: Int,
+        val rotationId: String,
+    ) : Operation {
+        override val touched get() = listOf(Keys.photo(photoId))
+    }
+
     @Serializable
     data class DeletePhoto(
         val id: String,

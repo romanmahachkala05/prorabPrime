@@ -24,6 +24,7 @@ object ApiPaths {
     const val TASKS = "/api/tasks"
     const val TASK = "/api/tasks/{id}"
     const val PHOTO = "/api/photos/{id}"
+    const val PHOTO_ROTATE = "/api/photos/{id}/rotate"
     const val FILE = "/files/{objectId}/{fileName}"
 }
 

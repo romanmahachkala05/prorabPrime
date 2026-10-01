@@ -174,4 +174,4 @@ internal fun ObjectDetails.toUi() = ObjectDetailsUi(
 )
 
 private fun Photo.toUi(coverPhotoId: PhotoId?) =
-    PhotoUi(id.value, thumbPath, isCover = id == coverPhotoId, isPending = isPending)
+    PhotoUi(id.value, thumbPath, isCover = id == coverPhotoId, isPending = isPending, quarterTurns = quarterTurns)

@@ -82,6 +82,7 @@
     <!-- photoviewer -->
     <string name="photoviewer_back">Назад</string>
     <string name="photoviewer_position">%1$d из %2$d</string>
+    <string name="photoviewer_rotate">Повернуть</string>
 
     <!-- objectedit -->
     <string name="objectedit_title_new">Новый объект</string>

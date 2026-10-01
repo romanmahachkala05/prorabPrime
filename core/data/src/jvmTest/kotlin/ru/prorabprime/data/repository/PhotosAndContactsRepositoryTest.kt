@@ -75,6 +75,47 @@ class PhotosAndContactsRepositoryTest {
     }
 
     @Test
+    fun `a turned picture shows turned at once, and the server's own turn replaces it`() = runTest {
+        val server = phone.server
+        val photoId = "22222222-2222-2222-2222-222222222222"
+        val dto = PhotoDto(photoId, "/files/o/p.jpg", "/files/o/p_thumb.jpg", 800, 600, server.at)
+        server.details = server.details.copy(photos = listOf(dto))
+        server.objects = listOf(server.details)
+        synced()
+        server.offline = true
+
+        phone.photos.rotate(PhotoId(photoId)).getOrThrow()
+        phone.photos.rotate(PhotoId(photoId)).getOrThrow()
+
+        val waiting = phone.objects.observeObject(objectId).first().getOrThrow().photos.single()
+        assertThat(waiting.quarterTurns).isEqualTo(2)
+        val queued = phone.db.outbox.snapshot().map { it.operation }.filterIsInstance<Operation.RotatePhoto>()
+        assertThat(queued.map { it.quarterTurns }).containsExactly(1, 1)
+        assertThat(queued.map { it.rotationId }.toSet()).hasSize(2)
+
+        server.offline = false
+        server.afterWrite = {
+            val turned = dto.copy(url = "/files/o/turned.jpg", thumbUrl = "/files/o/turned_thumb.jpg")
+            server.details = server.details.copy(photos = listOf(turned), updatedAt = server.later)
+            server.objects = listOf(server.details)
+        }
+        phone.engine.sync()
+
+        assertThat(server.writes.map { it.url.encodedPath }).contains("/api/photos/$photoId/rotate")
+        assertThat(phone.db.outbox.snapshot()).isEmpty()
+        val shown = phone.objects.observeObject(objectId).first().getOrThrow().photos.single()
+        assertThat(shown.quarterTurns).isEqualTo(0)
+        assertThat(shown.path.value).isEqualTo("/files/o/turned.jpg")
+    }
+
+    @Test
+    fun `turning a picture that is not on the phone is not found`() = runTest {
+        synced()
+
+        assertThat(phone.photos.rotate(PhotoId("nope")).isFailure).isTrue()
+    }
+
+    @Test
     fun `deleting a picture that never left the phone sends nothing and drops the file`() = runTest {
         synced().server.offline = true
         val photo = phone.photos.upload(objectId, shot, AttachmentKind.PHOTO).getOrThrow()

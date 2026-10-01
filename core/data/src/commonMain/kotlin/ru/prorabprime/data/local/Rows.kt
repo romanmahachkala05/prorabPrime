@@ -57,6 +57,8 @@ internal data class PhotoRow(
     val url: String? = null,
     val thumbUrl: String? = null,
     val localBlob: String? = null,
+    /** Clockwise quarter turns asked for on the phone and not yet made by the server (0 to 3). */
+    val quarterTurns: Int = 0,
 )
 
 @Serializable

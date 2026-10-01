@@ -241,6 +241,13 @@ internal class PhotosRepositoryImpl(
         return Result.success(Unit)
     }
 
+    override suspend fun rotate(id: PhotoId): Result<Unit> {
+        val row = db.photos.rows.value[id.value] ?: return AppError.NotFound.asFailure()
+        db.outbox.enqueue(Operation.RotatePhoto(id.value, quarterTurns = 1, rotationId = ids.next()))
+        db.photos.upsert(row.copy(quarterTurns = (row.quarterTurns + 1) % FULL_TURN))
+        return Result.success(Unit)
+    }
+
     override suspend fun setCover(objectId: ObjectId, photoId: PhotoId): Result<Unit> {
         val obj = db.objects.rows.value[objectId.value] ?: return AppError.NotFound.asFailure()
         db.outbox.enqueue(Operation.SetCover(objectId.value, photoId.value))
@@ -297,3 +304,5 @@ internal class ContactsRepositoryImpl(
 
     private fun ContactDraft.toDto(id: String) = ContactDto(id, name, phone, role.toDto())
 }
+
+private const val FULL_TURN = 4

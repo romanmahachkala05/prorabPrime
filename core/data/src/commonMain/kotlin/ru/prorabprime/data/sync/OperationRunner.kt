@@ -15,27 +15,52 @@ internal class OperationRunner(
     @Suppress("CyclomaticComplexMethod") // One branch per kind of change, each a single call.
     suspend fun run(operation: Operation): Result<Unit> = when (operation) {
         is Operation.CreateObject -> remote.createObject(operation.request)
+
         is Operation.UpdateObject -> remote.updateObject(operation.id, operation.request)
+
         is Operation.DeleteObject -> remote.deleteObject(operation.id).goneIsDone()
+
         is Operation.SetCover -> remote.setCover(operation.objectId, operation.photoId)
+
         is Operation.UploadPhoto -> upload(operation)
+
+        is Operation.RotatePhoto ->
+            remote.rotatePhoto(operation.photoId, operation.quarterTurns, operation.rotationId).goneIsDone()
+
         is Operation.DeletePhoto -> remote.deletePhoto(operation.id).goneIsDone()
+
         is Operation.CreateContact -> remote.createContact(operation.objectId, operation.request)
+
         is Operation.UpdateContact -> remote.updateContact(operation.id, operation.request)
+
         is Operation.DeleteContact -> remote.deleteContact(operation.id).goneIsDone()
+
         is Operation.SetTerms -> remote.setTerms(operation.objectId, operation.terms)
+
         is Operation.CreatePayment -> remote.createPayment(operation.objectId, operation.request)
+
         is Operation.UpdatePayment -> remote.updatePayment(operation.id, operation.request)
+
         is Operation.DeletePayment -> remote.deletePayment(operation.id).goneIsDone()
+
         is Operation.CreateExtraWork -> remote.createExtraWork(operation.objectId, operation.request)
+
         is Operation.UpdateExtraWork -> remote.updateExtraWork(operation.id, operation.request)
+
         is Operation.DeleteExtraWork -> remote.deleteExtraWork(operation.id).goneIsDone()
+
         is Operation.CreateMaterial -> remote.createMaterial(operation.objectId, operation.request)
+
         is Operation.UpdateMaterial -> remote.updateMaterial(operation.id, operation.request)
+
         is Operation.DeleteMaterial -> remote.deleteMaterial(operation.id).goneIsDone()
+
         is Operation.AddDefaultMaterials -> remote.addDefaultMaterials(operation.objectId)
+
         is Operation.CreateTask -> remote.createTask(operation.request)
+
         is Operation.UpdateTask -> remote.updateTask(operation.id, operation.request)
+
         is Operation.DeleteTask -> remote.deleteTask(operation.id).goneIsDone()
     }
 

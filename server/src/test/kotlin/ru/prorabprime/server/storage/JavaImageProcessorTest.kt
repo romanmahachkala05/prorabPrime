@@ -4,6 +4,7 @@ import com.google.common.truth.Truth.assertThat
 import java.awt.Color
 import java.awt.image.BufferedImage
 import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import javax.imageio.ImageIO
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
@@ -42,6 +43,39 @@ class JavaImageProcessorTest {
         val thumbnail = decode(image.thumbnail)
         assertThat(thumbnail.width to thumbnail.height).isEqualTo(20 to 40)
     }
+
+    @Test
+    fun `rotating turns a picture clockwise and swaps its sides`() = runTest {
+        // Red left half, blue right half; wide blocks, so JPEG does not blur the middle of each.
+        val source = BufferedImage(32, 16, BufferedImage.TYPE_INT_RGB).apply {
+            for (x in 0 until 32) for (y in 0 until 16) setRGB(x, y, (if (x < 16) Color.RED else Color.BLUE).rgb)
+        }
+        val bytes = ByteArrayOutputStream().also { ImageIO.write(source, "png", it) }.toByteArray()
+
+        val turned = decode(processor.rotate(bytes, 1).getOrThrow())
+
+        assertThat(turned.width to turned.height).isEqualTo(16 to 32)
+        // Clockwise: the left half goes to the top.
+        assertThat(isNear(Color(turned.getRGB(8, 8)), Color.RED)).isTrue()
+        assertThat(isNear(Color(turned.getRGB(8, 24)), Color.BLUE)).isTrue()
+    }
+
+    @Test
+    fun `rotating a sideways EXIF picture turns it from upright`() = runTest {
+        val turned = decode(processor.rotate(TestImages.jpeg(40, 20, orientation = 6), 1).getOrThrow())
+
+        assertThat(turned.width to turned.height).isEqualTo(40 to 20)
+    }
+
+    @Test
+    fun `rotating something that is not an image fails`() = runTest {
+        assertThat(processor.rotate(byteArrayOf(1, 2, 3), 1).exceptionOrNull())
+            .isInstanceOf(ServiceException::class.java)
+    }
+
+    private fun isNear(actual: Color, expected: Color) =
+        listOf(actual.red - expected.red, actual.green - expected.green, actual.blue - expected.blue)
+            .all { kotlin.math.abs(it) < 60 }
 
     @Test
     fun `a transparent PNG becomes a JPEG thumbnail`() = runTest {

@@ -31,6 +31,7 @@ import ru.prorabprime.contract.ObjectRequestDto
 import ru.prorabprime.contract.ObjectSummaryDto
 import ru.prorabprime.contract.PaymentRequestDto
 import ru.prorabprime.contract.PaymentRevisionDto
+import ru.prorabprime.contract.RotatePhotoRequestDto
 import ru.prorabprime.contract.SetCoverRequestDto
 import ru.prorabprime.contract.TaskDto
 import ru.prorabprime.contract.TaskRequestDto
@@ -107,6 +108,12 @@ internal class RemoteApi(
             },
         )
     }.map { }
+
+    suspend fun rotatePhoto(
+        id: String,
+        quarterTurns: Int,
+        rotationId: String,
+    ): Result<Unit> = post(url(ApiPaths.PHOTO_ROTATE, id), RotatePhotoRequestDto(quarterTurns, rotationId))
 
     suspend fun deletePhoto(id: String): Result<Unit> = delete(url(ApiPaths.PHOTO, id))
 

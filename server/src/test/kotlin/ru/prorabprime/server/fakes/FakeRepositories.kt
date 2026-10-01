@@ -122,6 +122,10 @@ class FakePhotoRepository : PhotoRepository {
 
     override suspend fun delete(id: UUID): Boolean = records.remove(id) != null
 
+    override suspend fun replaceFiles(photo: PhotoRecord) {
+        records[photo.id] = photo
+    }
+
     override suspend fun nextSortOrder(objectId: UUID): Int =
         (records.values.filter { it.objectId == objectId }.maxOfOrNull { it.sortOrder } ?: 0) + 1
 }

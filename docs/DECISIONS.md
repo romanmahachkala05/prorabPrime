@@ -36,6 +36,7 @@ entries below are the points where this project departs from it or goes beyond i
 | [0015](#adr-0015) | Reminders are alarm-clock alarms, remembered for a reboot | Accepted |
 | [0016](#adr-0016) | The web client is the same UI as Kotlin/Wasm, served by the server | Accepted, **amends** 0004 |
 | [0017](#adr-0017) | The phone keeps its own copy of the data and a queue of changes; screens never wait for the network | Accepted, **amends** 0003 |
+| [0018](#adr-0018) | A photo is turned by the server, which makes new files named by the client | Accepted |
 
 ---
 
@@ -603,3 +604,31 @@ after the next sync. Two phones editing one record, offline, will let the later 
 **Review when:** a second person works in the same data, the data grows beyond what is comfortable to
 read whole, or the web client must be usable offline.
 
+## ADR-0018
+
+### A photo is turned by the server, which makes new files named by the client
+
+**Accepted** · 2026-10-01
+
+**Context.** A picture can come out sideways whatever the phone's EXIF says, and the foreman needs to
+set it right on the spot, offline as well as on. File names are never reused and are cached for good
+(`immutable`), so a file changed in place would stay wrong in every cache.
+
+**Decision.** `POST /api/photos/{id}/rotate` takes the quarter turns (1 to 3, clockwise) and a
+`rotationId` the client chose. The server turns the stored picture, writes it and a new thumbnail as
+`{rotationId}.jpg` and `{rotationId}_thumb.jpg`, points the row at them, and only then removes the old
+files. A request whose `rotationId` already names the photo's file changes nothing, so a turn sent
+twice (the answer was lost) is turned once. On the phone a turn is a queued change like any other, and
+the picture is shown turned by the turns still waiting; the server's own copy replaces that after the sync.
+
+**Alternatives rejected.**
+- *Turning on the phone and re-uploading.* A new id and position for the picture, and a lost cover.
+- *Writing the turned file under the old name.* Every cache would keep the old picture.
+- *Storing a rotation on the row and turning at display.* Every client would have to honor it, and the
+  stored file would stay the wrong way round for anything else that reads it.
+
+**Consequences.** A turned picture is re-encoded as JPEG (quality 92), so a PNG or WebP becomes a JPEG
+and one more generation of loss is added per turn. Each turn on the phone is its own queued change.
+
+**Review when:** pictures are turned often enough for the re-encoding loss to show, or the server no
+longer owns the files.

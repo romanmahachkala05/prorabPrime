@@ -97,6 +97,17 @@ data class SetCoverRequestDto(
     val photoId: String,
 )
 
+/**
+ * Body of `POST /api/photos/{id}/rotate`. [rotationId] (a UUID the client picks) names the file the
+ * turn produces, so a retry of a turn the server already made changes nothing.
+ */
+@Serializable
+data class RotatePhotoRequestDto(
+    /** Clockwise, 1 to 3. */
+    val quarterTurns: Int,
+    val rotationId: String,
+)
+
 @Serializable
 data class HealthDto(
     val status: String,

@@ -30,6 +30,8 @@ class FakeFileStorage : FileStorage {
         files["$objectId/$fileName"] = bytes
     }
 
+    override suspend fun read(objectId: UUID, fileName: String): ByteArray? = files["$objectId/$fileName"]
+
     override suspend fun delete(objectId: UUID, fileName: String): Boolean {
         if (failDeletes) throw IOException("permission denied")
         return files.remove("$objectId/$fileName") != null
@@ -55,5 +57,19 @@ class FakeImageProcessor : ImageProcessor {
         ServiceError.UnsupportedMedia("not an image").asFailure()
     } else {
         Result.success(ProcessedImage(ImageFormat.JPEG, 4000, 3000, byteArrayOf(1, 2, 3)))
+    }
+
+    /** Remembers the turns it was asked for and returns the bytes with a marker byte per turn appended. */
+    val turned = mutableListOf<Int>()
+
+    override suspend fun rotate(bytes: ByteArray, quarterTurns: Int): Result<ByteArray> = if (reject) {
+        ServiceError.UnsupportedMedia("not an image").asFailure()
+    } else {
+        turned += quarterTurns
+        Result.success(bytes + ByteArray(quarterTurns) { ROTATED_MARK })
+    }
+
+    companion object {
+        const val ROTATED_MARK: Byte = 9
     }
 }

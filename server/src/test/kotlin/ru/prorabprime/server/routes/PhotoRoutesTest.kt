@@ -8,6 +8,7 @@ import io.ktor.client.request.delete
 import io.ktor.client.request.forms.formData
 import io.ktor.client.request.forms.submitFormWithBinaryData
 import io.ktor.client.request.get
+import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
@@ -31,6 +32,7 @@ import ru.prorabprime.contract.ObjectDetailsDto
 import ru.prorabprime.contract.ObjectStatusDto
 import ru.prorabprime.contract.PhotoDto
 import ru.prorabprime.contract.PhotoLimits
+import ru.prorabprime.contract.RotatePhotoRequestDto
 import ru.prorabprime.contract.SetCoverRequestDto
 import ru.prorabprime.server.TEST_TOKEN
 import ru.prorabprime.server.db.Transactor
@@ -183,6 +185,41 @@ class PhotoRoutesTest {
 
         assertThat(response.status).isEqualTo(HttpStatusCode.NoContent)
         assertThat(client.details().coverPhotoId).isEqualTo(second.id)
+    }
+
+    @Test
+    fun `rotating answers the photo with new files, and the same rotation again answers the same`() = server { client ->
+        val photo = client.upload(TestImages.jpeg(40, 20)).body<PhotoDto>()
+        val rotation = UUID.randomUUID().toString()
+
+        suspend fun rotate() = client.post("/api/photos/${photo.id}/rotate") {
+            bearerAuth(TEST_TOKEN)
+            contentType(ContentType.Application.Json)
+            setBody(RotatePhotoRequestDto(quarterTurns = 1, rotationId = rotation))
+        }
+
+        val first = rotate()
+        val turned = first.body<PhotoDto>()
+        val again = rotate().body<PhotoDto>()
+
+        assertThat(first.status).isEqualTo(HttpStatusCode.OK)
+        assertThat(turned.url).isNotEqualTo(photo.url)
+        assertThat(turned.url).contains(rotation)
+        assertThat(turned.width to turned.height).isEqualTo(20 to 40)
+        assertThat(again).isEqualTo(turned)
+    }
+
+    @Test
+    fun `rotating with a rotation id that is not a UUID is 400`() = server { client ->
+        val photo = client.upload(TestImages.jpeg(10, 10)).body<PhotoDto>()
+
+        val response = client.post("/api/photos/${photo.id}/rotate") {
+            bearerAuth(TEST_TOKEN)
+            contentType(ContentType.Application.Json)
+            setBody(RotatePhotoRequestDto(quarterTurns = 1, rotationId = "nope"))
+        }
+
+        assertThat(response.status).isEqualTo(HttpStatusCode.BadRequest)
     }
 
     @Test
