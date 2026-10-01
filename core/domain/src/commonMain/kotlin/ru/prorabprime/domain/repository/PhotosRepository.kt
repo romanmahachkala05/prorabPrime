@@ -5,6 +5,7 @@ import ru.prorabprime.domain.model.CompressedImage
 import ru.prorabprime.domain.model.ObjectId
 import ru.prorabprime.domain.model.Photo
 import ru.prorabprime.domain.model.PhotoId
+import ru.prorabprime.domain.model.ReceiptInfo
 
 /** Photo writes. Each one makes [ObjectsRepository]'s observed flows reload. */
 interface PhotosRepository {
@@ -16,6 +17,9 @@ interface PhotosRepository {
     ): Result<Photo>
 
     suspend fun delete(id: PhotoId): Result<Unit>
+
+    /** Sets the sum and day of a receipt by hand; null clears them. A photo that is not a receipt is refused. */
+    suspend fun setReceipt(id: PhotoId, receipt: ReceiptInfo?): Result<Unit>
 
     /** An empty note clears it. */
     suspend fun setNote(id: PhotoId, note: String?): Result<Unit>

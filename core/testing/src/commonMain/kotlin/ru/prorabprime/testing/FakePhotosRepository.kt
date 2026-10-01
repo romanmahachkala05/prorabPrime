@@ -6,6 +6,7 @@ import ru.prorabprime.domain.model.CompressedImage
 import ru.prorabprime.domain.model.ObjectId
 import ru.prorabprime.domain.model.Photo
 import ru.prorabprime.domain.model.PhotoId
+import ru.prorabprime.domain.model.ReceiptInfo
 import ru.prorabprime.domain.model.asFailure
 import ru.prorabprime.domain.repository.PhotosRepository
 
@@ -17,6 +18,7 @@ class FakePhotosRepository : PhotosRepository {
     val uploaded = mutableListOf<Pair<ObjectId, CompressedImage>>()
     val uploadedKinds = mutableListOf<AttachmentKind>()
     val uploadedNotes = mutableListOf<String?>()
+    val receipts = mutableListOf<Pair<PhotoId, ReceiptInfo?>>()
     val notes = mutableListOf<Pair<PhotoId, String?>>()
     val deleted = mutableListOf<PhotoId>()
     val rotated = mutableListOf<PhotoId>()
@@ -38,6 +40,12 @@ class FakePhotosRepository : PhotosRepository {
     override suspend fun delete(id: PhotoId): Result<Unit> {
         error?.let { return it.asFailure() }
         deleted += id
+        return Result.success(Unit)
+    }
+
+    override suspend fun setReceipt(id: PhotoId, receipt: ReceiptInfo?): Result<Unit> {
+        error?.let { return it.asFailure() }
+        receipts += id to receipt
         return Result.success(Unit)
     }
 
