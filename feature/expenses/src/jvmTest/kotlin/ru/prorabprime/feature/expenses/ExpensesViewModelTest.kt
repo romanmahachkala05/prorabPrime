@@ -13,7 +13,16 @@ import ru.prorabprime.domain.model.ObjectId
 import ru.prorabprime.domain.model.PhotoId
 import ru.prorabprime.domain.model.asFailure
 import ru.prorabprime.domain.usecase.ObserveExpensesUseCase
+import ru.prorabprime.domain.usecase.ObserveObjectsUseCase
+import ru.prorabprime.domain.usecase.SavePaymentUseCase
+import ru.prorabprime.domain.usecase.SetReceiptUseCase
+import ru.prorabprime.domain.usecase.UploadPhotoUseCase
 import ru.prorabprime.testing.FakeExpensesRepository
+import ru.prorabprime.testing.FakeFinanceRepository
+import ru.prorabprime.testing.FakeImageCompressor
+import ru.prorabprime.testing.FakeObjectsRepository
+import ru.prorabprime.testing.FakePhotosRepository
+import ru.prorabprime.testing.FakeSnackbarNotifier
 import ru.prorabprime.testing.MainDispatcherRule
 
 class ExpensesViewModelTest {
@@ -22,9 +31,22 @@ class ExpensesViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val repository = FakeExpensesRepository()
+    private val objects = FakeObjectsRepository()
+    private val finance = FakeFinanceRepository()
+    private val photos = FakePhotosRepository()
+    private val notifier = FakeSnackbarNotifier()
     private val today = LocalDay.of(2026, 10, 15)
 
-    private fun viewModel() = ExpensesViewModel(ObserveExpensesUseCase(repository)) { today }
+    private fun viewModel() = ExpensesViewModel(
+        ExpensesActions(
+            observeExpenses = ObserveExpensesUseCase(repository),
+            observeObjects = ObserveObjectsUseCase(objects),
+            savePayment = SavePaymentUseCase(finance),
+            uploadPhoto = UploadPhotoUseCase(FakeImageCompressor(), photos),
+            setReceipt = SetReceiptUseCase(photos),
+        ),
+        notifier,
+    ) { today }
 
     private fun receipt(
         id: String,
@@ -98,14 +120,14 @@ class ExpensesViewModelTest {
         repository.result.value = Result.success(Expenses(items))
         val viewModel = viewModel()
 
-        viewModel.selectFilter(ExpenseFilter.CREW)
+        viewModel.onEvent(ExpensesEvent.FilterSelected(ExpenseFilter.CREW))
 
         val state = viewModel.state.value
         assertThat(state.rows.map { it.id }).containsExactly("c1")
         assertThat(state.summary.total).isEqualTo(Money.format(60_000_000))
         assertThat(state.filter).isEqualTo(ExpenseFilter.CREW)
 
-        viewModel.selectFilter(ExpenseFilter.MATERIALS)
+        viewModel.onEvent(ExpensesEvent.FilterSelected(ExpenseFilter.MATERIALS))
         assertThat(viewModel.state.value.rows.map { it.id }).containsExactly("r1", "r2", "r3")
     }
 
@@ -113,7 +135,7 @@ class ExpensesViewModelTest {
     fun `a new reading keeps the filter`() {
         val viewModel = viewModel()
         repository.result.value = Result.success(Expenses(items))
-        viewModel.selectFilter(ExpenseFilter.CREW)
+        viewModel.onEvent(ExpensesEvent.FilterSelected(ExpenseFilter.CREW))
 
         repository.result.value = Result.success(Expenses(items + crew("c2", "1", today, 100_000)))
 

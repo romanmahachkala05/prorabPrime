@@ -13,11 +13,14 @@ import com.google.common.truth.Truth.assertThat
 import kotlinx.collections.immutable.persistentListOf
 import org.junit.Test
 import ru.prorabprime.designsystem.theme.ProrabTheme
+import ru.prorabprime.domain.model.ExpenseKind
+import ru.prorabprime.domain.model.LocalDay
+import ru.prorabprime.domain.model.PaymentMethod
 
 @OptIn(ExperimentalTestApi::class)
 class ExpensesContentTest {
 
-    private val filters = mutableListOf<ExpenseFilter>()
+    private val events = mutableListOf<ExpensesEvent>()
     private val receipts = mutableListOf<Pair<String, String>>()
     private val objects = mutableListOf<String>()
     private var backed = 0
@@ -40,7 +43,7 @@ class ExpensesContentTest {
         ProrabTheme {
             ExpensesContent(
                 state = state,
-                onFilter = { filters += it },
+                onEvent = { events += it },
                 onOpenReceipt = { objectId, photoId -> receipts += objectId to photoId },
                 onOpenObject = { objects += it },
                 onBack = { backed++ },
@@ -83,7 +86,7 @@ class ExpensesContentTest {
 
         onNode(hasText("Бригада") and hasClickAction()).performClick()
 
-        assertThat(filters).contains(ExpenseFilter.CREW)
+        assertThat(events).contains(ExpensesEvent.FilterSelected(ExpenseFilter.CREW))
     }
 
     @Test
@@ -93,5 +96,49 @@ class ExpensesContentTest {
         onNodeWithText("Расходов пока нет", substring = true).assertIsDisplayed()
         onNodeWithContentDescription("Назад").performClick()
         assertThat(backed).isEqualTo(1)
+    }
+
+    @Test
+    fun `the plus button asks for the form, also when nothing is spent yet`() = runComposeUiTest {
+        setContent { show(ExpensesState(status = ExpensesStatus.Content)) }
+
+        onNodeWithContentDescription("Добавить расход").performClick()
+
+        assertThat(events).containsExactly(ExpensesEvent.AddClicked)
+    }
+
+    @Test
+    fun `the form for a payment offers the objects and its fields, and sends what is done in it`() = runComposeUiTest {
+        val form = NewExpenseUi(day = LocalDay.of(2026, 10, 15), needsObject = true)
+        val choices = persistentListOf(ObjectChoiceUi("o1", "Дача"))
+        setContent { show(state.copy(form = form, objects = choices)) }
+
+        onNodeWithText("Новый расход").assertIsDisplayed()
+        onNodeWithText("Выберите объект").assertIsDisplayed()
+        onNodeWithText("15.10.2026").assertIsDisplayed()
+        onNodeWithText("Выбрать объект").performClick()
+        onNodeWithText("Дача").performClick()
+        onNodeWithText("Наличные").assertIsDisplayed()
+        onNodeWithText("Перевод").performClick()
+        onNodeWithText("Сохранить").performClick()
+
+        assertThat(events).containsExactly(
+            ExpenseFormEvent.ObjectChosen("o1"),
+            ExpenseFormEvent.MethodChanged(PaymentMethod.TRANSFER),
+            ExpenseFormEvent.Save,
+        ).inOrder()
+    }
+
+    @Test
+    fun `the form for a receipt asks for a picture instead of a way of payment`() = runComposeUiTest {
+        val form = NewExpenseUi(day = LocalDay.of(2026, 10, 15), kind = ExpenseKind.RECEIPT, needsPicture = true)
+        setContent { show(state.copy(form = form)) }
+
+        onNodeWithText("Выбрать фото чека").assertIsDisplayed()
+        onNodeWithText("Выберите фото чека").assertIsDisplayed()
+        onNodeWithText("Наличные").assertDoesNotExist()
+        onNodeWithText("Выплата бригаде").performClick()
+
+        assertThat(events).containsExactly(ExpenseFormEvent.KindChanged(ExpenseKind.CREW))
     }
 }
