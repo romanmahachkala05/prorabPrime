@@ -121,7 +121,11 @@ internal fun ExtraWorksSection(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Text(stringResource(Res.string.finance_extras), style = MaterialTheme.typography.titleMedium)
             IconButton(onClick = onAdd) {
                 Icon(Icons.Default.Add, stringResource(Res.string.finance_add_extra))
