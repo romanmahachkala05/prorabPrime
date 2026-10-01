@@ -86,6 +86,7 @@ import ru.prorabprime.feature.objects.resources.objectslist_sort_address_asc
 import ru.prorabprime.feature.objects.resources.objectslist_sort_address_desc
 import ru.prorabprime.feature.objects.resources.objectslist_sort_created
 import ru.prorabprime.feature.objects.resources.objectslist_sort_updated
+import ru.prorabprime.feature.objects.resources.objectslist_tasks
 import ru.prorabprime.feature.objects.resources.objectslist_title
 import ru.prorabprime.ui.UiText
 
@@ -95,9 +96,10 @@ fun ObjectsListScreen(
     onCreateObject: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenMap: () -> Unit,
+    onOpenTasks: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    ObjectsListScreen(onOpenObject, onCreateObject, onOpenSettings, onOpenMap, modifier, koinViewModel())
+    ObjectsListScreen(onOpenObject, onCreateObject, onOpenSettings, onOpenMap, onOpenTasks, modifier, koinViewModel())
 }
 
 @Composable
@@ -106,6 +108,7 @@ private fun ObjectsListScreen(
     onCreateObject: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenMap: () -> Unit,
+    onOpenTasks: () -> Unit,
     modifier: Modifier,
     viewModel: ObjectsListViewModel,
 ) {
@@ -118,6 +121,7 @@ private fun ObjectsListScreen(
         onCreateObject = onCreateObject,
         onOpenSettings = onOpenSettings,
         onOpenMap = onOpenMap,
+        onOpenTasks = onOpenTasks,
         onOpenCamera = camera::takePhoto,
         modifier = modifier,
     )
@@ -134,6 +138,7 @@ internal fun ObjectsListContent(
     modifier: Modifier = Modifier,
     onOpenCamera: () -> Unit = {},
     onOpenMap: () -> Unit = {},
+    onOpenTasks: () -> Unit = {},
 ) {
     Scaffold(
         modifier = modifier,
@@ -141,6 +146,9 @@ internal fun ObjectsListContent(
             TopAppBar(
                 title = { Text(stringResource(Res.string.objectslist_title)) },
                 actions = {
+                    IconButton(onClick = onOpenTasks) {
+                        Icon(ProrabIcons.Tasks, contentDescription = stringResource(Res.string.objectslist_tasks))
+                    }
                     IconButton(onClick = onOpenMap) {
                         Icon(ProrabIcons.Map, contentDescription = stringResource(Res.string.objectslist_map))
                     }

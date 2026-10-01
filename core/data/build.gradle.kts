@@ -27,6 +27,11 @@ kotlin {
             implementation(libs.androidx.datastore.preferences.core)
         }
 
+        // The reminders: alarm clock, notifications and a place to remember them across a reboot.
+        androidMain.dependencies {
+            implementation(libs.androidx.core.ktx)
+        }
+
         jvmTest.dependencies {
             implementation(project(":core:testing"))
             implementation(libs.junit)

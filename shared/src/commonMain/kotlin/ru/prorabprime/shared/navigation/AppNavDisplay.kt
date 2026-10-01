@@ -34,6 +34,8 @@ import ru.prorabprime.feature.objects.viewer.PhotoViewerNavKey
 import ru.prorabprime.feature.objects.viewer.PhotoViewerScreen
 import ru.prorabprime.feature.settings.SettingsNavKey
 import ru.prorabprime.feature.settings.SettingsScreen
+import ru.prorabprime.feature.tasks.TasksNavKey
+import ru.prorabprime.feature.tasks.TasksScreen
 import ru.prorabprime.ui.SnackbarNotifier
 import ru.prorabprime.ui.load
 
@@ -66,6 +68,7 @@ fun AppNavDisplay(notifier: SnackbarNotifier, modifier: Modifier = Modifier) {
                         onCreateObject = { backStack.add(ObjectEditNavKey()) },
                         onOpenSettings = { backStack.add(SettingsNavKey) },
                         onOpenMap = { backStack.add(MapNavKey) },
+                        onOpenTasks = { backStack.add(TasksNavKey) },
                     )
                 }
                 entry<ObjectDetailsNavKey> { key ->
@@ -82,6 +85,7 @@ fun AppNavDisplay(notifier: SnackbarNotifier, modifier: Modifier = Modifier) {
                 entry<MapNavKey> {
                     MapScreen(onOpenObject = { backStack.add(ObjectDetailsNavKey(it)) }, onBack = { backStack.pop() })
                 }
+                entry<TasksNavKey> { TasksScreen(onBack = { backStack.pop() }) }
                 entry<MaterialsNavKey> { key -> MaterialsScreen(objectId = key.objectId, onBack = { backStack.pop() }) }
                 entry<PhotoViewerNavKey> { key ->
                     PhotoViewerScreen(objectId = key.objectId, photoId = key.photoId, onBack = { backStack.pop() })
@@ -124,6 +128,7 @@ private val NAV_KEYS = SavedStateConfiguration {
             subclass(FinanceNavKey::class, FinanceNavKey.serializer())
             subclass(MaterialsNavKey::class, MaterialsNavKey.serializer())
             subclass(MapNavKey::class, MapNavKey.serializer())
+            subclass(TasksNavKey::class, TasksNavKey.serializer())
         }
     }
 }

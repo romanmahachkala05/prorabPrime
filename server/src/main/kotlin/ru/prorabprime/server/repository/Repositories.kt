@@ -18,6 +18,9 @@ import ru.prorabprime.server.model.PaymentFields
 import ru.prorabprime.server.model.PaymentRecord
 import ru.prorabprime.server.model.PaymentRevisionRecord
 import ru.prorabprime.server.model.PhotoRecord
+import ru.prorabprime.server.model.TaskFields
+import ru.prorabprime.server.model.TaskQuery
+import ru.prorabprime.server.model.TaskRecord
 
 interface ObjectRepository {
     suspend fun list(query: ObjectListQuery): List<ObjectListItem>
@@ -136,4 +139,19 @@ interface MaterialRepository {
 
     /** One past the object's highest sort order, so a new material goes to the end. */
     suspend fun nextSortOrder(objectId: UUID): Int
+}
+
+interface TaskRepository {
+    /** By day, then by reminder time (tasks without one last), then in the order they were added. */
+    suspend fun list(query: TaskQuery): List<TaskRecord>
+
+    suspend fun find(id: UUID): TaskRecord?
+
+    suspend fun insert(task: TaskRecord)
+
+    /** Returns false when there is no such task. */
+    suspend fun update(id: UUID, fields: TaskFields): Boolean
+
+    /** Returns false when there is no such task. */
+    suspend fun delete(id: UUID): Boolean
 }

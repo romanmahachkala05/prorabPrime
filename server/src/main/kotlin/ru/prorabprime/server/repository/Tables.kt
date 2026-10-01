@@ -110,3 +110,14 @@ object MaterialsTable : Table("materials") {
 
     override val primaryKey = PrimaryKey(id)
 }
+
+object TasksTable : Table("tasks") {
+    val id = javaUUID("id")
+    val title = varchar("title", 300)
+    val day = date("day")
+    val remindAtMinutes = integer("remind_at_minutes").nullable()
+    val done = bool("done")
+    val createdAt = timestamp("created_at")
+
+    override val primaryKey = PrimaryKey(id)
+}

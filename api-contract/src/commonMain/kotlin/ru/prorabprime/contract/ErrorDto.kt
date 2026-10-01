@@ -44,6 +44,9 @@ enum class ObjectFieldDto {
     WORK_AMOUNT,
     TOTAL_AMOUNT,
     MATERIAL_TITLE,
+    TASK_TITLE,
+    TASK_DAY,
+    TASK_TIME,
 }
 
 @Serializable

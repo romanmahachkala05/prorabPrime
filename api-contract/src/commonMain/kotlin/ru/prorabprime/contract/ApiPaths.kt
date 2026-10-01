@@ -20,6 +20,8 @@ object ApiPaths {
     const val OBJECT_MATERIALS = "/api/objects/{id}/materials"
     const val OBJECT_MATERIAL_DEFAULTS = "/api/objects/{id}/materials/defaults"
     const val MATERIAL = "/api/materials/{id}"
+    const val TASKS = "/api/tasks"
+    const val TASK = "/api/tasks/{id}"
     const val PHOTO = "/api/photos/{id}"
     const val FILE = "/files/{objectId}/{fileName}"
 }
@@ -35,6 +37,11 @@ object ApiQuery {
     const val SORT = "sort"
     const val ORDER = "order"
     const val KIND = "kind"
+
+    /** Tasks: the first and last day wanted (inclusive, `yyyy-MM-dd`), and `true` to leave out the done ones. */
+    const val FROM = "from"
+    const val TO = "to"
+    const val OPEN_ONLY = "open"
 }
 
 object ApiMultipart {

@@ -31,3 +31,8 @@ value class ExtraWorkId(
 value class MaterialId(
     val value: String,
 )
+
+@JvmInline
+value class TaskId(
+    val value: String,
+)

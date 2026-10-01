@@ -39,11 +39,11 @@ object TestPostgres {
         assumeTrue("Neither Docker nor embedded PostgreSQL is available: skipping", database != null)
     }
 
-    /** A migrated database with every table emptied. */
+    /** A migrated database with every table emptied: those of objects by cascade, the rest by name. */
     fun freshDataSource(): HikariDataSource {
         val dataSource = createDataSource(checkNotNull(database))
         migrate(dataSource)
-        dataSource.connection.use { it.createStatement().execute("TRUNCATE objects, photos CASCADE") }
+        dataSource.connection.use { it.createStatement().execute("TRUNCATE objects, photos, tasks CASCADE") }
         return dataSource
     }
 }

@@ -29,6 +29,7 @@ import ru.prorabprime.server.routes.healthRoutes
 import ru.prorabprime.server.routes.materialRoutes
 import ru.prorabprime.server.routes.objectRoutes
 import ru.prorabprime.server.routes.photoRoutes
+import ru.prorabprime.server.routes.taskRoutes
 
 /** Wire format shared by every route. Unknown fields are ignored so older clients keep working. */
 val ApiJson = Json {
@@ -70,6 +71,7 @@ fun Application.configure(config: AppConfig, koinModules: List<Module>) {
             contactRoutes()
             financeRoutes()
             materialRoutes()
+            taskRoutes()
             fileRoutes()
         }
     }

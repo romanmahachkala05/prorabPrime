@@ -219,6 +219,17 @@ class MigrationTest {
     }
 
     @Test
+    fun `a task is open by default and its time is a minute of the day`() {
+        sql("INSERT INTO tasks (id, title, day, created_at) VALUES ('${UUID.randomUUID()}', 'x', '2026-09-25', now())")
+        assertThat(scalar("SELECT done FROM tasks")).isEqualTo(false)
+        assertThat(scalar("SELECT remind_at_minutes FROM tasks")).isNull()
+
+        sql("UPDATE tasks SET remind_at_minutes = 1439")
+        assertThrows(SQLException::class.java) { sql("UPDATE tasks SET remind_at_minutes = 1440") }
+        assertThrows(SQLException::class.java) { sql("UPDATE tasks SET remind_at_minutes = -1") }
+    }
+
+    @Test
     fun `the executor runs a query in a transaction`() = runTest {
         val executor = DbExecutor(Database.connect(dataSource), Dispatchers.IO)
 

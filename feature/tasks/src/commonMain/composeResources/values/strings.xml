@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tasks_title">Дела на день</string>
+    <string name="tasks_back">Назад</string>
+    <string name="tasks_previous_day">Предыдущий день</string>
+    <string name="tasks_next_day">Следующий день</string>
+    <string name="tasks_today">Сегодня</string>
+    <string name="tasks_tomorrow">Завтра</string>
+    <string name="tasks_yesterday">Вчера</string>
+    <string name="tasks_weekday_1">Пн</string>
+    <string name="tasks_weekday_2">Вт</string>
+    <string name="tasks_weekday_3">Ср</string>
+    <string name="tasks_weekday_4">Чт</string>
+    <string name="tasks_weekday_5">Пт</string>
+    <string name="tasks_weekday_6">Сб</string>
+    <string name="tasks_weekday_7">Вс</string>
+    <string name="tasks_day_title">%1$s, %2$s</string>
+    <string name="tasks_add">Добавить дело</string>
+    <string name="tasks_edit">Дело</string>
+    <string name="tasks_empty">На этот день дел нет</string>
+    <string name="tasks_overdue">Не сделано раньше</string>
+    <string name="tasks_done">Сделано</string>
+    <string name="tasks_mark_done">Отметить сделанным</string>
+    <string name="tasks_mark_open">Вернуть в работу</string>
+    <string name="tasks_title_field">Что сделать *</string>
+    <string name="tasks_day_field">День</string>
+    <string name="tasks_pick_day">Выбрать день</string>
+    <string name="tasks_time_field">Напомнить в</string>
+    <string name="tasks_no_reminder">Без напоминания</string>
+    <string name="tasks_pick_time">Выбрать время</string>
+    <string name="tasks_clear_time">Убрать</string>
+    <string name="tasks_save">Сохранить</string>
+    <string name="tasks_cancel">Отмена</string>
+    <string name="tasks_delete">Удалить</string>
+    <string name="tasks_ok">Готово</string>
+    <string name="tasks_delete_title">Удалить дело?</string>
+    <string name="tasks_delete_message">Дело и его напоминание исчезнут.</string>
+    <string name="tasks_error_required">Обязательное поле</string>
+    <string name="tasks_error_too_long">Слишком длинное значение</string>
+    <string name="tasks_error_invalid">Неверное значение</string>
+</resources>

@@ -23,6 +23,9 @@ import ru.prorabprime.server.model.PaymentFields
 import ru.prorabprime.server.model.PaymentRecord
 import ru.prorabprime.server.model.PaymentRevisionRecord
 import ru.prorabprime.server.model.PhotoRecord
+import ru.prorabprime.server.model.TaskFields
+import ru.prorabprime.server.model.TaskQuery
+import ru.prorabprime.server.model.TaskRecord
 import ru.prorabprime.server.repository.ContactRepository
 import ru.prorabprime.server.repository.ExtraWorkRepository
 import ru.prorabprime.server.repository.FinanceTermsRepository
@@ -30,6 +33,7 @@ import ru.prorabprime.server.repository.MaterialRepository
 import ru.prorabprime.server.repository.ObjectRepository
 import ru.prorabprime.server.repository.PaymentRepository
 import ru.prorabprime.server.repository.PhotoRepository
+import ru.prorabprime.server.repository.TaskRepository
 import ru.prorabprime.server.repository.searchTextOf
 
 val FIXED_NOW: Instant = Instant.parse("2026-09-25T12:00:00Z")
@@ -235,6 +239,35 @@ class FakeMaterialRepository : MaterialRepository {
         (records.values.filter { it.objectId == objectId }.maxOfOrNull { it.sortOrder } ?: 0) + 1
 }
 
+class FakeTaskRepository : TaskRepository {
+
+    val records = linkedMapOf<UUID, TaskRecord>()
+
+    override suspend fun list(query: TaskQuery): List<TaskRecord> = records.values
+        .filter { query.from == null || it.fields.day >= query.from }
+        .filter { query.to == null || it.fields.day <= query.to }
+        .filter { !query.openOnly || !it.fields.done }
+        .sortedWith(
+            compareBy<TaskRecord> { it.fields.day }
+                .thenBy { it.fields.remindAtMinutes ?: Int.MAX_VALUE }
+                .thenBy { it.createdAt },
+        )
+
+    override suspend fun find(id: UUID): TaskRecord? = records[id]
+
+    override suspend fun insert(task: TaskRecord) {
+        records[task.id] = task
+    }
+
+    override suspend fun update(id: UUID, fields: TaskFields): Boolean {
+        val record = records[id] ?: return false
+        records[id] = record.copy(fields = fields)
+        return true
+    }
+
+    override suspend fun delete(id: UUID): Boolean = records.remove(id) != null
+}
+
 /** Runs the block directly; the fakes have no transactions to join. */
 object ImmediateTransactor : Transactor {
     override suspend fun <T> inTransaction(block: suspend () -> T): T = block()
@@ -266,5 +299,6 @@ fun financeFakes(): org.koin.core.module.Module = org.koin.dsl.module {
     single<PaymentRepository> { FakePaymentRepository() }
     single<ExtraWorkRepository> { FakeExtraWorkRepository() }
     single<MaterialRepository> { FakeMaterialRepository() }
+    single<TaskRepository> { FakeTaskRepository() }
     single<ru.prorabprime.server.db.Transactor> { ImmediateTransactor }
 }
