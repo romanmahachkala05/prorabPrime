@@ -3,6 +3,9 @@ package ru.prorabprime.feature.objects.list
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -86,7 +89,7 @@ class ObjectsListContentTest {
     fun `typing sends the search text`() = runComposeUiTest {
         setContent { show(ObjectsListState(status = ObjectsListStatus.Content, items = cards)) }
 
-        onNodeWithText("Поиск по адресу или названию").performTextInput("лен")
+        onNode(hasSetTextAction()).performTextInput("лен")
 
         assertThat(events).containsExactly(ObjectsListEvent.SearchChanged("лен"))
     }
@@ -128,7 +131,8 @@ class ObjectsListContentTest {
 
         onNodeWithText("Куда отправить снимок?").assertIsDisplayed()
         onNodeWithText("Чек").performClick()
-        onNodeWithText("Тверская, 5").performClick()
+        // The same title is on the list behind the sheet; the sheet is the last one.
+        onAllNodesWithText("Кухня").onLast().performClick()
 
         assertThat(events).containsExactly(
             ObjectsListEvent.CaptureKindChanged(AttachmentKind.RECEIPT),

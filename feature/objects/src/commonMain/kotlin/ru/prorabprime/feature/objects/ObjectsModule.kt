@@ -61,6 +61,7 @@ val objectsModule = module {
             observeObject = get(),
             createObject = get(),
             updateObject = get(),
+            pickedPlace = get(),
         )
     }
 }

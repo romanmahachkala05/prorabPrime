@@ -23,8 +23,6 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -39,6 +37,8 @@ import ru.prorabprime.designsystem.components.DialogHost
 import ru.prorabprime.designsystem.components.EmptyMessage
 import ru.prorabprime.designsystem.components.ErrorMessage
 import ru.prorabprime.designsystem.components.LoadingBox
+import ru.prorabprime.designsystem.components.TextButton
+import ru.prorabprime.designsystem.components.TopAppBar
 import ru.prorabprime.designsystem.theme.Spacing
 import ru.prorabprime.feature.tasks.resources.Res
 import ru.prorabprime.feature.tasks.resources.tasks_add
@@ -81,7 +81,11 @@ internal fun TasksContent(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { onEvent(TaskEditorEvent.Add) }) {
+            FloatingActionButton(
+                onClick = { onEvent(TaskEditorEvent.Add) },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+            ) {
                 Icon(Icons.Default.Add, stringResource(Res.string.tasks_add))
             }
         },

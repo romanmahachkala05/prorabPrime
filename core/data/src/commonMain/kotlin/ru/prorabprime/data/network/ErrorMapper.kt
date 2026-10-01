@@ -22,7 +22,7 @@ internal suspend fun <T> apiCall(block: suspend () -> T): Result<T> = try {
     Result.success(block())
 } catch (cancellation: CancellationException) {
     throw cancellation
-} catch (@Suppress("TooGenericExceptionCaught") failure: Exception) {
+} catch (@Suppress("TooGenericExceptionCaught") failure: Throwable) {
     val error = failure.toAppError()
     dataLogWarning("Server call failed as $error", failure)
     error.asFailure()
@@ -34,8 +34,8 @@ internal suspend fun Throwable.toAppError(): AppError = when (this) {
     // Connection refused, unknown host, timeouts, a bad server address.
     is IOException -> AppError.Network
 
-    // Unparseable bodies and anything unforeseen.
-    else -> AppError.Unknown
+    // Unparseable bodies and anything unforeseen; in the browser a failed fetch is a network failure.
+    else -> if (isTransportFailure()) AppError.Network else AppError.Unknown
 }
 
 private suspend fun HttpResponse.toAppError(): AppError = when (status) {

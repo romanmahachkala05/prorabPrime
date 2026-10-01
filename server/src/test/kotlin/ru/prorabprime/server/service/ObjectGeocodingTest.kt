@@ -45,6 +45,36 @@ class ObjectGeocodingTest {
     }
 
     @Test
+    fun `a point picked on the map is kept as it is, without asking the geocoder`() = runTest {
+        service.create(request("Тверская, 5").copy(latitude = 56.0, longitude = 60.0)).getOrThrow()
+
+        assertThat(objects.records.getValue(id).coordinates).isEqualTo(Coordinates(56.0, 60.0))
+        assertThat(geocoder.asked).isEmpty()
+
+        service.update(id, request("Арбат, 3").copy(latitude = 57.0, longitude = 61.0)).getOrThrow()
+        assertThat(objects.records.getValue(id).coordinates).isEqualTo(Coordinates(57.0, 61.0))
+        assertThat(geocoder.asked).isEmpty()
+    }
+
+    @Test
+    fun `half a point or one off the globe is ignored and the address decides`() = runTest {
+        service.create(request("Тверская, 5").copy(latitude = 56.0)).getOrThrow()
+        assertThat(objects.records.getValue(id).coordinates).isEqualTo(Coordinates(55.76, 37.61))
+
+        service.update(id, request("Арбат, 3").copy(latitude = 95.0, longitude = 60.0)).getOrThrow()
+        assertThat(objects.records.getValue(id).coordinates).isEqualTo(Coordinates(55.75, 37.59))
+    }
+
+    @Test
+    fun `saving again with the same address and no point leaves the pin alone`() = runTest {
+        service.create(request("Тверская, 5").copy(latitude = 56.0, longitude = 60.0)).getOrThrow()
+
+        service.update(id, request("Тверская, 5")).getOrThrow()
+
+        assertThat(objects.records.getValue(id).coordinates).isEqualTo(Coordinates(56.0, 60.0))
+    }
+
+    @Test
     fun `an address nobody knows is saved without a pin, not refused`() = runTest {
         val created = service.create(request("Деревня Гадюкино")).getOrThrow()
 

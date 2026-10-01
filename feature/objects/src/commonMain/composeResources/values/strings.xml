@@ -6,7 +6,7 @@
     <string name="objectslist_map">Карта объектов</string>
     <string name="objectslist_settings">Настройки</string>
     <string name="objectslist_add">Добавить объект</string>
-    <string name="objectslist_search">Поиск по адресу или названию</string>
+    <string name="objectslist_search">Адрес или название</string>
     <string name="objectslist_clear_search">Очистить поиск</string>
     <string name="objectslist_sort_address_asc">Адрес А–Я</string>
     <string name="objectslist_sort_address_desc">Адрес Я–А</string>
@@ -90,6 +90,8 @@
     <string name="objectedit_title">Название</string>
     <string name="objectedit_chat_link">Ссылка на чат (Telegram, Max)</string>
     <string name="objectedit_address">Адрес *</string>
+    <string name="objectedit_pick_on_map">Выбрать на карте</string>
+    <string name="objectedit_place_picked">Выбрано на карте</string>
     <string name="objectedit_status">Статус</string>
     <string name="objectedit_client_name">Имя клиента</string>
     <string name="objectedit_client_phone">Телефон клиента</string>
@@ -104,4 +106,7 @@
     <string name="objects_status_in_progress">В работе</string>
     <string name="objects_status_done">Сдан</string>
     <string name="objects_status_paused">На паузе</string>
+    <string name="objectedit_created">Объект создан</string>
+    <string name="objectedit_saved">Изменения сохранены</string>
+    <string name="objectdetails_contact_saved">Контакт сохранён</string>
 </resources>

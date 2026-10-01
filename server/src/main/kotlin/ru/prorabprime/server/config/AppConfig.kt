@@ -1,6 +1,7 @@
 package ru.prorabprime.server.config
 
 import io.ktor.server.config.ApplicationConfig
+import ru.prorabprime.server.model.Coordinates
 
 /** Everything the server reads from `application.conf` and the environment, checked at startup. */
 data class AppConfig(
@@ -9,6 +10,8 @@ data class AppConfig(
     val apiToken: String,
     /** A Nominatim-compatible server that turns addresses into map points; null switches geocoding off. */
     val geocoderUrl: String? = DEFAULT_GEOCODER_URL,
+    /** The point addresses without a city are resolved around; null looks everywhere equally. */
+    val geocoderNear: Coordinates? = DEFAULT_GEOCODER_NEAR,
     /** The built web app to serve at `/`; null serves none. */
     val webDir: String? = null,
 ) {
@@ -32,11 +35,15 @@ data class AppConfig(
                 storageDir = config.required("prorab.storage.dir", "STORAGE_DIR"),
                 apiToken = token,
                 geocoderUrl = geocoderUrl(config),
+                geocoderNear = geocoderNear(config),
                 webDir = config.propertyOrNull("prorab.web.dir")?.getString()?.trim()?.takeIf { it.isNotEmpty() },
             )
         }
 
         const val DEFAULT_GEOCODER_URL = "https://nominatim.openstreetmap.org"
+
+        /** Yekaterinburg: where the first customer works. */
+        val DEFAULT_GEOCODER_NEAR = Coordinates(latitude = 56.8389, longitude = 60.6057)
 
         private const val PLACEHOLDER = "change-me"
         private const val GEOCODER_OFF = "off"
@@ -49,6 +56,17 @@ data class AppConfig(
                 value.equals(GEOCODER_OFF, ignoreCase = true) -> null
                 else -> value
             }
+        }
+
+        /** `lat,lon`; unset means Yekaterinburg and `off` means no preference. */
+        private fun geocoderNear(config: ApplicationConfig): Coordinates? {
+            val value = config.propertyOrNull("prorab.geocoder.near")?.getString()?.trim()
+            if (value.isNullOrEmpty()) return DEFAULT_GEOCODER_NEAR
+            if (value.equals(GEOCODER_OFF, ignoreCase = true)) return null
+            val (latitude, longitude) = value.split(',').map { it.trim().toDoubleOrNull() }
+                .takeIf { it.size == 2 && it.none { number -> number == null } }
+                ?: error("GEOCODER_NEAR must look like 56.84,60.61 (latitude,longitude) or be off")
+            return Coordinates(latitude!!, longitude!!)
         }
 
         private fun ApplicationConfig.required(path: String, variable: String): String =

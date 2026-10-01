@@ -7,10 +7,13 @@ import org.junit.Rule
 import org.junit.Test
 import ru.prorabprime.domain.model.AppError
 import ru.prorabprime.domain.model.FieldProblem
+import ru.prorabprime.domain.model.GeoPoint
 import ru.prorabprime.domain.model.ObjectDraft
 import ru.prorabprime.domain.model.ObjectField
 import ru.prorabprime.domain.model.ObjectId
 import ru.prorabprime.domain.model.ObjectStatus
+import ru.prorabprime.domain.model.PickedPlace
+import ru.prorabprime.domain.model.PickedPlaceStore
 import ru.prorabprime.domain.usecase.CreateObjectUseCase
 import ru.prorabprime.domain.usecase.ObserveObjectUseCase
 import ru.prorabprime.domain.usecase.UpdateObjectUseCase
@@ -28,6 +31,7 @@ class ObjectEditViewModelTest {
     private val objects = FakeObjectsRepository()
     private val notifier = FakeSnackbarNotifier()
     private val savedState = SavedStateHandle()
+    private val pickedPlace = PickedPlaceStore()
 
     private fun viewModel(objectId: String? = null): ObjectEditViewModel {
         val args = ObjectEditArgs(objectId?.let(::ObjectId))
@@ -40,6 +44,7 @@ class ObjectEditViewModelTest {
             observeObject = ObserveObjectUseCase(objects),
             createObject = CreateObjectUseCase(objects),
             updateObject = UpdateObjectUseCase(objects),
+            pickedPlace = pickedPlace,
         )
     }
 
@@ -65,6 +70,47 @@ class ObjectEditViewModelTest {
 
         assertThat(objects.created).containsExactly(ObjectDraft(address = "Тверская, 5", status = ObjectStatus.PLANNED))
         assertThat(vm.state.value.saved).isEqualTo(SaveResult.Created("created-1"))
+    }
+
+    @Test
+    fun `a place picked on the map fills the address and is saved as the object's point`() {
+        val vm = viewModel()
+        vm.type(ObjectField.ADDRESS, "Ленина")
+
+        pickedPlace.put(PickedPlace(GeoPoint(56.84, 60.61), "Екатеринбург, улица Ленина, 5"))
+
+        assertThat(vm.state.value.form.address).isEqualTo("Екатеринбург, улица Ленина, 5")
+        assertThat(vm.state.value.form.point).isEqualTo(GeoPoint(56.84, 60.61))
+        assertThat(pickedPlace.place.value).isNull()
+
+        vm.onEvent(ObjectEditEvent.SaveClicked)
+        assertThat(objects.created.single().point).isEqualTo(GeoPoint(56.84, 60.61))
+    }
+
+    @Test
+    fun `a place without an address keeps what was typed, and typing another address drops the point`() {
+        val vm = viewModel()
+        vm.type(ObjectField.ADDRESS, "Ленина 5")
+
+        pickedPlace.put(PickedPlace(GeoPoint(56.84, 60.61), address = null))
+        assertThat(vm.state.value.form.address).isEqualTo("Ленина 5")
+        assertThat(vm.state.value.form.point).isNotNull()
+
+        vm.type(ObjectField.ADDRESS, "Ленина 7")
+        assertThat(vm.state.value.form.point).isNull()
+    }
+
+    @Test
+    fun `an object's point is kept in the form when it is edited`() {
+        objects.details.value = mapOf(
+            ObjectId("o1") to
+                anObjectDetails(id = "o1", address = "Тверская, 5").copy(latitude = 56.0, longitude = 60.0),
+        )
+        val vm = viewModel(objectId = "o1")
+
+        assertThat(vm.state.value.form.point).isEqualTo(GeoPoint(56.0, 60.0))
+        vm.onEvent(ObjectEditEvent.SaveClicked)
+        assertThat(objects.updated.single().second.point).isEqualTo(GeoPoint(56.0, 60.0))
     }
 
     @Test

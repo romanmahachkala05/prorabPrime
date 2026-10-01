@@ -14,11 +14,9 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -31,6 +29,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
+import ru.prorabprime.designsystem.components.FilterChip
+import ru.prorabprime.designsystem.components.TextButton
 import ru.prorabprime.designsystem.theme.Spacing
 import ru.prorabprime.domain.model.ExtraWorkStatus
 import ru.prorabprime.domain.model.FieldProblem
@@ -127,7 +127,7 @@ private fun WorkDialog(editor: FinanceEditorUi.Work, onEvent: (FinanceEvent) -> 
             onChange = { onEvent(WorkEvent.AmountChanged(it)) },
         )
         Label(Res.string.finance_extra_status)
-        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
             ExtraWorkStatus.entries.forEach { status ->
                 FilterChip(
                     selected = status == editor.status,
@@ -166,7 +166,7 @@ private fun FormDialog(
     content: @Composable () -> Unit,
 ) {
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { if (!isSaving) onDismiss() },
         title = { Text(stringResource(title)) },
         text = {
             Column(
@@ -175,16 +175,16 @@ private fun FormDialog(
             ) { content() }
         },
         confirmButton = {
-            TextButton(onClick = onSave, enabled = !isSaving) { Text(stringResource(Res.string.finance_save)) }
+            TextButton(onClick = onSave, loading = isSaving) { Text(stringResource(Res.string.finance_save)) }
         },
         dismissButton = {
             Row {
                 onDelete?.let {
-                    TextButton(onClick = it) {
+                    TextButton(onClick = it, enabled = !isSaving) {
                         Text(stringResource(Res.string.finance_delete), color = MaterialTheme.colorScheme.error)
                     }
                 }
-                TextButton(onClick = onDismiss) { Text(stringResource(Res.string.finance_cancel)) }
+                TextButton(onClick = onDismiss, enabled = !isSaving) { Text(stringResource(Res.string.finance_cancel)) }
             }
         },
     )

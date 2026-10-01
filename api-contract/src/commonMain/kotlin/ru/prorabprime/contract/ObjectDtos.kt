@@ -74,6 +74,15 @@ data class ObjectRequestDto(
     val clientPhone: String? = null,
     val notes: String? = null,
     val chatLink: String? = null,
+    /** The point picked on the map, both or neither; without it the server looks the address up. */
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+)
+
+/** The address found at a point of the map; null when there is none. */
+@Serializable
+data class AddressDto(
+    val address: String? = null,
 )
 
 @Serializable

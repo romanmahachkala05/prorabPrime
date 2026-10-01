@@ -8,6 +8,7 @@ object ApiPaths {
     const val OBJECT_PHOTOS = "/api/objects/{id}/photos"
     const val OBJECT_COVER = "/api/objects/{id}/cover"
     const val OBJECT_GEOCODE = "/api/objects/{id}/geocode"
+    const val GEOCODE_REVERSE = "/api/geocode/reverse"
     const val OBJECT_CONTACTS = "/api/objects/{id}/contacts"
     const val CONTACT = "/api/contacts/{id}"
     const val OBJECT_FINANCE = "/api/objects/{id}/finance"
@@ -37,6 +38,8 @@ object ApiQuery {
     const val SORT = "sort"
     const val ORDER = "order"
     const val KIND = "kind"
+    const val LAT = "lat"
+    const val LON = "lon"
 
     /** Tasks: the first and last day wanted (inclusive, `yyyy-MM-dd`), and `true` to leave out the done ones. */
     const val FROM = "from"

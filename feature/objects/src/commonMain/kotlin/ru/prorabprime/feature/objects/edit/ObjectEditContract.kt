@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentMapOf
 import ru.prorabprime.domain.model.FieldProblem
+import ru.prorabprime.domain.model.GeoPoint
 import ru.prorabprime.domain.model.ObjectField
 import ru.prorabprime.domain.model.ObjectStatus
 import ru.prorabprime.ui.UiText
@@ -30,6 +31,8 @@ internal data class ObjectForm(
     val clientPhone: String = "",
     val notes: String = "",
     val chatLink: String = "",
+    /** Picked on the map, or null; typing another address drops it, so the server looks that address up. */
+    val point: GeoPoint? = null,
 )
 
 @Immutable

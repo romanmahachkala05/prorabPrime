@@ -81,12 +81,12 @@ internal class MapViewport(
     )
 
     companion object {
-        // Before any pin is known the map looks at Moscow: this is an app for a Russian business.
-        private val DEFAULT_CENTER_X = WebMercator.x(MOSCOW_LONGITUDE)
-        private val DEFAULT_CENTER_Y = WebMercator.y(MOSCOW_LATITUDE)
-        private const val MOSCOW_LATITUDE = 55.75
-        private const val MOSCOW_LONGITUDE = 37.62
-        private const val DEFAULT_ZOOM = 5f
+        // Before any pin is known the map looks at Yekaterinburg, where the first customer works.
+        private val DEFAULT_CENTER_X = WebMercator.x(HOME_LONGITUDE)
+        private val DEFAULT_CENTER_Y = WebMercator.y(HOME_LATITUDE)
+        private const val HOME_LATITUDE = 56.84
+        private const val HOME_LONGITUDE = 60.61
+        private const val DEFAULT_ZOOM = 10f
         private const val MIN_SPAN = 1e-6
         private const val FIT_FILL = 0.7
         private const val MAX_FIT_ZOOM = 16f

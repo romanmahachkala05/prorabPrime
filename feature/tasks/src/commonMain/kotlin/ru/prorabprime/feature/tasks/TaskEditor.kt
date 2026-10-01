@@ -3,6 +3,7 @@ package ru.prorabprime.feature.tasks
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardOptions
@@ -13,7 +14,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
@@ -22,9 +22,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import org.jetbrains.compose.resources.stringResource
+import ru.prorabprime.designsystem.components.OutlinedButton
+import ru.prorabprime.designsystem.components.TextButton
 import ru.prorabprime.designsystem.theme.Spacing
 import ru.prorabprime.domain.model.LocalDay
 import ru.prorabprime.domain.model.ObjectField
@@ -47,22 +50,22 @@ import ru.prorabprime.feature.tasks.resources.tasks_title_field
 internal fun TaskEditorDialog(editor: TaskEditorUi, onEvent: (TasksEvent) -> Unit) {
     val title = if (editor.taskId == null) Res.string.tasks_add else Res.string.tasks_edit
     AlertDialog(
-        onDismissRequest = { onEvent(TaskEditorEvent.Dismiss) },
+        onDismissRequest = { if (!editor.isSaving) onEvent(TaskEditorEvent.Dismiss) },
         title = { Text(stringResource(title)) },
         text = { TaskForm(editor, onEvent) },
         confirmButton = {
-            TextButton(onClick = { onEvent(TaskEditorEvent.Save) }, enabled = !editor.isSaving) {
+            TextButton(onClick = { onEvent(TaskEditorEvent.Save) }, loading = editor.isSaving) {
                 Text(stringResource(Res.string.tasks_save))
             }
         },
         dismissButton = {
             Row {
                 editor.taskId?.let { id ->
-                    TextButton(onClick = { onEvent(TaskEditorEvent.Delete(id)) }) {
+                    TextButton(onClick = { onEvent(TaskEditorEvent.Delete(id)) }, enabled = !editor.isSaving) {
                         Text(stringResource(Res.string.tasks_delete), color = MaterialTheme.colorScheme.error)
                     }
                 }
-                TextButton(onClick = { onEvent(TaskEditorEvent.Dismiss) }) {
+                TextButton(onClick = { onEvent(TaskEditorEvent.Dismiss) }, enabled = !editor.isSaving) {
                     Text(stringResource(Res.string.tasks_cancel))
                 }
             }
@@ -94,13 +97,13 @@ private fun TaskForm(editor: TaskEditorUi, onEvent: (TasksEvent) -> Unit) {
 private fun DayRow(day: LocalDay, onPick: (LocalDay) -> Unit) {
     // Whether the picker is open is view state with no meaning beyond this row.
     var picking by remember { mutableStateOf(false) }
-    Column(Modifier.fillMaxWidth().clickable { picking = true }) {
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
         Text(
             stringResource(Res.string.tasks_day_field),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Text(day.format(), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.primary)
+        OutlinedButton(onClick = { picking = true }, modifier = Modifier.fillMaxWidth()) { Text(day.format()) }
     }
     if (picking) {
         val state = rememberDatePickerState(initialSelectedDateMillis = LocalDay.toUtcMillis(day))
@@ -130,8 +133,11 @@ private fun TimeRow(minutes: Int?, onChange: (Int?) -> Unit) {
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
-            TextButton(onClick = { picking = true }) {
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+            itemVerticalAlignment = Alignment.CenterVertically,
+        ) {
+            OutlinedButton(onClick = { picking = true }) {
                 Text(minutes?.let(::formatMinutes) ?: stringResource(Res.string.tasks_pick_time))
             }
             if (minutes != null) {

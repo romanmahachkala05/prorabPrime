@@ -17,7 +17,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -40,6 +39,7 @@ import org.koin.core.parameter.parametersOf
 import ru.prorabprime.designsystem.components.ErrorMessage
 import ru.prorabprime.designsystem.components.LoadingBox
 import ru.prorabprime.designsystem.components.ServerImage
+import ru.prorabprime.designsystem.components.TopAppBar
 import ru.prorabprime.domain.model.ServerFilePath
 import ru.prorabprime.feature.objects.resources.Res
 import ru.prorabprime.feature.objects.resources.photoviewer_back
@@ -103,7 +103,8 @@ private fun Pages(state: PhotoViewerState, onBack: () -> Unit) {
                 )
             }
         },
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = BAR_SCRIM),
+        containerColor = BAR_SCRIM,
+        contentColor = Color.White,
     )
 }
 

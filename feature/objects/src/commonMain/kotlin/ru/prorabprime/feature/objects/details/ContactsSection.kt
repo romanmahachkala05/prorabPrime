@@ -3,6 +3,7 @@ package ru.prorabprime.feature.objects.details
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -12,15 +13,14 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -28,6 +28,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import kotlinx.collections.immutable.ImmutableList
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
+import ru.prorabprime.designsystem.components.FilterChip
+import ru.prorabprime.designsystem.components.TextButton
 import ru.prorabprime.designsystem.theme.Spacing
 import ru.prorabprime.domain.model.ContactRole
 import ru.prorabprime.domain.model.FieldProblem
@@ -68,7 +70,7 @@ internal fun ContactsSection(
 ) {
     val uriHandler = LocalUriHandler.current
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-        Row(Modifier.padding(horizontal = Spacing.m)) {
+        Row(Modifier.padding(horizontal = Spacing.m), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 stringResource(Res.string.objectdetails_contacts),
                 style = MaterialTheme.typography.titleMedium,
@@ -122,23 +124,27 @@ internal fun ContactEditorDialog(editor: ContactEditorUi, onEvent: (ObjectDetail
         Res.string.objectdetails_edit_contact
     }
     AlertDialog(
-        onDismissRequest = { onEvent(ObjectDetailsEvent.ContactEditorDismissed) },
+        onDismissRequest = { if (!editor.isSaving) onEvent(ObjectDetailsEvent.ContactEditorDismissed) },
         title = { Text(stringResource(title)) },
         text = { ContactForm(editor, onEvent) },
         confirmButton = {
             TextButton(
                 onClick = { onEvent(ObjectDetailsEvent.ContactSaveClicked) },
-                enabled = !editor.isSaving,
+                loading = editor.isSaving,
             ) { Text(stringResource(Res.string.contact_save)) }
         },
         dismissButton = {
             Row {
                 editor.contactId?.let { id ->
-                    TextButton(onClick = { onEvent(ObjectDetailsEvent.DeleteContactClicked(id)) }) {
+                    TextButton(onClick = {
+                        onEvent(ObjectDetailsEvent.DeleteContactClicked(id))
+                    }, enabled = !editor.isSaving) {
                         Text(stringResource(Res.string.contact_delete), color = MaterialTheme.colorScheme.error)
                     }
                 }
-                TextButton(onClick = { onEvent(ObjectDetailsEvent.ContactEditorDismissed) }) {
+                TextButton(onClick = {
+                    onEvent(ObjectDetailsEvent.ContactEditorDismissed)
+                }, enabled = !editor.isSaving) {
                     Text(stringResource(Res.string.contact_cancel))
                 }
             }
@@ -168,7 +174,7 @@ private fun ContactForm(editor: ContactEditorUi, onEvent: (ObjectDetailsEvent) -
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
             ContactRole.entries.forEach { role ->
                 FilterChip(
                     selected = role == editor.role,

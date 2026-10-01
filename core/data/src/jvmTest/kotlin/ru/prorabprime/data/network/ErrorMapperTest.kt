@@ -71,6 +71,13 @@ class ErrorMapperTest {
     }
 
     @Test
+    fun `a failure that is not an Exception is classified too, as the browser's fetch errors are`() = runTest {
+        val result = apiCall<Unit> { throw LinkageError("not an Exception") }
+
+        assertThat(result.exceptionOrNull()?.asAppError()).isEqualTo(AppError.Unknown)
+    }
+
+    @Test
     fun `cancellation is passed through, not classified`() {
         assertThrows(CancellationException::class.java) {
             kotlinx.coroutines.runBlocking { apiCall { throw CancellationException("screen left") } }

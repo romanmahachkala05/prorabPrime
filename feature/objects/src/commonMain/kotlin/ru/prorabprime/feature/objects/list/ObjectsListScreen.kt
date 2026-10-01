@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,24 +22,19 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeFloatingActionButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -59,8 +55,11 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import ru.prorabprime.designsystem.components.EmptyMessage
 import ru.prorabprime.designsystem.components.ErrorMessage
+import ru.prorabprime.designsystem.components.FilterChip
 import ru.prorabprime.designsystem.components.LoadingBox
+import ru.prorabprime.designsystem.components.SearchField
 import ru.prorabprime.designsystem.components.ServerImage
+import ru.prorabprime.designsystem.components.TopAppBar
 import ru.prorabprime.designsystem.icons.ProrabIcons
 import ru.prorabprime.designsystem.theme.ProrabTheme
 import ru.prorabprime.designsystem.theme.Spacing
@@ -166,7 +165,11 @@ internal fun ObjectsListContent(
         },
         floatingActionButton = {
             // Big, bottom right, under the thumb: open, shoot, pick where it goes.
-            LargeFloatingActionButton(onClick = onOpenCamera) {
+            LargeFloatingActionButton(
+                onClick = onOpenCamera,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+            ) {
                 Icon(
                     ProrabIcons.Camera,
                     contentDescription = stringResource(Res.string.objectslist_camera),
@@ -177,7 +180,7 @@ internal fun ObjectsListContent(
     ) { padding ->
         Column(Modifier.padding(padding).fillMaxSize()) {
             Row(
-                modifier = Modifier.padding(horizontal = Spacing.m),
+                modifier = Modifier.padding(horizontal = Spacing.m, vertical = Spacing.s),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 SearchField(state.search, onEvent, Modifier.weight(1f))
@@ -230,20 +233,12 @@ private fun SearchField(
     onEvent: (ObjectsListEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    OutlinedTextField(
+    SearchField(
         value = text,
         onValueChange = { onEvent(ObjectsListEvent.SearchChanged(it)) },
-        placeholder = { Text(stringResource(Res.string.objectslist_search)) },
-        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-        trailingIcon = {
-            if (text.isNotEmpty()) {
-                IconButton(onClick = { onEvent(ObjectsListEvent.SearchChanged("")) }) {
-                    Icon(Icons.Default.Clear, contentDescription = stringResource(Res.string.objectslist_clear_search))
-                }
-            }
-        },
-        singleLine = true,
-        modifier = modifier.fillMaxWidth(),
+        placeholder = stringResource(Res.string.objectslist_search),
+        clearDescription = stringResource(Res.string.objectslist_clear_search),
+        modifier = modifier,
     )
 }
 
@@ -339,7 +334,7 @@ private fun CaptureSheet(
             verticalArrangement = Arrangement.spacedBy(Spacing.s),
         ) {
             Text(stringResource(Res.string.objectslist_capture_title), style = MaterialTheme.typography.titleMedium)
-            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
                 FilterChip(
                     selected = capture.kind == AttachmentKind.PHOTO,
                     onClick = { onEvent(ObjectsListEvent.CaptureKindChanged(AttachmentKind.PHOTO)) },
@@ -351,13 +346,15 @@ private fun CaptureSheet(
                     label = { Text(stringResource(Res.string.objectslist_capture_receipt)) },
                 )
             }
-            LazyColumn(modifier = Modifier.heightIn(max = CAPTURE_LIST_MAX_HEIGHT)) {
+            // The same two-column tiles as the main screen, so choosing an object needs little scrolling.
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(GRID_COLUMNS),
+                modifier = Modifier.heightIn(max = CAPTURE_LIST_MAX_HEIGHT),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+                verticalArrangement = Arrangement.spacedBy(Spacing.s),
+            ) {
                 items(items, key = { it.id }) { item ->
-                    ListItem(
-                        headlineContent = { Text(item.title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                        supportingContent = item.address?.let { { Text(it, maxLines = 1) } },
-                        modifier = Modifier.clickable { onEvent(ObjectsListEvent.CaptureTargetChosen(item.id)) },
-                    )
+                    ObjectTile(item, onClick = { onEvent(ObjectsListEvent.CaptureTargetChosen(item.id)) })
                 }
             }
         }

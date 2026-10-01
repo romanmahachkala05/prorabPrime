@@ -228,6 +228,29 @@ class ObjectRoutesTest {
     }
 
     @Test
+    fun `the address at a point comes from the geocoder, and a bad point is refused`() {
+        val point = ru.prorabprime.server.model.Coordinates(56.84, 60.61)
+        val geocoder = ru.prorabprime.server.fakes.FakeGeocoder(
+            streets = mutableMapOf(point to "Екатеринбург, улица Ленина, 5"),
+        )
+        val withGeocoder = module { single<ru.prorabprime.server.service.Geocoder> { geocoder } }
+        testServer(koinModules = listOf(fakes, financeFakes(), serviceModule, withGeocoder)) { client ->
+            val found = client.authedGet("/api/geocode/reverse?lat=56.84&lon=60.61")
+            assertThat(
+                found.body<ru.prorabprime.contract.AddressDto>().address,
+            ).isEqualTo("Екатеринбург, улица Ленина, 5")
+
+            val nothing = client.authedGet("/api/geocode/reverse?lat=1&lon=2")
+            assertThat(nothing.body<ru.prorabprime.contract.AddressDto>().address).isNull()
+
+            assertThat(
+                client.authedGet("/api/geocode/reverse?lat=95&lon=2").status,
+            ).isEqualTo(HttpStatusCode.BadRequest)
+            assertThat(client.authedGet("/api/geocode/reverse?lat=x").status).isEqualTo(HttpStatusCode.BadRequest)
+        }
+    }
+
+    @Test
     fun `an object is geocoded when created and again on request`() {
         val geocoder = ru.prorabprime.server.fakes.FakeGeocoder(
             mutableMapOf("Тверская, 5" to ru.prorabprime.server.model.Coordinates(55.76, 37.61)),

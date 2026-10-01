@@ -38,4 +38,5 @@
     <string name="tasks_error_required">Обязательное поле</string>
     <string name="tasks_error_too_long">Слишком длинное значение</string>
     <string name="tasks_error_invalid">Неверное значение</string>
+    <string name="tasks_saved">Дело сохранено</string>
 </resources>

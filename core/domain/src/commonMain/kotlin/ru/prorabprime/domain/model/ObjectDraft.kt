@@ -13,6 +13,8 @@ data class ObjectDraft(
     val clientPhone: String? = null,
     val notes: String? = null,
     val chatLink: String? = null,
+    /** Picked on the map; null lets the server find the address itself. */
+    val point: GeoPoint? = null,
 ) {
     /** Trims every field and turns blank optional fields into `null`. */
     fun normalized(): ObjectDraft = copy(

@@ -1,13 +1,21 @@
 package ru.prorabprime.shared.navigation
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
@@ -18,10 +26,15 @@ import androidx.navigation3.ui.NavDisplay
 import androidx.savedstate.serialization.SavedStateConfiguration
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
+import ru.prorabprime.designsystem.components.AppSnackbarHost
+import ru.prorabprime.designsystem.components.show
+import ru.prorabprime.designsystem.components.topBarColor
 import ru.prorabprime.feature.finance.FinanceNavKey
 import ru.prorabprime.feature.finance.FinanceScreen
 import ru.prorabprime.feature.map.MapNavKey
 import ru.prorabprime.feature.map.MapScreen
+import ru.prorabprime.feature.map.PlacePickerNavKey
+import ru.prorabprime.feature.map.PlacePickerScreen
 import ru.prorabprime.feature.materials.MaterialsNavKey
 import ru.prorabprime.feature.materials.MaterialsScreen
 import ru.prorabprime.feature.objects.details.ObjectDetailsNavKey
@@ -48,64 +61,86 @@ import ru.prorabprime.ui.load
 fun AppNavDisplay(notifier: SnackbarNotifier, modifier: Modifier = Modifier) {
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(notifier) {
-        notifier.messages.collect { snackbarHostState.showSnackbar(it.load()) }
+        notifier.messages.collect { snackbarHostState.show(it, it.text.load()) }
     }
 
     val backStack = rememberNavBackStack(NAV_KEYS, ObjectsListNavKey)
-    Scaffold(modifier = modifier, snackbarHost = { SnackbarHost(snackbarHostState) }) {
-        // No padding from this Scaffold: each screen has its own, with its own top bar.
-        NavDisplay(
-            backStack = backStack,
-            onBack = { backStack.pop() },
-            entryDecorators = listOf(
-                rememberSaveableStateHolderNavEntryDecorator(),
-                rememberViewModelStoreNavEntryDecorator(),
-            ),
-            entryProvider = entryProvider {
-                entry<ObjectsListNavKey> {
-                    ObjectsListScreen(
-                        onOpenObject = { backStack.add(ObjectDetailsNavKey(it)) },
-                        onCreateObject = { backStack.add(ObjectEditNavKey()) },
-                        onOpenSettings = { backStack.add(SettingsNavKey) },
-                        onOpenMap = { backStack.add(MapNavKey) },
-                        onOpenTasks = { backStack.add(TasksNavKey) },
-                    )
-                }
-                entry<ObjectDetailsNavKey> { key ->
-                    ObjectDetailsScreen(
-                        objectId = key.objectId,
-                        onEdit = { backStack.add(ObjectEditNavKey(key.objectId)) },
-                        onOpenPhoto = { backStack.add(PhotoViewerNavKey(key.objectId, it)) },
-                        onOpenFinance = { backStack.add(FinanceNavKey(key.objectId)) },
-                        onOpenMaterials = { backStack.add(MaterialsNavKey(key.objectId)) },
-                        onClose = { backStack.pop() },
-                    )
-                }
-                entry<FinanceNavKey> { key -> FinanceScreen(objectId = key.objectId, onBack = { backStack.pop() }) }
-                entry<MapNavKey> {
-                    MapScreen(onOpenObject = { backStack.add(ObjectDetailsNavKey(it)) }, onBack = { backStack.pop() })
-                }
-                entry<TasksNavKey> { TasksScreen(onBack = { backStack.pop() }) }
-                entry<MaterialsNavKey> { key -> MaterialsScreen(objectId = key.objectId, onBack = { backStack.pop() }) }
-                entry<PhotoViewerNavKey> { key ->
-                    PhotoViewerScreen(objectId = key.objectId, photoId = key.photoId, onBack = { backStack.pop() })
-                }
-                entry<ObjectEditNavKey> { key ->
-                    ObjectEditScreen(
-                        objectId = key.objectId,
-                        // The form gives way to the new object's card, so back goes to the list.
-                        onCreated = { id ->
-                            backStack.pop()
-                            backStack.add(ObjectDetailsNavKey(id))
-                        },
-                        onBack = { backStack.pop() },
-                    )
-                }
-                entry<SettingsNavKey> { SettingsScreen(onBack = { backStack.pop() }) }
-            },
-            modifier = Modifier.fillMaxSize(),
+    Scaffold(modifier = modifier, snackbarHost = { AppSnackbarHost(snackbarHostState) }) {
+        // No padding from this Scaffold: each screen has its own, with its own top bar. On a wide
+        // screen (the web client) the app stays a phone-shaped column in the middle.
+        BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+            if (maxWidth > MAX_CONTENT_WIDTH) {
+                // The bar goes on across the whole window, so the column does not look cut out of it.
+                Box(Modifier.fillMaxWidth().height(BAR_HEIGHT).background(topBarColor()))
+            }
+            NavDisplay(
+                backStack = backStack,
+                onBack = { backStack.pop() },
+                entryDecorators = listOf(
+                    rememberSaveableStateHolderNavEntryDecorator(),
+                    rememberViewModelStoreNavEntryDecorator(),
+                ),
+                entryProvider = appEntries(backStack),
+                modifier = Modifier.widthIn(max = MAX_CONTENT_WIDTH).fillMaxHeight(),
+            )
+        }
+    }
+}
+
+private val MAX_CONTENT_WIDTH = 840.dp
+private val BAR_HEIGHT = 64.dp
+
+/** Every screen of the app, with the callbacks that move between them. */
+private fun appEntries(backStack: NavBackStack<NavKey>) = entryProvider<NavKey> {
+    entry<ObjectsListNavKey> {
+        ObjectsListScreen(
+            onOpenObject = { backStack.add(ObjectDetailsNavKey(it)) },
+            onCreateObject = { backStack.add(ObjectEditNavKey()) },
+            onOpenSettings = { backStack.add(SettingsNavKey) },
+            onOpenMap = { backStack.add(MapNavKey) },
+            onOpenTasks = { backStack.add(TasksNavKey) },
         )
     }
+    entry<ObjectDetailsNavKey> { key ->
+        ObjectDetailsScreen(
+            objectId = key.objectId,
+            onEdit = { backStack.add(ObjectEditNavKey(key.objectId)) },
+            onOpenPhoto = { backStack.add(PhotoViewerNavKey(key.objectId, it)) },
+            onOpenFinance = { backStack.add(FinanceNavKey(key.objectId)) },
+            onOpenMaterials = { backStack.add(MaterialsNavKey(key.objectId)) },
+            onClose = { backStack.pop() },
+        )
+    }
+    entry<FinanceNavKey> { key -> FinanceScreen(objectId = key.objectId, onBack = { backStack.pop() }) }
+    entry<MapNavKey> {
+        MapScreen(onOpenObject = { backStack.add(ObjectDetailsNavKey(it)) }, onBack = { backStack.pop() })
+    }
+    entry<TasksNavKey> { TasksScreen(onBack = { backStack.pop() }) }
+    entry<MaterialsNavKey> { key -> MaterialsScreen(objectId = key.objectId, onBack = { backStack.pop() }) }
+    entry<PhotoViewerNavKey> { key ->
+        PhotoViewerScreen(objectId = key.objectId, photoId = key.photoId, onBack = { backStack.pop() })
+    }
+    entry<ObjectEditNavKey> { key ->
+        ObjectEditScreen(
+            objectId = key.objectId,
+            // The form gives way to the new object's card, so back goes to the list.
+            onCreated = { id ->
+                backStack.pop()
+                backStack.add(ObjectDetailsNavKey(id))
+            },
+            onBack = { backStack.pop() },
+            onPickOnMap = { latitude, longitude -> backStack.add(PlacePickerNavKey(latitude, longitude)) },
+        )
+    }
+    entry<PlacePickerNavKey> { key ->
+        PlacePickerScreen(
+            latitude = key.latitude,
+            longitude = key.longitude,
+            onDone = { backStack.pop() },
+            onBack = { backStack.pop() },
+        )
+    }
+    entry<SettingsNavKey> { SettingsScreen(onBack = { backStack.pop() }) }
 }
 
 /** Never pops the last screen: the system back gesture closes the app from there instead. */
@@ -128,6 +163,7 @@ private val NAV_KEYS = SavedStateConfiguration {
             subclass(FinanceNavKey::class, FinanceNavKey.serializer())
             subclass(MaterialsNavKey::class, MaterialsNavKey.serializer())
             subclass(MapNavKey::class, MapNavKey.serializer())
+            subclass(PlacePickerNavKey::class, PlacePickerNavKey.serializer())
             subclass(TasksNavKey::class, TasksNavKey.serializer())
         }
     }

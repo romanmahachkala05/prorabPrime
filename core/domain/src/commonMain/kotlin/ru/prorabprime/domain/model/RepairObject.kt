@@ -47,6 +47,8 @@ data class ObjectDetails(
     val clientPhone: String?,
     val notes: String?,
     val chatLink: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
     val coverPhotoId: PhotoId?,
     val contacts: ImmutableList<Contact> = persistentListOf(),
     /** In carousel order. */
@@ -54,6 +56,9 @@ data class ObjectDetails(
     val createdAt: Instant,
     val updatedAt: Instant,
 ) {
+    /** Where the object is on the map; null while its address has not been located. */
+    val point: GeoPoint? get() = if (latitude != null && longitude != null) GeoPoint(latitude, longitude) else null
+
     val displayTitle: String get() = title ?: address
 }
 

@@ -412,11 +412,20 @@ JDK's HTTP client, with an identifying User-Agent and short timeouts. Anything t
 no match, a bad answer, no network — is "not found": the object is saved with no pin, never refused.
 A changed address that is not found removes the old pin. `GEOCODER_URL` points at another
 Nominatim-compatible server, and `off` disables geocoding.
+Addresses are written without a city, so the search carries a `viewbox` around `GEOCODER_NEAR`
+(default Yekaterinburg). It is a preference, not a bound: a city typed in the address still wins.
+An address may also be chosen on the map: the form opens a picker (a pin fixed in the middle, the map
+moves under it), `GET /api/geocode/reverse` turns the point into an address, and the point travels with
+the object request (`latitude`/`longitude`), in which case the server does not geocode. Typing another
+address drops the point. The two screens do not know each other: the picker leaves its choice in a
+`PickedPlaceStore` that the form's view model reads.
 
 **Alternatives rejected.**
 - *Geocode on the phone.* Every client would need a geocoder and the policy of its provider.
 - *Coordinates typed in by hand.* Nobody knows the coordinates of an address.
 - *Yandex or Google geocoders.* Need a key, which the customer does not have.
+- *Appending the city to every query.* A different city typed in the address would be contradicted.
+- *`bounded=1`.* An address in another city would silently find nothing.
 
 **Consequences.** **The addresses of the owner's objects are sent to nominatim.openstreetmap.org**
 unless `GEOCODER_URL=off`; `.env.example` and the README say so. Nominatim's one request a second

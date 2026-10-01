@@ -11,6 +11,7 @@ import ru.prorabprime.domain.model.asAppError
 import ru.prorabprime.domain.usecase.DeleteContactUseCase
 import ru.prorabprime.domain.usecase.SaveContactUseCase
 import ru.prorabprime.feature.objects.resources.Res
+import ru.prorabprime.feature.objects.resources.objectdetails_contact_saved
 import ru.prorabprime.feature.objects.resources.objectdetails_delete_confirm
 import ru.prorabprime.feature.objects.resources.objectdetails_delete_contact_message
 import ru.prorabprime.feature.objects.resources.objectdetails_delete_contact_title
@@ -85,7 +86,10 @@ internal class ContactEditorController(
                 saveContact.update(ContactId(editor.contactId), draft)
             }
             result
-                .onSuccess { stateHolder.closeContactEditor() }
+                .onSuccess {
+                    stateHolder.closeContactEditor()
+                    errorHandler.onSaved(UiText.Resource(Res.string.objectdetails_contact_saved))
+                }
                 .onFailure { onSaveFailure(it.asAppError()) }
         }
     }

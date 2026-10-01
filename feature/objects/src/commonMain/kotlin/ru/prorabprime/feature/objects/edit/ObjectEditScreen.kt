@@ -3,28 +3,32 @@ package ru.prorabprime.feature.objects.edit
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Button
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
@@ -34,8 +38,13 @@ import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
+import ru.prorabprime.designsystem.components.BusyScreen
+import ru.prorabprime.designsystem.components.Button
 import ru.prorabprime.designsystem.components.ErrorMessage
+import ru.prorabprime.designsystem.components.FilterChip
 import ru.prorabprime.designsystem.components.LoadingBox
+import ru.prorabprime.designsystem.components.OutlinedButton
+import ru.prorabprime.designsystem.components.TopAppBar
 import ru.prorabprime.designsystem.theme.ProrabTheme
 import ru.prorabprime.designsystem.theme.Spacing
 import ru.prorabprime.domain.model.ObjectField
@@ -50,6 +59,8 @@ import ru.prorabprime.feature.objects.resources.objectedit_chat_link
 import ru.prorabprime.feature.objects.resources.objectedit_client_name
 import ru.prorabprime.feature.objects.resources.objectedit_client_phone
 import ru.prorabprime.feature.objects.resources.objectedit_notes
+import ru.prorabprime.feature.objects.resources.objectedit_pick_on_map
+import ru.prorabprime.feature.objects.resources.objectedit_place_picked
 import ru.prorabprime.feature.objects.resources.objectedit_save
 import ru.prorabprime.feature.objects.resources.objectedit_status
 import ru.prorabprime.feature.objects.resources.objectedit_title
@@ -66,18 +77,20 @@ fun ObjectEditScreen(
     objectId: String?,
     onCreated: (objectId: String) -> Unit,
     onBack: () -> Unit,
+    onPickOnMap: (latitude: Double?, longitude: Double?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val viewModel: ObjectEditViewModel = koinViewModel(key = "edit-$objectId") {
         parametersOf(ObjectEditArgs(objectId?.let(::ObjectId)))
     }
-    ObjectEditScreen(onCreated, onBack, modifier, viewModel)
+    ObjectEditScreen(onCreated, onBack, onPickOnMap, modifier, viewModel)
 }
 
 @Composable
 private fun ObjectEditScreen(
     onCreated: (objectId: String) -> Unit,
     onBack: () -> Unit,
+    onPickOnMap: (latitude: Double?, longitude: Double?) -> Unit,
     modifier: Modifier,
     viewModel: ObjectEditViewModel,
 ) {
@@ -89,7 +102,9 @@ private fun ObjectEditScreen(
             null -> Unit
         }
     }
-    ObjectEditContent(state, viewModel::onEvent, onBack, modifier)
+    ObjectEditContent(state, viewModel::onEvent, onBack, modifier, onPickOnMap = {
+        onPickOnMap(state.form.point?.latitude, state.form.point?.longitude)
+    })
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -99,36 +114,39 @@ internal fun ObjectEditContent(
     onEvent: (ObjectEditEvent) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    onPickOnMap: () -> Unit = {},
 ) {
-    Scaffold(
-        modifier = modifier,
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        stringResource(
-                            if (state.isNew) Res.string.objectedit_title_new else Res.string.objectedit_title_edit,
-                        ),
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(Res.string.objectedit_back))
-                    }
-                },
-            )
-        },
-    ) { padding ->
-        when (val status = state.status) {
-            ObjectEditStatus.Content -> Form(state, onEvent, Modifier.padding(padding))
+    BusyScreen(state.isSaving, modifier) {
+        Scaffold(
+            modifier = Modifier,
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Text(
+                            stringResource(
+                                if (state.isNew) Res.string.objectedit_title_new else Res.string.objectedit_title_edit,
+                            ),
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(Res.string.objectedit_back))
+                        }
+                    },
+                )
+            },
+        ) { padding ->
+            when (val status = state.status) {
+                ObjectEditStatus.Content -> Form(state, onEvent, onPickOnMap, Modifier.padding(padding))
 
-            ObjectEditStatus.Loading -> LoadingBox(Modifier.padding(padding))
+                ObjectEditStatus.Loading -> LoadingBox(Modifier.padding(padding))
 
-            is ObjectEditStatus.Error -> ErrorMessage(
-                status.message,
-                onRetry = { onEvent(ObjectEditEvent.Retry) },
-                modifier = Modifier.padding(padding),
-            )
+                is ObjectEditStatus.Error -> ErrorMessage(
+                    status.message,
+                    onRetry = { onEvent(ObjectEditEvent.Retry) },
+                    modifier = Modifier.padding(padding),
+                )
+            }
         }
     }
 }
@@ -137,6 +155,7 @@ internal fun ObjectEditContent(
 private fun Form(
     state: ObjectEditState,
     onEvent: (ObjectEditEvent) -> Unit,
+    onPickOnMap: () -> Unit,
     modifier: Modifier,
 ) {
     Column(
@@ -145,6 +164,7 @@ private fun Form(
     ) {
         FormField(state, onEvent, ObjectField.TITLE, Res.string.objectedit_title)
         FormField(state, onEvent, ObjectField.ADDRESS, Res.string.objectedit_address)
+        PickOnMapButton(placed = state.form.point != null, onClick = onPickOnMap)
         StatusPicker(state.form.status, onSelect = { onEvent(ObjectEditEvent.StatusChanged(it)) })
         FormField(state, onEvent, ObjectField.CLIENT_NAME, Res.string.objectedit_client_name)
         FormField(
@@ -164,7 +184,7 @@ private fun Form(
         FormField(state, onEvent, ObjectField.NOTES, Res.string.objectedit_notes, singleLine = false)
         Button(
             onClick = { onEvent(ObjectEditEvent.SaveClicked) },
-            enabled = !state.isSaving,
+            loading = state.isSaving,
             modifier = Modifier.fillMaxWidth().padding(top = Spacing.s),
         ) { Text(stringResource(Res.string.objectedit_save)) }
     }
@@ -191,6 +211,25 @@ private fun FormField(
         keyboardOptions = keyboardOptions,
         modifier = Modifier.fillMaxWidth(),
     )
+}
+
+/** The address can be typed or chosen on the map; a chosen point is said so, since the field alone does not. */
+@Composable
+private fun PickOnMapButton(placed: Boolean, onClick: () -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
+        OutlinedButton(onClick = onClick) {
+            Icon(Icons.Default.LocationOn, contentDescription = null, modifier = Modifier.size(ButtonDefaults.IconSize))
+            Spacer(Modifier.width(ButtonDefaults.IconSpacing))
+            Text(stringResource(Res.string.objectedit_pick_on_map))
+        }
+        if (placed) {
+            Text(
+                stringResource(Res.string.objectedit_place_picked),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
 }
 
 @Composable
