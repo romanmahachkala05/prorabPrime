@@ -34,6 +34,7 @@ internal class TasksViewModel(
         actions.deleteTask,
     )
     private var loadJob: Job? = null
+    private var marksJob: Job? = null
 
     /** The failure last reported, so one outage seen by both flows is said once. */
     private var reportedFailure: AppError? = null
@@ -48,6 +49,10 @@ internal class TasksViewModel(
             TasksEvent.PreviousDay -> moveTo(state.value.day.plusDays(-1))
             TasksEvent.NextDay -> moveTo(state.value.day.plusDays(1))
             TasksEvent.TodayClicked -> moveTo(state.value.today)
+            TasksEvent.MonthToggled -> toggleMonth()
+            TasksEvent.PreviousMonth -> showMonth(state.value.month.previousMonth())
+            TasksEvent.NextMonth -> showMonth(state.value.month.nextMonth())
+            is TasksEvent.DayPicked -> moveTo(event.day)
             is TasksEvent.DoneToggled -> toggle(event.taskId)
             TasksEvent.DialogConfirmed -> deletePending()
             TasksEvent.DialogDismissed -> stateHolder.dismissDialog()
@@ -85,9 +90,31 @@ internal class TasksViewModel(
     }
 
     private fun moveTo(day: LocalDay) {
-        if (day == state.value.day) return
-        stateHolder.showDay(day)
-        load()
+        if (day != state.value.day) {
+            stateHolder.showDay(day)
+            load()
+        }
+        if (state.value.view == TasksView.MONTH && day.firstOfMonth() != state.value.month) {
+            showMonth(day.firstOfMonth())
+        }
+    }
+
+    private fun toggleMonth() {
+        if (state.value.view == TasksView.MONTH) {
+            marksJob?.cancel()
+            stateHolder.showMonth(null)
+        } else {
+            showMonth(state.value.day.firstOfMonth())
+        }
+    }
+
+    /** The marks come from the same copy as the list, so a task added under the grid shows up in it. */
+    private fun showMonth(first: LocalDay) {
+        stateHolder.showMonth(first)
+        marksJob?.cancel()
+        marksJob = actions.observeRange(first, first.lastOfMonth())
+            .onEach { result -> result.onSuccess { stateHolder.showMarks(it.toMarks()) } }
+            .launchIn(viewModelScope)
     }
 
     private fun retry() {

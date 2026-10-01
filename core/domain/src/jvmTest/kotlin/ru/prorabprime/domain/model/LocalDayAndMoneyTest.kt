@@ -22,6 +22,17 @@ class LocalDayAndMoneyTest {
     }
 
     @Test
+    fun `a day knows its year, month and day of the month`() {
+        val day = LocalDay.of(2024, 2, 29)
+
+        assertThat(listOf(day.year, day.month, day.dayOfMonth)).containsExactly(2024, 2, 29).inOrder()
+        assertThat(LocalDay.daysInMonth(2024, 2)).isEqualTo(29)
+        assertThat(LocalDay.daysInMonth(2026, 2)).isEqualTo(28)
+        assertThat(LocalDay.daysInMonth(2026, 9)).isEqualTo(30)
+        assertThat(LocalDay.daysInMonth(2026, 10)).isEqualTo(31)
+    }
+
+    @Test
     fun `a date that does not exist does not parse`() {
         listOf("2026-02-29", "2026-13-01", "2026-00-10", "2026-04-31", "26-09-25", "вчера", "", "2026-09").forEach {
             assertThat(LocalDay.parseIso(it)).isNull()

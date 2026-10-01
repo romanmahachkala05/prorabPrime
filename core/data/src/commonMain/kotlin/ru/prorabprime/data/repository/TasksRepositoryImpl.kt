@@ -31,6 +31,9 @@ internal class TasksRepositoryImpl(
 
     override fun observeOverdue(day: LocalDay): Flow<Result<ImmutableList<Task>>> = tasks { !it.done && it.day < day }
 
+    override fun observeRange(from: LocalDay, to: LocalDay): Flow<Result<ImmutableList<Task>>> =
+        tasks { it.day >= from && it.day <= to }
+
     override fun observeOpenFrom(from: LocalDay): Flow<Result<ImmutableList<Task>>> =
         tasks { !it.done && it.day >= from }
 

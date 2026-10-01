@@ -16,6 +16,9 @@ interface TasksRepository {
     /** Open tasks of days before [day]: what was not done and is still waiting. */
     fun observeOverdue(day: LocalDay): Flow<Result<ImmutableList<Task>>>
 
+    /** Every task, done or not, from [from] to [to] inclusive: what a month view marks. */
+    fun observeRange(from: LocalDay, to: LocalDay): Flow<Result<ImmutableList<Task>>>
+
     /** Open tasks from [from] on, which is what reminders are set for. */
     fun observeOpenFrom(from: LocalDay): Flow<Result<ImmutableList<Task>>>
 

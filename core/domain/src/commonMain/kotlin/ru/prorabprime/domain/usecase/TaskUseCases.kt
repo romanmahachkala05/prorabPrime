@@ -24,6 +24,13 @@ class ObserveOverdueTasksUseCase(
     operator fun invoke(day: LocalDay): Flow<Result<ImmutableList<Task>>> = repository.observeOverdue(day)
 }
 
+class ObserveTasksRangeUseCase(
+    private val repository: TasksRepository,
+) {
+    operator fun invoke(from: LocalDay, to: LocalDay): Flow<Result<ImmutableList<Task>>> =
+        repository.observeRange(from, to)
+}
+
 /** Normalizes and validates the draft; an invalid one never reaches the server. */
 class SaveTaskUseCase(
     private val repository: TasksRepository,

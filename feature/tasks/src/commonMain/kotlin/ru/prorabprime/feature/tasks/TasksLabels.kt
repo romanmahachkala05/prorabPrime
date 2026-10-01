@@ -10,6 +10,19 @@ import ru.prorabprime.feature.tasks.resources.tasks_day_title
 import ru.prorabprime.feature.tasks.resources.tasks_error_invalid
 import ru.prorabprime.feature.tasks.resources.tasks_error_required
 import ru.prorabprime.feature.tasks.resources.tasks_error_too_long
+import ru.prorabprime.feature.tasks.resources.tasks_month_1
+import ru.prorabprime.feature.tasks.resources.tasks_month_10
+import ru.prorabprime.feature.tasks.resources.tasks_month_11
+import ru.prorabprime.feature.tasks.resources.tasks_month_12
+import ru.prorabprime.feature.tasks.resources.tasks_month_2
+import ru.prorabprime.feature.tasks.resources.tasks_month_3
+import ru.prorabprime.feature.tasks.resources.tasks_month_4
+import ru.prorabprime.feature.tasks.resources.tasks_month_5
+import ru.prorabprime.feature.tasks.resources.tasks_month_6
+import ru.prorabprime.feature.tasks.resources.tasks_month_7
+import ru.prorabprime.feature.tasks.resources.tasks_month_8
+import ru.prorabprime.feature.tasks.resources.tasks_month_9
+import ru.prorabprime.feature.tasks.resources.tasks_month_title
 import ru.prorabprime.feature.tasks.resources.tasks_today
 import ru.prorabprime.feature.tasks.resources.tasks_tomorrow
 import ru.prorabprime.feature.tasks.resources.tasks_weekday_1
@@ -28,7 +41,7 @@ internal val FieldProblem.message: StringResource
         FieldProblem.INVALID -> Res.string.tasks_error_invalid
     }
 
-private val WEEKDAYS = listOf(
+internal val WEEKDAYS = listOf(
     Res.string.tasks_weekday_1,
     Res.string.tasks_weekday_2,
     Res.string.tasks_weekday_3,
@@ -37,6 +50,26 @@ private val WEEKDAYS = listOf(
     Res.string.tasks_weekday_6,
     Res.string.tasks_weekday_7,
 )
+
+private val MONTHS = listOf(
+    Res.string.tasks_month_1,
+    Res.string.tasks_month_2,
+    Res.string.tasks_month_3,
+    Res.string.tasks_month_4,
+    Res.string.tasks_month_5,
+    Res.string.tasks_month_6,
+    Res.string.tasks_month_7,
+    Res.string.tasks_month_8,
+    Res.string.tasks_month_9,
+    Res.string.tasks_month_10,
+    Res.string.tasks_month_11,
+    Res.string.tasks_month_12,
+)
+
+/** `Сентябрь 2026`, for any day of that month. */
+@Composable
+internal fun monthTitle(day: LocalDay): String =
+    stringResource(Res.string.tasks_month_title, stringResource(MONTHS[day.month - 1]), day.year)
 
 /** `Сегодня, 25.09.2026`, `Завтра, 26.09.2026`, `Пн, 28.09.2026`. */
 @Composable

@@ -9,6 +9,7 @@ import ru.prorabprime.domain.repository.TasksRepository
 import ru.prorabprime.domain.usecase.DeleteTaskUseCase
 import ru.prorabprime.domain.usecase.ObserveDayTasksUseCase
 import ru.prorabprime.domain.usecase.ObserveOverdueTasksUseCase
+import ru.prorabprime.domain.usecase.ObserveTasksRangeUseCase
 import ru.prorabprime.domain.usecase.SaveTaskUseCase
 import ru.prorabprime.testing.FakeSnackbarNotifier
 import ru.prorabprime.testing.FakeTasksRepository
@@ -25,6 +26,7 @@ class TasksModuleTest {
         single<TasksRepository> { FakeTasksRepository() }
         factory { ObserveDayTasksUseCase(get()) }
         factory { ObserveOverdueTasksUseCase(get()) }
+        factory { ObserveTasksRangeUseCase(get()) }
         factory { SaveTaskUseCase(get()) }
         factory { DeleteTaskUseCase(get()) }
         single<SnackbarNotifier> { FakeSnackbarNotifier() }

@@ -9,6 +9,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.v2.runComposeUiTest
 import com.google.common.truth.Truth.assertThat
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentMapOf
 import org.junit.Test
 import ru.prorabprime.designsystem.theme.ProrabTheme
 import ru.prorabprime.domain.model.LocalDay
@@ -48,6 +49,44 @@ class TasksContentTest {
         onNodeWithText("Не сделано раньше").assertIsDisplayed()
         onNodeWithText("Забыл вчера").assertIsDisplayed()
         onNodeWithText("24.09.2026").assertIsDisplayed()
+    }
+
+    @Test
+    fun `the calendar button asks for the month grid`() = runComposeUiTest {
+        show(state())
+
+        onNodeWithContentDescription("Показать месяц").performClick()
+        assertThat(events).containsExactly(TasksEvent.MonthToggled)
+    }
+
+    @Test
+    fun `an open grid shows the month, its weeks, and picks a day, with the buttons paging months`() =
+        runComposeUiTest {
+            show(state().copy(view = TasksView.MONTH, marks = persistentMapOf(today to DayMarkUi(1, 0))))
+
+            onNodeWithText("Сентябрь 2026").assertIsDisplayed()
+            onNodeWithContentDescription("Скрыть месяц").assertIsDisplayed()
+            onNodeWithContentDescription("28.09.2026").performClick()
+            onNodeWithContentDescription("Следующий месяц").performClick()
+            onNodeWithContentDescription("Предыдущий месяц").performClick()
+
+            assertThat(events).containsExactly(
+                TasksEvent.DayPicked(LocalDay.of(2026, 9, 28)),
+                TasksEvent.NextMonth,
+                TasksEvent.PreviousMonth,
+            ).inOrder()
+        }
+
+    @Test
+    fun `a month is laid out in weeks that start on Monday`() {
+        // September 2026 starts on a Tuesday and ends on a Wednesday.
+        val weeks = monthWeeks(LocalDay.of(2026, 9, 1))
+
+        assertThat(weeks).hasSize(5)
+        assertThat(weeks.all { it.size == 7 }).isTrue()
+        assertThat(weeks.first().take(2)).containsExactly(null, LocalDay.of(2026, 9, 1)).inOrder()
+        assertThat(weeks.last().filterNotNull().last()).isEqualTo(LocalDay.of(2026, 9, 30))
+        assertThat(weeks.flatten().filterNotNull()).hasSize(30)
     }
 
     @Test

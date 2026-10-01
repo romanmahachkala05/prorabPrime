@@ -27,6 +27,15 @@ object ProrabIcons {
         )
     }
 
+    val CalendarMonth: ImageVector by lazy {
+        icon(
+            "CalendarMonth",
+            "M20,3h-1V1h-2v2H7V1H5v2H4C2.9,3 2,3.9 2,5v16c0,1.1 0.9,2 2,2h16c1.1,0 2,-0.9 2,-2V5C22,3.9 21.1,3 20," +
+                "3zM20,21H4V8h16V21zM7,10h2v2H7V10zM11,10h2v2h-2V10zM15,10h2v2h-2V10zM7,14h2v2H7V14zM11,14h2v2h-2V14z" +
+                "M15,14h2v2h-2V14z",
+        )
+    }
+
     val Receipt: ImageVector by lazy {
         icon(
             "Receipt",

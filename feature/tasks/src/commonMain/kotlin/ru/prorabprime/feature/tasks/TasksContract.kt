@@ -48,6 +48,19 @@ internal data class TaskEditorUi(
     val isSaving: Boolean = false,
 )
 
+/** One day on screen, or a month grid above it. */
+internal enum class TasksView {
+    DAY,
+    MONTH,
+}
+
+/** What the month grid shows under a day: how many of its tasks are open and how many are done. */
+@Immutable
+internal data class DayMarkUi(
+    val open: Int,
+    val done: Int,
+)
+
 @Immutable
 internal data class TasksState(
     val status: TasksStatus = TasksStatus.Loading,
@@ -60,6 +73,10 @@ internal data class TasksState(
     val editor: TaskEditorUi? = null,
     val dialog: DialogModel? = null,
     val pendingDeleteId: String? = null,
+    val view: TasksView = TasksView.DAY,
+    /** The first day of the month the grid shows; it always holds [day] while the grid is open. */
+    val month: LocalDay = day.firstOfMonth(),
+    val marks: ImmutableMap<LocalDay, DayMarkUi> = persistentMapOf(),
 ) {
     val isToday: Boolean get() = day == today
 }
@@ -72,6 +89,18 @@ internal sealed interface TasksEvent {
     data object NextDay : TasksEvent
 
     data object TodayClicked : TasksEvent
+
+    /** The calendar button: opens the month grid above the day, or closes it. */
+    data object MonthToggled : TasksEvent
+
+    data object PreviousMonth : TasksEvent
+
+    data object NextMonth : TasksEvent
+
+    /** A tap on a day of the grid. */
+    data class DayPicked(
+        val day: LocalDay,
+    ) : TasksEvent
 
     /** A tick on a task's checkbox. */
     data class DoneToggled(
