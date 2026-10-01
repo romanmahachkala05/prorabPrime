@@ -160,6 +160,19 @@ class PhotoRoutesTest {
     }
 
     @Test
+    fun `an upload with an id of its own keeps it, and the same upload again is the same photo`() = server { client ->
+        val photoId = UUID.randomUUID().toString()
+
+        val first = client.upload(TestImages.jpeg(10, 10), query = "?kind=PHOTO&id=$photoId")
+        val again = client.upload(TestImages.jpeg(10, 10), query = "?kind=PHOTO&id=$photoId")
+
+        assertThat(first.status).isEqualTo(HttpStatusCode.Created)
+        assertThat(first.body<PhotoDto>().id).isEqualTo(photoId)
+        assertThat(again.body<PhotoDto>().id).isEqualTo(photoId)
+        assertThat(client.details().photos.map { it.id }).containsExactly(photoId)
+    }
+
+    @Test
     fun `a file over the limit is 413`() = server { client ->
         val response = client.upload(ByteArray(PhotoLimits.MAX_UPLOAD_BYTES.toInt() + 1))
 

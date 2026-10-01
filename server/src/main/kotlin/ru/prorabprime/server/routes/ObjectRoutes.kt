@@ -49,9 +49,12 @@ fun Route.objectRoutes() {
     }
 }
 
-/** A malformed id cannot name anything that exists, so it is a 404 like any unknown id. */
+/**
+ * An id from the path only (a query parameter of the same name, the id a client picks for a photo, must
+ * not win). A malformed id cannot name anything that exists, so it is a 404 like any unknown id.
+ */
 fun RoutingCall.uuidParam(name: String): UUID {
-    val raw = parameters[name].orEmpty()
+    val raw = pathParameters[name].orEmpty()
     return runCatching { UUID.fromString(raw) }.getOrNull()
         ?: throw ServiceException(ServiceError.NotFound("No such id: $raw"))
 }
