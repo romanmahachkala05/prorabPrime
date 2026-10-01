@@ -22,9 +22,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import org.jetbrains.compose.resources.stringResource
+import ru.prorabprime.designsystem.components.OutlinedButton
 import ru.prorabprime.designsystem.components.TextButton
 import ru.prorabprime.designsystem.theme.Spacing
 import ru.prorabprime.domain.model.LocalDay
@@ -95,13 +97,13 @@ private fun TaskForm(editor: TaskEditorUi, onEvent: (TasksEvent) -> Unit) {
 private fun DayRow(day: LocalDay, onPick: (LocalDay) -> Unit) {
     // Whether the picker is open is view state with no meaning beyond this row.
     var picking by remember { mutableStateOf(false) }
-    Column(Modifier.fillMaxWidth().clickable { picking = true }) {
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
         Text(
             stringResource(Res.string.tasks_day_field),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Text(day.format(), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.primary)
+        OutlinedButton(onClick = { picking = true }, modifier = Modifier.fillMaxWidth()) { Text(day.format()) }
     }
     if (picking) {
         val state = rememberDatePickerState(initialSelectedDateMillis = LocalDay.toUtcMillis(day))
@@ -131,8 +133,11 @@ private fun TimeRow(minutes: Int?, onChange: (Int?) -> Unit) {
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
-            TextButton(onClick = { picking = true }) {
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+            itemVerticalAlignment = Alignment.CenterVertically,
+        ) {
+            OutlinedButton(onClick = { picking = true }) {
                 Text(minutes?.let(::formatMinutes) ?: stringResource(Res.string.tasks_pick_time))
             }
             if (minutes != null) {
