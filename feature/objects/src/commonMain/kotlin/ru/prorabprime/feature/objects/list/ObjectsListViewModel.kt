@@ -71,10 +71,7 @@ internal class ObjectsListViewModel(
             ObjectsListEvent.Retry -> retry()
 
             is ObjectsListEvent.PhotosCaptured ->
-                stateHolder.setCapture(CaptureUi(event.images.toImmutableList()))
-
-            is ObjectsListEvent.CaptureKindChanged ->
-                state.value.capture?.let { stateHolder.setCapture(it.copy(kind = event.kind)) }
+                stateHolder.setCapture(CaptureUi(event.images.toImmutableList(), event.kind))
 
             is ObjectsListEvent.CaptureNoteChanged ->
                 state.value.capture?.let { stateHolder.setCapture(it.copy(note = event.note)) }
