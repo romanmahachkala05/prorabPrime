@@ -138,6 +138,7 @@ private fun PhotoTile(
         }
         if (photo.isCover) CoverBadge(Modifier.align(Alignment.BottomStart).padding(Spacing.xs))
         if (photo.isPending) PendingBadge(Modifier.align(Alignment.TopEnd).padding(Spacing.xs))
+        photo.amount?.let { AmountBadge(it, Modifier.align(Alignment.BottomEnd).padding(Spacing.xs)) }
         if (photo.hasNote) NoteBadge(Modifier.align(Alignment.TopStart).padding(Spacing.xs))
         DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
             if (canMakeCover && !photo.isCover) {
@@ -157,6 +158,19 @@ private fun PhotoTile(
                 },
             )
         }
+    }
+}
+
+/** The sum read from a receipt, in the corner of its tile. */
+@Composable
+private fun AmountBadge(amount: String, modifier: Modifier) {
+    Surface(color = MaterialTheme.colorScheme.primary, shape = MaterialTheme.shapes.small, modifier = modifier) {
+        Text(
+            amount,
+            color = MaterialTheme.colorScheme.onPrimary,
+            style = MaterialTheme.typography.labelMedium,
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+        )
     }
 }
 

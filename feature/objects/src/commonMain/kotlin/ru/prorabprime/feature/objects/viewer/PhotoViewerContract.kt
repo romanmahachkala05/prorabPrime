@@ -32,6 +32,8 @@ internal data class ViewerPhoto(
     val path: ServerFilePath,
     val quarterTurns: Int = 0,
     val note: String? = null,
+    /** `790 ₽ · 01.10.2026 15:26`, for a receipt the server could read. */
+    val receiptLine: String? = null,
 )
 
 internal data class PhotoViewerArgs(

@@ -8,6 +8,7 @@ import androidx.compose.foundation.gestures.calculatePan
 import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -149,7 +150,12 @@ private fun Pages(
         // Keyed by the photo, so swiping to another one shows its own note.
         current?.let { photo ->
             key(photo.id) {
-                NoteBar(photo.note, { onSaveNote(photo.id, it) }, Modifier.align(Alignment.BottomCenter))
+                NoteBar(
+                    note = photo.note,
+                    receiptLine = photo.receiptLine,
+                    onSave = { onSaveNote(photo.id, it) },
+                    modifier = Modifier.align(Alignment.BottomCenter),
+                )
             }
         }
     }
@@ -159,6 +165,7 @@ private fun Pages(
 @Composable
 private fun NoteBar(
     note: String?,
+    receiptLine: String?,
     onSave: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -173,14 +180,18 @@ private fun NoteBar(
             .padding(horizontal = Spacing.m, vertical = Spacing.s),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = note ?: stringResource(Res.string.photoviewer_note_add),
-            color = if (note == null) Color.White.copy(alpha = HINT_ALPHA) else Color.White,
-            style = MaterialTheme.typography.bodyMedium,
-            maxLines = NOTE_PREVIEW_LINES,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f),
-        )
+        Column(Modifier.weight(1f)) {
+            receiptLine?.let {
+                Text(it, color = Color.White, style = MaterialTheme.typography.titleSmall)
+            }
+            Text(
+                text = note ?: stringResource(Res.string.photoviewer_note_add),
+                color = if (note == null) Color.White.copy(alpha = HINT_ALPHA) else Color.White,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = NOTE_PREVIEW_LINES,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
         Icon(
             Icons.Default.Edit,
             stringResource(Res.string.photoviewer_note_edit),

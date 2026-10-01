@@ -16,6 +16,7 @@ import ru.prorabprime.domain.model.asAppError
 import ru.prorabprime.domain.usecase.ObserveObjectUseCase
 import ru.prorabprime.domain.usecase.RotatePhotoUseCase
 import ru.prorabprime.domain.usecase.SetPhotoNoteUseCase
+import ru.prorabprime.feature.objects.photos.line
 import ru.prorabprime.ui.SnackbarNotifier
 import ru.prorabprime.ui.StateOwner
 import ru.prorabprime.ui.toUiText
@@ -49,7 +50,7 @@ internal class PhotoViewerViewModel(
                             PhotoViewerState(
                                 PhotoViewerStatus.Content,
                                 folder.map {
-                                    ViewerPhoto(it.id.value, it.path, it.quarterTurns, it.note)
+                                    ViewerPhoto(it.id.value, it.path, it.quarterTurns, it.note, it.receipt?.line())
                                 }.toImmutableList(),
                                 index,
                             )

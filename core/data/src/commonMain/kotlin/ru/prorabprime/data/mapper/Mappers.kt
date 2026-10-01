@@ -29,6 +29,7 @@ import ru.prorabprime.domain.model.ObjectStatus
 import ru.prorabprime.domain.model.ObjectSummary
 import ru.prorabprime.domain.model.Photo
 import ru.prorabprime.domain.model.PhotoId
+import ru.prorabprime.domain.model.ReceiptInfo
 import ru.prorabprime.domain.model.ServerFilePath
 
 internal fun ObjectSummaryDto.toDomain() = ObjectSummary(
@@ -72,6 +73,7 @@ internal fun PhotoDto.toDomain() = Photo(
     createdAt = createdAt,
     kind = kind.toDomain(),
     note = note,
+    receipt = receipt?.let { ReceiptInfo(it.amountKopecks, it.purchasedAt) },
 )
 
 internal fun ObjectDraft.toRequestDto() = ObjectRequestDto(

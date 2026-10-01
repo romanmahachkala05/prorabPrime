@@ -13,6 +13,7 @@ import ru.prorabprime.domain.model.ObjectSort
 import ru.prorabprime.domain.model.ObjectSummary
 import ru.prorabprime.domain.model.Photo
 import ru.prorabprime.domain.model.PhotoId
+import ru.prorabprime.domain.model.ReceiptInfo
 import ru.prorabprime.domain.model.ServerFilePath
 
 /*
@@ -37,6 +38,7 @@ internal fun PhotoRow.toDomain(blobs: BlobStore) = Photo(
     isPending = localBlob != null,
     quarterTurns = quarterTurns,
     note = note,
+    receipt = receiptAmountKopecks?.let { ReceiptInfo(it, receiptAt) },
 )
 
 internal fun ObjectRow.toSummary(

@@ -39,6 +39,19 @@ class PhotoViewerContentTest {
     }
 
     @Test
+    fun `a receipt's sum and time are shown above the note`() = runComposeUiTest {
+        val state = PhotoViewerState(
+            status = PhotoViewerStatus.Content,
+            photos = persistentListOf(
+                ViewerPhoto("p1", ServerFilePath("/files/o/p1.jpg"), receiptLine = "790 ₽ · 01.10.2026 15:26"),
+            ),
+        )
+        setContent { ProrabTheme { PhotoViewerContent(state, {}, {}, { _, _ -> }) } }
+
+        onNodeWithText("790 ₽ · 01.10.2026 15:26").assertIsDisplayed()
+    }
+
+    @Test
     fun `without a note the bar invites to add one`() = runComposeUiTest {
         setContent { ProrabTheme { PhotoViewerContent(stateWith(null), {}, {}, { _, _ -> }) } }
 

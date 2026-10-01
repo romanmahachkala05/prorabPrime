@@ -60,6 +60,9 @@ internal data class PhotoRow(
     /** Clockwise quarter turns asked for on the phone and not yet made by the server (0 to 3). */
     val quarterTurns: Int = 0,
     val note: String? = null,
+    /** From the QR code on a receipt, read by the server; null for a photo and for a receipt it could not read. */
+    val receiptAmountKopecks: Long? = null,
+    val receiptAt: String? = null,
 )
 
 @Serializable
