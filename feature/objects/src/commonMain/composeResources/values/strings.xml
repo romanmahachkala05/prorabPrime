@@ -18,6 +18,7 @@
     <string name="objectslist_capture_title">Куда отправить снимок?</string>
     <string name="objectslist_capture_photo">Фото объекта</string>
     <string name="objectslist_capture_receipt">Чек</string>
+    <string name="objectslist_capture_note">Заметка (необязательно)</string>
     <string name="objectslist_photo_uploaded">Фото добавлено: %1$s</string>
     <string name="objectslist_receipt_uploaded">Чек добавлен: %1$s</string>
     <string name="objectslist_nothing_found">Ничего не найдено</string>
@@ -46,6 +47,7 @@
     <string name="objectdetails_add_photo">Добавить фото</string>
     <string name="objectdetails_take_photo">Сфотографировать</string>
     <string name="objectdetails_pick_photos">Выбрать из галереи</string>
+    <string name="objectdetails_has_note">Есть заметка</string>
     <string name="objectdetails_cover">Обложка</string>
     <string name="objectdetails_make_cover">Сделать обложкой</string>
     <string name="objectdetails_cover_set">Обложка обновлена</string>
@@ -83,6 +85,11 @@
     <string name="photoviewer_back">Назад</string>
     <string name="photoviewer_position">%1$d из %2$d</string>
     <string name="photoviewer_rotate">Повернуть</string>
+    <string name="photoviewer_note_add">Добавить заметку</string>
+    <string name="photoviewer_note_edit">Изменить заметку</string>
+    <string name="photoviewer_note_title">Заметка</string>
+    <string name="photoviewer_note_save">Сохранить</string>
+    <string name="photoviewer_note_cancel">Отмена</string>
 
     <!-- objectedit -->
     <string name="objectedit_title_new">Новый объект</string>

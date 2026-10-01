@@ -69,6 +69,7 @@ internal data class PhotoUi(
     val isCover: Boolean,
     val isPending: Boolean = false,
     val quarterTurns: Int = 0,
+    val hasNote: Boolean = false,
 )
 
 /** A picture on its way to the server, shown in the carousel until it arrives as a [PhotoUi]. */

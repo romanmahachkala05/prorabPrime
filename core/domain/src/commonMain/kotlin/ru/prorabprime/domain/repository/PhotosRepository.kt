@@ -12,9 +12,13 @@ interface PhotosRepository {
         objectId: ObjectId,
         image: CompressedImage,
         kind: AttachmentKind = AttachmentKind.PHOTO,
+        note: String? = null,
     ): Result<Photo>
 
     suspend fun delete(id: PhotoId): Result<Unit>
+
+    /** An empty note clears it. */
+    suspend fun setNote(id: PhotoId, note: String?): Result<Unit>
 
     /** One quarter turn clockwise, kept: the server makes new files, and the phone shows the turn at once. */
     suspend fun rotate(id: PhotoId): Result<Unit>

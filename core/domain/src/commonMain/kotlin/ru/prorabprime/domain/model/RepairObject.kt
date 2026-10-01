@@ -84,4 +84,6 @@ data class Photo(
     val isPending: Boolean = false,
     /** Clockwise quarter turns asked for and not yet made by the server; the picture is shown turned by them. */
     val quarterTurns: Int = 0,
+    /** What the foreman wrote about it. */
+    val note: String? = null,
 )

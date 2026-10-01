@@ -24,6 +24,8 @@ internal class OperationRunner(
 
         is Operation.UploadPhoto -> upload(operation)
 
+        is Operation.SetPhotoNote -> remote.setPhotoNote(operation.photoId, operation.note).goneIsDone()
+
         is Operation.RotatePhoto ->
             remote.rotatePhoto(operation.photoId, operation.quarterTurns, operation.rotationId).goneIsDone()
 
@@ -66,7 +68,14 @@ internal class OperationRunner(
 
     private suspend fun upload(operation: Operation.UploadPhoto): Result<Unit> {
         val bytes = blobs.get(operation.blob) ?: return AppError.NotFound.asFailure()
-        return remote.uploadPhoto(operation.objectId, operation.photoId, operation.kind, bytes, operation.mimeType)
+        return remote.uploadPhoto(
+            operation.objectId,
+            operation.photoId,
+            operation.kind,
+            bytes,
+            operation.mimeType,
+            operation.note,
+        )
             .onSuccess { blobs.delete(operation.blob) }
     }
 

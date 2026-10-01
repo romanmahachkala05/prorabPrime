@@ -173,4 +173,5 @@ private fun ru.prorabprime.contract.PhotoDto.toRow(objectId: String, order: Long
     createdAt = createdAt,
     url = url,
     thumbUrl = thumbUrl,
+    note = note,
 )

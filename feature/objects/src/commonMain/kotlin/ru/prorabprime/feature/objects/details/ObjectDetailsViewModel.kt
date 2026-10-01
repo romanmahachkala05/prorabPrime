@@ -173,5 +173,12 @@ internal fun ObjectDetails.toUi() = ObjectDetailsUi(
     receipts = photos.filter { it.kind == AttachmentKind.RECEIPT }.map { it.toUi(coverPhotoId) }.toImmutableList(),
 )
 
-private fun Photo.toUi(coverPhotoId: PhotoId?) =
-    PhotoUi(id.value, thumbPath, isCover = id == coverPhotoId, isPending = isPending, quarterTurns = quarterTurns)
+private fun Photo.toUi(coverPhotoId: PhotoId?) = PhotoUi(
+    id.value,
+    thumbPath,
+    isCover = id == coverPhotoId,
+    isPending = isPending,
+    quarterTurns = quarterTurns,
+    hasNote =
+        note != null,
+)

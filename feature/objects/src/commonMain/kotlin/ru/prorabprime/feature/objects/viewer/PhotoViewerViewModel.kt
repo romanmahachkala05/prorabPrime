@@ -15,6 +15,7 @@ import ru.prorabprime.domain.model.PhotoId
 import ru.prorabprime.domain.model.asAppError
 import ru.prorabprime.domain.usecase.ObserveObjectUseCase
 import ru.prorabprime.domain.usecase.RotatePhotoUseCase
+import ru.prorabprime.domain.usecase.SetPhotoNoteUseCase
 import ru.prorabprime.ui.SnackbarNotifier
 import ru.prorabprime.ui.StateOwner
 import ru.prorabprime.ui.toUiText
@@ -27,6 +28,7 @@ internal class PhotoViewerViewModel(
     args: PhotoViewerArgs,
     observeObject: ObserveObjectUseCase,
     private val rotatePhoto: RotatePhotoUseCase,
+    private val setPhotoNote: SetPhotoNoteUseCase,
     private val notifier: SnackbarNotifier,
 ) : ViewModel(),
     StateOwner<PhotoViewerState> {
@@ -46,7 +48,9 @@ internal class PhotoViewerViewModel(
                         _state.update {
                             PhotoViewerState(
                                 PhotoViewerStatus.Content,
-                                folder.map { ViewerPhoto(it.id.value, it.path, it.quarterTurns) }.toImmutableList(),
+                                folder.map {
+                                    ViewerPhoto(it.id.value, it.path, it.quarterTurns, it.note)
+                                }.toImmutableList(),
                                 index,
                             )
                         }
@@ -54,6 +58,12 @@ internal class PhotoViewerViewModel(
                         _state.update { it.copy(status = PhotoViewerStatus.Error(failure.asAppError().toUiText())) }
                     }
             }.launchIn(viewModelScope)
+    }
+
+    fun saveNote(photoId: String, note: String) {
+        viewModelScope.launch {
+            setPhotoNote(PhotoId(photoId), note).onFailure { notifier.showError(it.asAppError().toUiText()) }
+        }
     }
 
     fun rotate(photoId: String) {
