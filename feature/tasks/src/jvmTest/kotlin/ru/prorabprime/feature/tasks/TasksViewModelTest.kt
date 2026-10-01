@@ -12,6 +12,7 @@ import ru.prorabprime.domain.model.TaskId
 import ru.prorabprime.domain.usecase.DeleteTaskUseCase
 import ru.prorabprime.domain.usecase.ObserveDayTasksUseCase
 import ru.prorabprime.domain.usecase.ObserveOverdueTasksUseCase
+import ru.prorabprime.domain.usecase.ObserveTasksRangeUseCase
 import ru.prorabprime.domain.usecase.SaveTaskUseCase
 import ru.prorabprime.testing.FakeSnackbarNotifier
 import ru.prorabprime.testing.FakeTasksRepository
@@ -36,6 +37,7 @@ class TasksViewModelTest {
             actions = TasksActions(
                 observeDay = ObserveDayTasksUseCase(repository),
                 observeOverdue = ObserveOverdueTasksUseCase(repository),
+                observeRange = ObserveTasksRangeUseCase(repository),
                 saveTask = SaveTaskUseCase(repository),
                 deleteTask = DeleteTaskUseCase(repository),
             ),
@@ -84,6 +86,73 @@ class TasksViewModelTest {
         viewModel.onEvent(TasksEvent.TodayClicked)
         assertThat(state.isToday).isTrue()
         assertThat(state.overdue.map { it.id }).containsExactly("old")
+    }
+
+    @Test
+    fun `the month grid opens on the month of the day and marks the days that have tasks`() {
+        withTasks()
+
+        viewModel.onEvent(TasksEvent.MonthToggled)
+
+        assertThat(state.view).isEqualTo(TasksView.MONTH)
+        assertThat(state.month).isEqualTo(LocalDay.of(2026, 9, 1))
+        // Today has one open and one done task, yesterday one open; tomorrow is also in September.
+        assertThat(state.marks[today]).isEqualTo(DayMarkUi(open = 1, done = 1))
+        assertThat(state.marks[today.plusDays(-1)]).isEqualTo(DayMarkUi(open = 1, done = 0))
+        assertThat(state.marks[today.plusDays(1)]).isEqualTo(DayMarkUi(open = 1, done = 0))
+        assertThat(state.marks[today.plusDays(2)]).isNull()
+
+        viewModel.onEvent(TasksEvent.MonthToggled)
+        assertThat(state.view).isEqualTo(TasksView.DAY)
+    }
+
+    @Test
+    fun `a task added while the grid is open appears in it`() {
+        withTasks()
+        viewModel.onEvent(TasksEvent.MonthToggled)
+
+        repository.tasks.value += aTask("new", "Новое", today.plusDays(2))
+
+        assertThat(state.marks[today.plusDays(2)]).isEqualTo(DayMarkUi(open = 1, done = 0))
+    }
+
+    @Test
+    fun `a day tapped in the grid becomes the day on screen and the grid stays open`() {
+        withTasks()
+        viewModel.onEvent(TasksEvent.MonthToggled)
+
+        viewModel.onEvent(TasksEvent.DayPicked(today.plusDays(1)))
+
+        assertThat(state.day).isEqualTo(today.plusDays(1))
+        assertThat(state.view).isEqualTo(TasksView.MONTH)
+        assertThat(state.tasks.map { it.id }).containsExactly("tomorrow")
+    }
+
+    @Test
+    fun `the grid pages through months and follows the day when it leaves the month`() {
+        withTasks()
+        repository.tasks.value += aTask("oct", "Октябрьское", LocalDay.of(2026, 10, 3))
+        viewModel.onEvent(TasksEvent.MonthToggled)
+
+        viewModel.onEvent(TasksEvent.NextMonth)
+        assertThat(state.month).isEqualTo(LocalDay.of(2026, 10, 1))
+        assertThat(state.marks.keys).containsExactly(LocalDay.of(2026, 10, 3))
+        viewModel.onEvent(TasksEvent.PreviousMonth)
+        viewModel.onEvent(TasksEvent.PreviousMonth)
+        assertThat(state.month).isEqualTo(LocalDay.of(2026, 8, 1))
+
+        viewModel.onEvent(TasksEvent.TodayClicked)
+        assertThat(state.month).isEqualTo(LocalDay.of(2026, 9, 1))
+        viewModel.onEvent(TasksEvent.DayPicked(LocalDay.of(2026, 10, 3)))
+        assertThat(state.month).isEqualTo(LocalDay.of(2026, 10, 1))
+        assertThat(state.tasks.map { it.id }).containsExactly("oct")
+    }
+
+    @Test
+    fun `months step over a year and a leap February`() {
+        assertThat(LocalDay.of(2026, 12, 1).nextMonth()).isEqualTo(LocalDay.of(2027, 1, 1))
+        assertThat(LocalDay.of(2026, 1, 15).previousMonth()).isEqualTo(LocalDay.of(2025, 12, 1))
+        assertThat(LocalDay.of(2024, 2, 10).lastOfMonth()).isEqualTo(LocalDay.of(2024, 2, 29))
     }
 
     @Test

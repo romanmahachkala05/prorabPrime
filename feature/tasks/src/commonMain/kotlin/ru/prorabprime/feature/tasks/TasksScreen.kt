@@ -40,16 +40,19 @@ import ru.prorabprime.designsystem.components.LoadingBox
 import ru.prorabprime.designsystem.components.PendingMark
 import ru.prorabprime.designsystem.components.TextButton
 import ru.prorabprime.designsystem.components.TopAppBar
+import ru.prorabprime.designsystem.icons.ProrabIcons
 import ru.prorabprime.designsystem.theme.Spacing
 import ru.prorabprime.feature.tasks.resources.Res
 import ru.prorabprime.feature.tasks.resources.tasks_add
 import ru.prorabprime.feature.tasks.resources.tasks_back
 import ru.prorabprime.feature.tasks.resources.tasks_empty
+import ru.prorabprime.feature.tasks.resources.tasks_hide_month
 import ru.prorabprime.feature.tasks.resources.tasks_mark_done
 import ru.prorabprime.feature.tasks.resources.tasks_mark_open
 import ru.prorabprime.feature.tasks.resources.tasks_next_day
 import ru.prorabprime.feature.tasks.resources.tasks_overdue
 import ru.prorabprime.feature.tasks.resources.tasks_previous_day
+import ru.prorabprime.feature.tasks.resources.tasks_show_month
 import ru.prorabprime.feature.tasks.resources.tasks_title
 import ru.prorabprime.feature.tasks.resources.tasks_today
 import ru.prorabprime.ui.UiText
@@ -79,6 +82,15 @@ internal fun TasksContent(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(Res.string.tasks_back))
                     }
                 },
+                actions = {
+                    val monthOpen = state.view == TasksView.MONTH
+                    IconButton(onClick = { onEvent(TasksEvent.MonthToggled) }) {
+                        Icon(
+                            ProrabIcons.CalendarMonth,
+                            stringResource(if (monthOpen) Res.string.tasks_hide_month else Res.string.tasks_show_month),
+                        )
+                    }
+                },
             )
         },
         floatingActionButton = {
@@ -92,6 +104,7 @@ internal fun TasksContent(
         },
     ) { padding ->
         Column(Modifier.padding(padding).fillMaxSize()) {
+            if (state.view == TasksView.MONTH) MonthGrid(state, onEvent)
             DayBar(state, onEvent)
             when (val status = state.status) {
                 TasksStatus.Content -> TaskList(state, onEvent)
@@ -111,6 +124,8 @@ internal fun TasksContent(
 /** Yesterday, tomorrow, and a way back to today. */
 @Composable
 private fun DayBar(state: TasksState, onEvent: (TasksEvent) -> Unit) {
+    // With the grid paged to another month, "today" is also the way back to this one.
+    val monthAway = state.view == TasksView.MONTH && state.month != state.today.firstOfMonth()
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.s),
         verticalAlignment = Alignment.CenterVertically,
@@ -123,7 +138,7 @@ private fun DayBar(state: TasksState, onEvent: (TasksEvent) -> Unit) {
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.weight(1f),
         )
-        if (!state.isToday) {
+        if (!state.isToday || monthAway) {
             TextButton(onClick = { onEvent(TasksEvent.TodayClicked) }) { Text(stringResource(Res.string.tasks_today)) }
         }
         IconButton(onClick = { onEvent(TasksEvent.NextDay) }) {

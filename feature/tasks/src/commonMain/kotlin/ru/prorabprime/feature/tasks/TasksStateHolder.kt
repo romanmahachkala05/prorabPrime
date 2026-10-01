@@ -1,6 +1,7 @@
 package ru.prorabprime.feature.tasks
 
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,6 +20,11 @@ internal interface ITasksStateHolder : StateOwner<TasksState> {
 
     /** Moves to [day]; what was shown stays until the new day's tasks arrive. */
     fun showDay(day: LocalDay)
+
+    /** Opens the grid on the month starting at [first], or closes it when null; marks stay until new ones arrive. */
+    fun showMonth(first: LocalDay?)
+
+    fun showMarks(marks: ImmutableMap<LocalDay, DayMarkUi>)
 
     fun openEditor(editor: TaskEditorUi)
 
@@ -49,6 +55,12 @@ internal class TasksStateHolder(
     override fun showError(message: UiText) = _state.update { it.copy(status = TasksStatus.Error(message)) }
 
     override fun showDay(day: LocalDay) = _state.update { it.copy(day = day) }
+
+    override fun showMonth(first: LocalDay?) = _state.update {
+        if (first == null) it.copy(view = TasksView.DAY) else it.copy(view = TasksView.MONTH, month = first)
+    }
+
+    override fun showMarks(marks: ImmutableMap<LocalDay, DayMarkUi>) = _state.update { it.copy(marks = marks) }
 
     override fun openEditor(editor: TaskEditorUi) = _state.update { it.copy(editor = editor) }
 
