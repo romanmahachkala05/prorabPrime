@@ -22,6 +22,8 @@ data class TaskRequestDto(
     val day: String,
     val remindAtMinutes: Int? = null,
     val done: Boolean = false,
+    /** Chosen by the client on create (a UUID), so a retry of the same create finds the record it made. */
+    val id: String? = null,
 )
 
 object TaskLimits {

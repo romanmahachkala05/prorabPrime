@@ -29,6 +29,7 @@ import ru.prorabprime.contract.SetCoverRequestDto
 import ru.prorabprime.server.error.ServiceError
 import ru.prorabprime.server.error.ServiceException
 import ru.prorabprime.server.service.PhotoService
+import ru.prorabprime.server.service.parseClientId
 import ru.prorabprime.server.storage.FileStorage
 
 fun Route.photoRoutes() {
@@ -37,7 +38,8 @@ fun Route.photoRoutes() {
     post(ApiPaths.OBJECT_PHOTOS) {
         val objectId = call.uuidParam(ApiParams.ID)
         val bytes = call.receiveUploadedFile()
-        val photo = service.upload(objectId, bytes, call.attachmentKind()).getOrThrow()
+        val clientId = parseClientId(call.request.queryParameters[ApiQuery.ID]).getOrThrow()
+        val photo = service.upload(objectId, bytes, call.attachmentKind(), clientId).getOrThrow()
         call.respond(HttpStatusCode.Created, photo.toDto())
     }
     delete(ApiPaths.PHOTO) {

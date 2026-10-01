@@ -46,6 +46,8 @@ data class PaymentRequestDto(
     val method: PaymentMethodDto,
     val paidOn: String,
     val note: String? = null,
+    /** Chosen by the client on create (a UUID), so a retry of the same create finds the record it made. */
+    val id: String? = null,
 )
 
 @Serializable
@@ -62,6 +64,8 @@ data class ExtraWorkRequestDto(
     val title: String,
     val amountKopecks: Long,
     val status: ExtraWorkStatusDto = ExtraWorkStatusDto.NOT_AGREED,
+    /** Chosen by the client on create (a UUID), so a retry of the same create finds the record it made. */
+    val id: String? = null,
 )
 
 /** What was agreed for the whole object; either side may be unset. Body of `PUT .../finance/terms`. */

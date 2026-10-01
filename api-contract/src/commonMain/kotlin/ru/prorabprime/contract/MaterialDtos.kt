@@ -22,6 +22,8 @@ data class MaterialDto(
 data class MaterialRequestDto(
     val title: String,
     val status: MaterialStatusDto = MaterialStatusDto.NOT_CHOSEN,
+    /** Chosen by the client on create (a UUID), so a retry of the same create finds the record it made. */
+    val id: String? = null,
 )
 
 object MaterialLimits {

@@ -49,7 +49,9 @@ class TaskService(
 
     suspend fun create(request: TaskRequestDto): Result<TaskRecord> {
         val fields = validateTask(request).getOrElse { return Result.failure(it) }
-        val record = TaskRecord(newId(), fields, clock.now())
+        val clientId = parseClientId(request.id).getOrElse { return Result.failure(it) }
+        alreadyCreated(clientId?.let { tasks.find(it) }) { true }?.let { return it }
+        val record = TaskRecord(clientId ?: newId(), fields, clock.now())
         tasks.insert(record)
         return Result.success(record)
     }

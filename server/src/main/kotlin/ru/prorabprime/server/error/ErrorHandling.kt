@@ -42,5 +42,7 @@ internal fun ServiceError.toResponse(): Pair<HttpStatusCode, ErrorDto> = when (t
     is ServiceError.UnsupportedMedia ->
         HttpStatusCode.UnsupportedMediaType to ErrorDto(ErrorCode.UNSUPPORTED_MEDIA, message)
 
+    is ServiceError.Conflict -> HttpStatusCode.Conflict to ErrorDto(ErrorCode.CONFLICT, message)
+
     is ServiceError.TooLarge -> HttpStatusCode.PayloadTooLarge to ErrorDto(ErrorCode.PAYLOAD_TOO_LARGE, message)
 }

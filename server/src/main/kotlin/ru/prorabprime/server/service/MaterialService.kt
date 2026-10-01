@@ -63,8 +63,10 @@ class MaterialService(
     suspend fun create(objectId: UUID, request: MaterialRequestDto): Result<MaterialRecord> {
         val fields = validateMaterial(request).getOrElse { return Result.failure(it) }
         if (objects.find(objectId) == null) return objectNotFound(objectId)
+        val clientId = parseClientId(request.id).getOrElse { return Result.failure(it) }
+        alreadyCreated(clientId?.let { materials.find(it) }) { it.objectId == objectId }?.let { return it }
         val now = clock.now()
-        val record = MaterialRecord(newId(), objectId, fields, materials.nextSortOrder(objectId), now)
+        val record = MaterialRecord(clientId ?: newId(), objectId, fields, materials.nextSortOrder(objectId), now)
         materials.insert(record)
         objects.touch(objectId, now)
         return Result.success(record)

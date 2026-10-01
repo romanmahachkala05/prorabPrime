@@ -77,6 +77,8 @@ data class ObjectRequestDto(
     /** The point picked on the map, both or neither; without it the server looks the address up. */
     val latitude: Double? = null,
     val longitude: Double? = null,
+    /** Chosen by the client on create (a UUID), so a retry of the same create finds the record it made. */
+    val id: String? = null,
 )
 
 /** The address found at a point of the map; null when there is none. */
