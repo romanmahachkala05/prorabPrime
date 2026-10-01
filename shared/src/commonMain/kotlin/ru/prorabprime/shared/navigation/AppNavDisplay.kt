@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
+import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
@@ -46,6 +47,8 @@ import ru.prorabprime.feature.objects.details.ObjectDetailsNavKey
 import ru.prorabprime.feature.objects.details.ObjectDetailsScreen
 import ru.prorabprime.feature.objects.edit.ObjectEditNavKey
 import ru.prorabprime.feature.objects.edit.ObjectEditScreen
+import ru.prorabprime.feature.objects.gallery.GalleryNavKey
+import ru.prorabprime.feature.objects.gallery.GalleryScreen
 import ru.prorabprime.feature.objects.list.ObjectsListNavKey
 import ru.prorabprime.feature.objects.list.ObjectsListScreen
 import ru.prorabprime.feature.objects.viewer.PhotoViewerNavKey
@@ -109,6 +112,12 @@ private val SNACKBAR_CLEARANCE = 72.dp
 
 /** Every screen of the app, with the callbacks that move between them. */
 private fun appEntries(backStack: NavBackStack<NavKey>) = entryProvider<NavKey> {
+    objectEntries(backStack)
+    toolEntries(backStack)
+}
+
+/** The objects list, the card of an object and what opens from it. */
+private fun EntryProviderScope<NavKey>.objectEntries(backStack: NavBackStack<NavKey>) {
     entry<ObjectsListNavKey> {
         ObjectsListScreen(
             onOpenObject = { backStack.add(ObjectDetailsNavKey(it)) },
@@ -125,24 +134,20 @@ private fun appEntries(backStack: NavBackStack<NavKey>) = entryProvider<NavKey> 
             objectId = key.objectId,
             onEdit = { backStack.add(ObjectEditNavKey(key.objectId)) },
             onOpenPhoto = { backStack.add(PhotoViewerNavKey(key.objectId, it)) },
+            onOpenGallery = { backStack.add(GalleryNavKey(key.objectId, it)) },
             onOpenFinance = { backStack.add(FinanceNavKey(key.objectId)) },
             onOpenMaterials = { backStack.add(MaterialsNavKey(key.objectId)) },
             onClose = { backStack.pop() },
         )
     }
-    entry<FinanceNavKey> { key -> FinanceScreen(objectId = key.objectId, onBack = { backStack.pop() }) }
-    entry<MapNavKey> {
-        MapScreen(onOpenObject = { backStack.add(ObjectDetailsNavKey(it)) }, onBack = { backStack.pop() })
-    }
-    entry<TasksNavKey> { TasksScreen(onBack = { backStack.pop() }) }
-    entry<ExpensesNavKey> {
-        ExpensesScreen(
-            onOpenReceipt = { objectId, photoId -> backStack.add(PhotoViewerNavKey(objectId, photoId)) },
-            onOpenObject = { backStack.add(ObjectDetailsNavKey(it)) },
+    entry<GalleryNavKey> { key ->
+        GalleryScreen(
+            objectId = key.objectId,
+            receipts = key.receipts,
+            onOpenPhoto = { backStack.add(PhotoViewerNavKey(key.objectId, it)) },
             onBack = { backStack.pop() },
         )
     }
-    entry<MaterialsNavKey> { key -> MaterialsScreen(objectId = key.objectId, onBack = { backStack.pop() }) }
     entry<PhotoViewerNavKey> { key ->
         PhotoViewerScreen(objectId = key.objectId, photoId = key.photoId, onBack = { backStack.pop() })
     }
@@ -166,6 +171,23 @@ private fun appEntries(backStack: NavBackStack<NavKey>) = entryProvider<NavKey> 
             onBack = { backStack.pop() },
         )
     }
+}
+
+/** The screens that stand apart from one object: money, materials, the map, the plan, the settings. */
+private fun EntryProviderScope<NavKey>.toolEntries(backStack: NavBackStack<NavKey>) {
+    entry<FinanceNavKey> { key -> FinanceScreen(objectId = key.objectId, onBack = { backStack.pop() }) }
+    entry<MapNavKey> {
+        MapScreen(onOpenObject = { backStack.add(ObjectDetailsNavKey(it)) }, onBack = { backStack.pop() })
+    }
+    entry<TasksNavKey> { TasksScreen(onBack = { backStack.pop() }) }
+    entry<ExpensesNavKey> {
+        ExpensesScreen(
+            onOpenReceipt = { objectId, photoId -> backStack.add(PhotoViewerNavKey(objectId, photoId)) },
+            onOpenObject = { backStack.add(ObjectDetailsNavKey(it)) },
+            onBack = { backStack.pop() },
+        )
+    }
+    entry<MaterialsNavKey> { key -> MaterialsScreen(objectId = key.objectId, onBack = { backStack.pop() }) }
     entry<SettingsNavKey> { SettingsScreen(onBack = { backStack.pop() }) }
 }
 
@@ -185,6 +207,7 @@ private val NAV_KEYS = SavedStateConfiguration {
             subclass(ObjectDetailsNavKey::class, ObjectDetailsNavKey.serializer())
             subclass(ObjectEditNavKey::class, ObjectEditNavKey.serializer())
             subclass(PhotoViewerNavKey::class, PhotoViewerNavKey.serializer())
+            subclass(GalleryNavKey::class, GalleryNavKey.serializer())
             subclass(SettingsNavKey::class, SettingsNavKey.serializer())
             subclass(FinanceNavKey::class, FinanceNavKey.serializer())
             subclass(MaterialsNavKey::class, MaterialsNavKey.serializer())
