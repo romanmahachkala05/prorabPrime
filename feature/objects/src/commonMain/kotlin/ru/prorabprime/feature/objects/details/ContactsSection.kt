@@ -19,7 +19,6 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
@@ -28,6 +27,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import kotlinx.collections.immutable.ImmutableList
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
+import ru.prorabprime.designsystem.components.TextButton
 import ru.prorabprime.designsystem.theme.Spacing
 import ru.prorabprime.domain.model.ContactRole
 import ru.prorabprime.domain.model.FieldProblem

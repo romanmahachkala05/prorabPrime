@@ -4,6 +4,7 @@ import com.google.common.truth.Truth.assertThat
 import io.ktor.server.config.MapApplicationConfig
 import org.junit.Assert.assertThrows
 import org.junit.Test
+import ru.prorabprime.server.model.Coordinates
 
 class AppConfigTest {
 
@@ -32,6 +33,17 @@ class AppConfigTest {
         assertThat(AppConfig.from(config().apply { put("prorab.geocoder.url", " OFF ") }).geocoderUrl).isNull()
         assertThat(AppConfig.from(config().apply { put("prorab.geocoder.url", "") }).geocoderUrl)
             .isEqualTo(AppConfig.DEFAULT_GEOCODER_URL)
+    }
+
+    @Test
+    fun `addresses are resolved around Yekaterinburg unless told otherwise`() {
+        assertThat(AppConfig.from(config()).geocoderNear).isEqualTo(AppConfig.DEFAULT_GEOCODER_NEAR)
+        assertThat(AppConfig.from(config().apply { put("prorab.geocoder.near", " 58.01, 56.25 ") }).geocoderNear)
+            .isEqualTo(Coordinates(58.01, 56.25))
+        assertThat(AppConfig.from(config().apply { put("prorab.geocoder.near", "OFF") }).geocoderNear).isNull()
+        assertThrows(IllegalStateException::class.java) {
+            AppConfig.from(config().apply { put("prorab.geocoder.near", "Екатеринбург") })
+        }
     }
 
     @Test

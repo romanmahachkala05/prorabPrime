@@ -22,10 +22,8 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -45,6 +43,8 @@ import org.koin.core.parameter.parametersOf
 import ru.prorabprime.designsystem.components.DialogHost
 import ru.prorabprime.designsystem.components.ErrorMessage
 import ru.prorabprime.designsystem.components.LoadingBox
+import ru.prorabprime.designsystem.components.OutlinedButton
+import ru.prorabprime.designsystem.components.TopAppBar
 import ru.prorabprime.designsystem.theme.ProrabTheme
 import ru.prorabprime.designsystem.theme.Spacing
 import ru.prorabprime.domain.model.AttachmentKind

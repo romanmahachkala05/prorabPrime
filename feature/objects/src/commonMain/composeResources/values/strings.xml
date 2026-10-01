@@ -90,6 +90,8 @@
     <string name="objectedit_title">Название</string>
     <string name="objectedit_chat_link">Ссылка на чат (Telegram, Max)</string>
     <string name="objectedit_address">Адрес *</string>
+    <string name="objectedit_pick_on_map">Выбрать на карте</string>
+    <string name="objectedit_place_picked">Место выбрано на карте</string>
     <string name="objectedit_status">Статус</string>
     <string name="objectedit_client_name">Имя клиента</string>
     <string name="objectedit_client_phone">Телефон клиента</string>

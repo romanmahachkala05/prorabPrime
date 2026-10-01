@@ -14,5 +14,10 @@
     <string name="map_find">Найти на карте</string>
     <string name="map_find_requested">Ищем адрес на карте</string>
     <string name="map_empty">Пока нет ни одного объекта</string>
+    <string name="picker_title">Выбор места</string>
+    <string name="picker_back">Назад</string>
+    <string name="picker_hint">Сдвиньте карту так, чтобы метка встала на нужный дом.</string>
+    <string name="picker_confirm">Выбрать это место</string>
+    <string name="picker_pin">Выбранное место</string>
     <string name="map_error_gone">Не удалось загрузить объекты.</string>
 </resources>

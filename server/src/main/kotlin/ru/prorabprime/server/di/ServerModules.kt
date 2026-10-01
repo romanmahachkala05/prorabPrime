@@ -52,7 +52,7 @@ fun configModule(config: AppConfig): Module = module {
     single<Clock> { Clock.System }
     single<FileStorage> { LocalFileStorage(Path.of(config.storageDir), get(IO)) }
     single<ImageProcessor> { JavaImageProcessor(get(IO)) }
-    single<Geocoder> { config.geocoderUrl?.let { NominatimGeocoder(it, get(IO)) } ?: NoGeocoder }
+    single<Geocoder> { config.geocoderUrl?.let { NominatimGeocoder(it, get(IO), config.geocoderNear) } ?: NoGeocoder }
 }
 
 /** The Exposed implementations; route tests replace this module with fakes. */

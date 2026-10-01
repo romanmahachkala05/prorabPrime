@@ -39,6 +39,9 @@ python -c "import secrets; print(secrets.token_urlsafe(24))"
 **Map pins.** To put an object on the map the server looks its address up on OpenStreetMap's
 public Nominatim, which means **the address is sent to nominatim.openstreetmap.org**. If you would
 rather keep addresses on this computer, set `GEOCODER_URL=off` in `.env`: objects then have no pins.
+An address can be typed or chosen on the map ("Выбрать на карте" in the object form). Addresses
+without a city are resolved around Yekaterinburg; change the point with `GEOCODER_NEAR`
+(`.env.example`).
 
 ## 2. Start the server
 

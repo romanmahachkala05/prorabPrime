@@ -7,6 +7,7 @@ import kotlinx.coroutines.CancellationException
 import ru.prorabprime.contract.ObjectRequestDto
 import ru.prorabprime.server.error.ServiceError
 import ru.prorabprime.server.error.asFailure
+import ru.prorabprime.server.model.Coordinates
 import ru.prorabprime.server.model.ObjectDetails
 import ru.prorabprime.server.model.ObjectListItem
 import ru.prorabprime.server.model.ObjectListQuery
@@ -37,7 +38,7 @@ class ObjectService(
         val now = clock.now()
         val record = ObjectRecord(id = newId(), fields = fields, coverPhotoId = null, createdAt = now, updatedAt = now)
         objects.insert(record)
-        locate(record.id, fields.address)
+        placePin(record.id, request.pinned(), fields.address)
         return Result.success(record)
     }
 
@@ -46,7 +47,9 @@ class ObjectService(
             val before = objects.find(id)
             if (objects.update(id, fields, clock.now())) {
                 // A new address is somewhere else: the old pin must not stay behind.
-                if (before != null && before.fields.address != fields.address) locate(id, fields.address)
+                val moved = before != null && before.fields.address != fields.address
+                val pin = request.pinned()
+                if (pin != null || moved) placePin(id, pin, fields.address)
                 get(id)
             } else {
                 notFound(id)
@@ -60,6 +63,18 @@ class ObjectService(
         val record = objects.find(id) ?: return notFound(id)
         locate(id, record.fields.address)
         return get(id)
+    }
+
+    /** The address at a point of the map, for the form that picks a place there; null when unknown. */
+    suspend fun addressAt(point: Coordinates): String? = geocoder.addressAt(point)
+
+    /** A point picked on the map is used as it is; otherwise the address is looked up. */
+    private suspend fun placePin(
+        id: UUID,
+        pin: Coordinates?,
+        address: String,
+    ) {
+        if (pin != null) objects.setCoordinates(id, pin) else locate(id, address)
     }
 
     /** Best effort: a geocoder that is down or does not know the address must never fail a save. */
@@ -77,7 +92,16 @@ class ObjectService(
 
     private fun <T> notFound(id: UUID): Result<T> = ServiceError.NotFound("No object $id").asFailure()
 
+    private fun ObjectRequestDto.pinned(): Coordinates? {
+        val lat = latitude ?: return null
+        val lon = longitude ?: return null
+        return Coordinates(lat, lon).takeIf { lat in LAT_RANGE && lon in LON_RANGE }
+    }
+
     private companion object {
+        val LAT_RANGE = -90.0..90.0
+        val LON_RANGE = -180.0..180.0
+
         val log = KtorSimpleLogger(ObjectService::class.qualifiedName!!)
     }
 }

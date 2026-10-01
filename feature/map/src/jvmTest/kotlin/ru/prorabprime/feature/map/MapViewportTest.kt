@@ -92,12 +92,12 @@ class MapViewportTest {
     }
 
     @Test
-    fun `before any pin the map looks at Moscow`() {
+    fun `before any pin the map looks at Yekaterinburg`() {
         val viewport = MapViewport()
 
-        assertThat(viewport.centerX).isWithin(1e-9).of(WebMercator.x(37.62))
-        assertThat(viewport.centerY).isWithin(1e-9).of(WebMercator.y(55.75))
-        assertThat(viewport.zoom).isEqualTo(5f)
+        assertThat(viewport.centerX).isWithin(1e-9).of(WebMercator.x(60.61))
+        assertThat(viewport.centerY).isWithin(1e-9).of(WebMercator.y(56.84))
+        assertThat(viewport.zoom).isEqualTo(10f)
         assertThat(viewport.isFitted).isFalse()
     }
 

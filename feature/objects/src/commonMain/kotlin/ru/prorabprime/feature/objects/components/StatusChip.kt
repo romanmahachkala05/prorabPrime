@@ -1,13 +1,11 @@
 package ru.prorabprime.feature.objects.components
 
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
@@ -32,10 +30,10 @@ internal fun StatusChip(status: ObjectStatus, modifier: Modifier = Modifier) {
     val (container, content) = when (status) {
         ObjectStatus.PLANNED -> colors.secondaryContainer to colors.onSecondaryContainer
         ObjectStatus.IN_PROGRESS -> colors.primaryContainer to colors.onPrimaryContainer
-        ObjectStatus.DONE -> DONE_GREEN to Color.White
-        ObjectStatus.PAUSED -> colors.surfaceVariant to colors.onSurfaceVariant
+        ObjectStatus.DONE -> colors.primary to colors.onPrimary
+        ObjectStatus.PAUSED -> colors.tertiaryContainer to colors.onTertiaryContainer
     }
-    Surface(color = container, contentColor = content, shape = PILL, modifier = modifier) {
+    Surface(color = container, contentColor = content, shape = MaterialTheme.shapes.small, modifier = modifier) {
         Text(
             stringResource(status.label),
             style = MaterialTheme.typography.labelMedium,
@@ -43,6 +41,3 @@ internal fun StatusChip(status: ObjectStatus, modifier: Modifier = Modifier) {
         )
     }
 }
-
-private val DONE_GREEN = Color(0xFF2E7D32)
-private val PILL = RoundedCornerShape(percent = 50)

@@ -14,6 +14,7 @@ import ru.prorabprime.contract.SortOrderDto
 import ru.prorabprime.domain.model.ContactDraft
 import ru.prorabprime.domain.model.ContactId
 import ru.prorabprime.domain.model.ContactRole
+import ru.prorabprime.domain.model.GeoPoint
 import ru.prorabprime.domain.model.ObjectDraft
 import ru.prorabprime.domain.model.ObjectSort
 import ru.prorabprime.domain.model.ObjectStatus
@@ -61,6 +62,17 @@ class MappersTest {
         assertThat(request.title).isEqualTo("Кухня")
         assertThat(request.status).isEqualTo(ObjectStatusDto.PAUSED)
         assertThat(request.notes).isEqualTo("ключи у соседа")
+    }
+
+    @Test
+    fun `a point picked on the map travels as latitude and longitude, and none as neither`() {
+        val pinned = ObjectDraft(address = "Ленина, 5", point = GeoPoint(56.84, 60.61)).toRequestDto()
+        assertThat(pinned.latitude).isEqualTo(56.84)
+        assertThat(pinned.longitude).isEqualTo(60.61)
+
+        val unpinned = ObjectDraft(address = "Ленина, 5").toRequestDto()
+        assertThat(unpinned.latitude).isNull()
+        assertThat(unpinned.longitude).isNull()
     }
 
     @Test

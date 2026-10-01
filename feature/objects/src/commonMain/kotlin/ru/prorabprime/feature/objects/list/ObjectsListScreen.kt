@@ -21,8 +21,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
@@ -35,10 +33,8 @@ import androidx.compose.material3.LargeFloatingActionButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -60,7 +56,9 @@ import org.koin.compose.viewmodel.koinViewModel
 import ru.prorabprime.designsystem.components.EmptyMessage
 import ru.prorabprime.designsystem.components.ErrorMessage
 import ru.prorabprime.designsystem.components.LoadingBox
+import ru.prorabprime.designsystem.components.SearchField
 import ru.prorabprime.designsystem.components.ServerImage
+import ru.prorabprime.designsystem.components.TopAppBar
 import ru.prorabprime.designsystem.icons.ProrabIcons
 import ru.prorabprime.designsystem.theme.ProrabTheme
 import ru.prorabprime.designsystem.theme.Spacing
@@ -230,20 +228,12 @@ private fun SearchField(
     onEvent: (ObjectsListEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    OutlinedTextField(
+    SearchField(
         value = text,
         onValueChange = { onEvent(ObjectsListEvent.SearchChanged(it)) },
-        placeholder = { Text(stringResource(Res.string.objectslist_search)) },
-        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-        trailingIcon = {
-            if (text.isNotEmpty()) {
-                IconButton(onClick = { onEvent(ObjectsListEvent.SearchChanged("")) }) {
-                    Icon(Icons.Default.Clear, contentDescription = stringResource(Res.string.objectslist_clear_search))
-                }
-            }
-        },
-        singleLine = true,
-        modifier = modifier.fillMaxWidth(),
+        placeholder = stringResource(Res.string.objectslist_search),
+        clearDescription = stringResource(Res.string.objectslist_clear_search),
+        modifier = modifier,
     )
 }
 

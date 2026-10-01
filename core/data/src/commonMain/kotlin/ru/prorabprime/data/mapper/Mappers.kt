@@ -54,6 +54,8 @@ internal fun ObjectDetailsDto.toDomain() = ObjectDetails(
     clientPhone = clientPhone,
     notes = notes,
     chatLink = chatLink,
+    latitude = latitude,
+    longitude = longitude,
     coverPhotoId = coverPhotoId?.let(::PhotoId),
     contacts = contacts.map { it.toDomain() }.toImmutableList(),
     photos = photos.map { it.toDomain() }.toImmutableList(),
@@ -79,6 +81,8 @@ internal fun ObjectDraft.toRequestDto() = ObjectRequestDto(
     clientPhone = clientPhone,
     notes = notes,
     chatLink = chatLink,
+    latitude = point?.latitude,
+    longitude = point?.longitude,
 )
 
 internal fun ObjectStatusDto.toDomain(): ObjectStatus = when (this) {

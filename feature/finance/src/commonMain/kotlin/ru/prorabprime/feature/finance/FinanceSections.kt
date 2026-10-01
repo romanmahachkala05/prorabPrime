@@ -13,13 +13,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import kotlinx.collections.immutable.ImmutableList
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
+import ru.prorabprime.designsystem.components.OutlinedButton
 import ru.prorabprime.designsystem.theme.Spacing
 import ru.prorabprime.feature.finance.resources.Res
 import ru.prorabprime.feature.finance.resources.finance_add_extra

@@ -22,6 +22,8 @@ import ru.prorabprime.feature.finance.FinanceNavKey
 import ru.prorabprime.feature.finance.FinanceScreen
 import ru.prorabprime.feature.map.MapNavKey
 import ru.prorabprime.feature.map.MapScreen
+import ru.prorabprime.feature.map.PlacePickerNavKey
+import ru.prorabprime.feature.map.PlacePickerScreen
 import ru.prorabprime.feature.materials.MaterialsNavKey
 import ru.prorabprime.feature.materials.MaterialsScreen
 import ru.prorabprime.feature.objects.details.ObjectDetailsNavKey
@@ -61,51 +63,63 @@ fun AppNavDisplay(notifier: SnackbarNotifier, modifier: Modifier = Modifier) {
                 rememberSaveableStateHolderNavEntryDecorator(),
                 rememberViewModelStoreNavEntryDecorator(),
             ),
-            entryProvider = entryProvider {
-                entry<ObjectsListNavKey> {
-                    ObjectsListScreen(
-                        onOpenObject = { backStack.add(ObjectDetailsNavKey(it)) },
-                        onCreateObject = { backStack.add(ObjectEditNavKey()) },
-                        onOpenSettings = { backStack.add(SettingsNavKey) },
-                        onOpenMap = { backStack.add(MapNavKey) },
-                        onOpenTasks = { backStack.add(TasksNavKey) },
-                    )
-                }
-                entry<ObjectDetailsNavKey> { key ->
-                    ObjectDetailsScreen(
-                        objectId = key.objectId,
-                        onEdit = { backStack.add(ObjectEditNavKey(key.objectId)) },
-                        onOpenPhoto = { backStack.add(PhotoViewerNavKey(key.objectId, it)) },
-                        onOpenFinance = { backStack.add(FinanceNavKey(key.objectId)) },
-                        onOpenMaterials = { backStack.add(MaterialsNavKey(key.objectId)) },
-                        onClose = { backStack.pop() },
-                    )
-                }
-                entry<FinanceNavKey> { key -> FinanceScreen(objectId = key.objectId, onBack = { backStack.pop() }) }
-                entry<MapNavKey> {
-                    MapScreen(onOpenObject = { backStack.add(ObjectDetailsNavKey(it)) }, onBack = { backStack.pop() })
-                }
-                entry<TasksNavKey> { TasksScreen(onBack = { backStack.pop() }) }
-                entry<MaterialsNavKey> { key -> MaterialsScreen(objectId = key.objectId, onBack = { backStack.pop() }) }
-                entry<PhotoViewerNavKey> { key ->
-                    PhotoViewerScreen(objectId = key.objectId, photoId = key.photoId, onBack = { backStack.pop() })
-                }
-                entry<ObjectEditNavKey> { key ->
-                    ObjectEditScreen(
-                        objectId = key.objectId,
-                        // The form gives way to the new object's card, so back goes to the list.
-                        onCreated = { id ->
-                            backStack.pop()
-                            backStack.add(ObjectDetailsNavKey(id))
-                        },
-                        onBack = { backStack.pop() },
-                    )
-                }
-                entry<SettingsNavKey> { SettingsScreen(onBack = { backStack.pop() }) }
-            },
+            entryProvider = appEntries(backStack),
             modifier = Modifier.fillMaxSize(),
         )
     }
+}
+
+/** Every screen of the app, with the callbacks that move between them. */
+private fun appEntries(backStack: NavBackStack<NavKey>) = entryProvider<NavKey> {
+    entry<ObjectsListNavKey> {
+        ObjectsListScreen(
+            onOpenObject = { backStack.add(ObjectDetailsNavKey(it)) },
+            onCreateObject = { backStack.add(ObjectEditNavKey()) },
+            onOpenSettings = { backStack.add(SettingsNavKey) },
+            onOpenMap = { backStack.add(MapNavKey) },
+            onOpenTasks = { backStack.add(TasksNavKey) },
+        )
+    }
+    entry<ObjectDetailsNavKey> { key ->
+        ObjectDetailsScreen(
+            objectId = key.objectId,
+            onEdit = { backStack.add(ObjectEditNavKey(key.objectId)) },
+            onOpenPhoto = { backStack.add(PhotoViewerNavKey(key.objectId, it)) },
+            onOpenFinance = { backStack.add(FinanceNavKey(key.objectId)) },
+            onOpenMaterials = { backStack.add(MaterialsNavKey(key.objectId)) },
+            onClose = { backStack.pop() },
+        )
+    }
+    entry<FinanceNavKey> { key -> FinanceScreen(objectId = key.objectId, onBack = { backStack.pop() }) }
+    entry<MapNavKey> {
+        MapScreen(onOpenObject = { backStack.add(ObjectDetailsNavKey(it)) }, onBack = { backStack.pop() })
+    }
+    entry<TasksNavKey> { TasksScreen(onBack = { backStack.pop() }) }
+    entry<MaterialsNavKey> { key -> MaterialsScreen(objectId = key.objectId, onBack = { backStack.pop() }) }
+    entry<PhotoViewerNavKey> { key ->
+        PhotoViewerScreen(objectId = key.objectId, photoId = key.photoId, onBack = { backStack.pop() })
+    }
+    entry<ObjectEditNavKey> { key ->
+        ObjectEditScreen(
+            objectId = key.objectId,
+            // The form gives way to the new object's card, so back goes to the list.
+            onCreated = { id ->
+                backStack.pop()
+                backStack.add(ObjectDetailsNavKey(id))
+            },
+            onBack = { backStack.pop() },
+            onPickOnMap = { latitude, longitude -> backStack.add(PlacePickerNavKey(latitude, longitude)) },
+        )
+    }
+    entry<PlacePickerNavKey> { key ->
+        PlacePickerScreen(
+            latitude = key.latitude,
+            longitude = key.longitude,
+            onDone = { backStack.pop() },
+            onBack = { backStack.pop() },
+        )
+    }
+    entry<SettingsNavKey> { SettingsScreen(onBack = { backStack.pop() }) }
 }
 
 /** Never pops the last screen: the system back gesture closes the app from there instead. */
@@ -128,6 +142,7 @@ private val NAV_KEYS = SavedStateConfiguration {
             subclass(FinanceNavKey::class, FinanceNavKey.serializer())
             subclass(MaterialsNavKey::class, MaterialsNavKey.serializer())
             subclass(MapNavKey::class, MapNavKey.serializer())
+            subclass(PlacePickerNavKey::class, PlacePickerNavKey.serializer())
             subclass(TasksNavKey::class, TasksNavKey.serializer())
         }
     }

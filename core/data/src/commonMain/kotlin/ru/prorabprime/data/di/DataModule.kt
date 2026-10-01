@@ -6,6 +6,7 @@ import org.koin.dsl.module
 import ru.prorabprime.data.network.createHttpClient
 import ru.prorabprime.data.remote.ContactsApi
 import ru.prorabprime.data.remote.FinanceApi
+import ru.prorabprime.data.remote.GeocodeApi
 import ru.prorabprime.data.remote.KtorConnectionChecker
 import ru.prorabprime.data.remote.MaterialsApi
 import ru.prorabprime.data.remote.ServerApi
@@ -16,13 +17,16 @@ import ru.prorabprime.data.repository.Invalidator
 import ru.prorabprime.data.repository.MaterialsRepositoryImpl
 import ru.prorabprime.data.repository.ObjectsRepositoryImpl
 import ru.prorabprime.data.repository.PhotosRepositoryImpl
+import ru.prorabprime.data.repository.PlacesRepositoryImpl
 import ru.prorabprime.data.repository.TasksRepositoryImpl
 import ru.prorabprime.domain.ConnectionChecker
+import ru.prorabprime.domain.model.PickedPlaceStore
 import ru.prorabprime.domain.repository.ContactsRepository
 import ru.prorabprime.domain.repository.FinanceRepository
 import ru.prorabprime.domain.repository.MaterialsRepository
 import ru.prorabprime.domain.repository.ObjectsRepository
 import ru.prorabprime.domain.repository.PhotosRepository
+import ru.prorabprime.domain.repository.PlacesRepository
 import ru.prorabprime.domain.repository.SettingsRepository
 import ru.prorabprime.domain.repository.TasksRepository
 import ru.prorabprime.domain.usecase.AddDefaultMaterialsUseCase
@@ -35,6 +39,7 @@ import ru.prorabprime.domain.usecase.DeleteObjectUseCase
 import ru.prorabprime.domain.usecase.DeletePaymentUseCase
 import ru.prorabprime.domain.usecase.DeletePhotoUseCase
 import ru.prorabprime.domain.usecase.DeleteTaskUseCase
+import ru.prorabprime.domain.usecase.FindAddressUseCase
 import ru.prorabprime.domain.usecase.GeocodeObjectUseCase
 import ru.prorabprime.domain.usecase.ObserveDayTasksUseCase
 import ru.prorabprime.domain.usecase.ObserveFinanceUseCase
@@ -70,12 +75,15 @@ val dataModule: Module = module {
     single { Invalidator() }
     single { ServerApi(get()) }
     single { ContactsApi(get()) }
+    single { GeocodeApi(get()) }
     single { FinanceApi(get()) }
     single { MaterialsApi(get()) }
     single { TasksApi(get()) }
     single<ObjectsRepository> { ObjectsRepositoryImpl(get(), get(), get()) }
     single<PhotosRepository> { PhotosRepositoryImpl(get(), get()) }
     single<ContactsRepository> { ContactsRepositoryImpl(get(), get()) }
+    single<PlacesRepository> { PlacesRepositoryImpl(get()) }
+    single { PickedPlaceStore() }
     single<FinanceRepository> { FinanceRepositoryImpl(get(), get(), get()) }
     single<MaterialsRepository> { MaterialsRepositoryImpl(get(), get(), get()) }
     single<TasksRepository> { TasksRepositoryImpl(get(), get(), get()) }
@@ -93,6 +101,7 @@ val dataModule: Module = module {
     factory { SaveContactUseCase(get()) }
     factory { DeleteContactUseCase(get()) }
     factory { GeocodeObjectUseCase(get()) }
+    factory { FindAddressUseCase(get()) }
     factory { ObserveFinanceUseCase(get()) }
     factory { ObservePaymentHistoryUseCase(get()) }
     factory { SaveFinanceTermsUseCase(get()) }

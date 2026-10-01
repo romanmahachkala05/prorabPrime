@@ -8,6 +8,7 @@ import org.koin.core.parameter.parametersOf
 import org.koin.dsl.koinApplication
 import org.koin.dsl.module
 import ru.prorabprime.domain.model.ObjectId
+import ru.prorabprime.domain.model.PickedPlaceStore
 import ru.prorabprime.domain.repository.ContactsRepository
 import ru.prorabprime.domain.repository.ObjectsRepository
 import ru.prorabprime.domain.repository.PhotosRepository
@@ -59,6 +60,7 @@ class ObjectsModuleTest {
         factory { UpdateObjectUseCase(get()) }
         single<PhotosRepository> { FakePhotosRepository() }
         single<ContactsRepository> { FakeContactsRepository() }
+        single { PickedPlaceStore() }
         factory { SaveContactUseCase(get()) }
         factory { DeleteContactUseCase(get()) }
         factory { UploadPhotoUseCase(FakeImageCompressor(), get()) }

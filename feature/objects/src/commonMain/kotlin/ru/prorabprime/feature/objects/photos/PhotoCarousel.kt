@@ -43,6 +43,7 @@ import kotlinx.collections.immutable.ImmutableList
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import ru.prorabprime.designsystem.components.ServerImage
+import ru.prorabprime.designsystem.theme.Corners
 import ru.prorabprime.designsystem.theme.Spacing
 import ru.prorabprime.feature.objects.details.PhotoUi
 import ru.prorabprime.feature.objects.details.UploadUi
@@ -151,7 +152,7 @@ private fun PhotoTile(
 
 @Composable
 private fun CoverBadge(modifier: Modifier) {
-    Surface(color = MaterialTheme.colorScheme.primary, shape = PILL, modifier = modifier) {
+    Surface(color = MaterialTheme.colorScheme.primary, shape = MaterialTheme.shapes.small, modifier = modifier) {
         Box(Modifier.padding(horizontal = 6.dp, vertical = 2.dp), contentAlignment = Alignment.Center) {
             Icon(
                 Icons.Default.Star,
@@ -210,6 +211,5 @@ private fun Row2(onRetry: () -> Unit, onDismiss: () -> Unit) {
 }
 
 private val TILE_SIZE = 120.dp
-private val TILE_SHAPE = RoundedCornerShape(12.dp)
+private val TILE_SHAPE = RoundedCornerShape(Corners.m)
 private val SCRIM = Color(0x99000000)
-private val PILL = RoundedCornerShape(percent = 50)

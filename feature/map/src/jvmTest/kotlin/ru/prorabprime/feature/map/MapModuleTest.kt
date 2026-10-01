@@ -5,10 +5,13 @@ import org.junit.Rule
 import org.junit.Test
 import org.koin.dsl.koinApplication
 import org.koin.dsl.module
+import ru.prorabprime.domain.model.PickedPlaceStore
 import ru.prorabprime.domain.repository.ObjectsRepository
+import ru.prorabprime.domain.usecase.FindAddressUseCase
 import ru.prorabprime.domain.usecase.GeocodeObjectUseCase
 import ru.prorabprime.domain.usecase.ObserveObjectsUseCase
 import ru.prorabprime.testing.FakeObjectsRepository
+import ru.prorabprime.testing.FakePlacesRepository
 import ru.prorabprime.testing.FakeSnackbarNotifier
 import ru.prorabprime.testing.MainDispatcherRule
 import ru.prorabprime.ui.SnackbarNotifier
@@ -24,12 +27,15 @@ class MapModuleTest {
         factory { ObserveObjectsUseCase(get()) }
         factory { GeocodeObjectUseCase(get()) }
         single<SnackbarNotifier> { FakeSnackbarNotifier() }
+        single { PickedPlaceStore() }
+        factory { FindAddressUseCase(FakePlacesRepository()) }
     }
 
     @Test
-    fun `resolves the map ViewModel`() {
+    fun `resolves the map and place picker ViewModels`() {
         val koin = koinApplication { modules(fakes, mapModule) }.koin
 
         assertThat(koin.get<MapViewModel>()).isNotNull()
+        assertThat(koin.get<PlacePickerViewModel>()).isNotNull()
     }
 }
