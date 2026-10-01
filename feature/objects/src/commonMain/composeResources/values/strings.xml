@@ -15,10 +15,10 @@
     <string name="objectslist_sort_updated">Недавно изменённые</string>
     <string name="objectslist_empty">Пока нет ни одного объекта</string>
     <string name="objectslist_empty_action">Добавить первый объект</string>
-    <string name="objectslist_camera">Сфотографировать</string>
-    <string name="objectslist_capture_title">Куда отправить снимок?</string>
-    <string name="objectslist_capture_photo">Фото объекта</string>
-    <string name="objectslist_capture_receipt">Чек</string>
+    <string name="objectslist_camera_photo">Сфотографировать объект</string>
+    <string name="objectslist_camera_receipt">Сфотографировать чек</string>
+    <string name="objectslist_capture_title_photo">Фото: на какой объект?</string>
+    <string name="objectslist_capture_title_receipt">Чек: на какой объект?</string>
     <string name="objectslist_capture_note">Заметка (необязательно)</string>
     <string name="objectslist_photo_uploaded">Фото добавлено: %1$s</string>
     <string name="objectslist_receipt_uploaded">Чек добавлен: %1$s</string>
