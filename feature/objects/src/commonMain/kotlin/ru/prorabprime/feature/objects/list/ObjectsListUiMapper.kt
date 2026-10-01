@@ -11,6 +11,7 @@ internal fun ObjectSummary.toCardUi() = ObjectCardUi(
     status = status,
     photoCount = photoCount,
     cover = coverThumbPath,
+    isPending = isPending,
 )
 
 internal fun List<ObjectSummary>.toCardsUi(): ImmutableList<ObjectCardUi> = map { it.toCardUi() }.toImmutableList()

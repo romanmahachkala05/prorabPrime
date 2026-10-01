@@ -161,4 +161,4 @@ internal class MaterialsViewModel(
 }
 
 private fun ImmutableList<Material>.toUi() =
-    MaterialsUi(map { MaterialUi(it.id.value, it.title, it.status) }.toImmutableList())
+    MaterialsUi(map { MaterialUi(it.id.value, it.title, it.status, it.isPending) }.toImmutableList())

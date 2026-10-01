@@ -168,9 +168,10 @@ internal fun ObjectDetails.toUi() = ObjectDetailsUi(
     clientPhone = clientPhone,
     notes = notes,
     chatLink = chatLink,
-    contacts = contacts.map { ContactUi(it.id.value, it.name, it.phone, it.role) }.toImmutableList(),
+    contacts = contacts.map { ContactUi(it.id.value, it.name, it.phone, it.role, it.isPending) }.toImmutableList(),
     photos = photos.filter { it.kind == AttachmentKind.PHOTO }.map { it.toUi(coverPhotoId) }.toImmutableList(),
     receipts = photos.filter { it.kind == AttachmentKind.RECEIPT }.map { it.toUi(coverPhotoId) }.toImmutableList(),
 )
 
-private fun Photo.toUi(coverPhotoId: PhotoId?) = PhotoUi(id.value, thumbPath, isCover = id == coverPhotoId)
+private fun Photo.toUi(coverPhotoId: PhotoId?) =
+    PhotoUi(id.value, thumbPath, isCover = id == coverPhotoId, isPending = isPending)

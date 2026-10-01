@@ -57,6 +57,7 @@ import ru.prorabprime.designsystem.components.EmptyMessage
 import ru.prorabprime.designsystem.components.ErrorMessage
 import ru.prorabprime.designsystem.components.FilterChip
 import ru.prorabprime.designsystem.components.LoadingBox
+import ru.prorabprime.designsystem.components.PendingMark
 import ru.prorabprime.designsystem.components.SearchField
 import ru.prorabprime.designsystem.components.ServerImage
 import ru.prorabprime.designsystem.components.TopAppBar
@@ -310,12 +311,18 @@ private fun ObjectTile(item: ObjectCardUi, onClick: () -> Unit) {
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Text(
-                    stringResource(item.status.label),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
+                ) {
+                    Text(
+                        stringResource(item.status.label),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                    )
+                    if (item.isPending) PendingMark()
+                }
             }
         }
     }

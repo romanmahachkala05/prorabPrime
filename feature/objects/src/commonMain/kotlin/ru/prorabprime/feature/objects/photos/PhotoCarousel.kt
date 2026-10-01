@@ -42,6 +42,7 @@ import coil3.compose.AsyncImage
 import kotlinx.collections.immutable.ImmutableList
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
+import ru.prorabprime.designsystem.components.PendingBadge
 import ru.prorabprime.designsystem.components.ServerImage
 import ru.prorabprime.designsystem.theme.Corners
 import ru.prorabprime.designsystem.theme.Spacing
@@ -129,6 +130,7 @@ private fun PhotoTile(
                 .combinedClickable(onClick = onClick, onLongClick = { menuOpen = true }),
         )
         if (photo.isCover) CoverBadge(Modifier.align(Alignment.BottomStart).padding(Spacing.xs))
+        if (photo.isPending) PendingBadge(Modifier.align(Alignment.TopEnd).padding(Spacing.xs))
         DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
             if (canMakeCover && !photo.isCover) {
                 DropdownMenuItem(

@@ -38,6 +38,8 @@ internal data class ObjectCardUi(
     val status: ObjectStatus,
     val photoCount: Int,
     val cover: ServerFilePath?,
+    /** Not yet on the server. */
+    val isPending: Boolean = false,
 )
 
 /** A picture just taken, waiting for the user to say which object and folder it goes to. */

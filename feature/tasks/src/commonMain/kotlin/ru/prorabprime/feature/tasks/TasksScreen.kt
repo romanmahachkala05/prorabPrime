@@ -37,6 +37,7 @@ import ru.prorabprime.designsystem.components.DialogHost
 import ru.prorabprime.designsystem.components.EmptyMessage
 import ru.prorabprime.designsystem.components.ErrorMessage
 import ru.prorabprime.designsystem.components.LoadingBox
+import ru.prorabprime.designsystem.components.PendingMark
 import ru.prorabprime.designsystem.components.TextButton
 import ru.prorabprime.designsystem.components.TopAppBar
 import ru.prorabprime.designsystem.theme.Spacing
@@ -158,10 +159,17 @@ private fun TaskRow(task: TaskUi, onEvent: (TasksEvent) -> Unit) {
     val label = stringResource(if (task.task.done) Res.string.tasks_mark_open else Res.string.tasks_mark_done)
     ListItem(
         headlineContent = {
-            Text(
-                task.task.title,
-                textDecoration = if (task.task.done) TextDecoration.LineThrough else null,
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
+            ) {
+                Text(
+                    task.task.title,
+                    textDecoration = if (task.task.done) TextDecoration.LineThrough else null,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+                if (task.task.isPending) PendingMark()
+            }
         },
         supportingContent = listOfNotNull(task.dayLabel, task.time).takeIf { it.isNotEmpty() }?.let { parts ->
             { Text(parts.joinToString(" · ")) }
