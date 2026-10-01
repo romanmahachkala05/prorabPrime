@@ -35,6 +35,7 @@ entries below are the points where this project departs from it or goes beyond i
 | [0014](#adr-0014) | The map is drawn in Compose over OpenStreetMap tiles | Accepted, **amends** 0008 |
 | [0015](#adr-0015) | Reminders are alarm-clock alarms, remembered for a reboot | Accepted |
 | [0016](#adr-0016) | The web client is the same UI as Kotlin/Wasm, served by the server | Accepted, **amends** 0004 |
+| [0017](#adr-0017) | The phone keeps its own copy of the data and a queue of changes; screens never wait for the network | Accepted, **amends** 0003 |
 
 ---
 
@@ -528,4 +529,77 @@ the settings screen are shared with Android as they are. A browser needs WebAsse
 
 **Review when:** the web client must work offline, or must be installable (a service worker and a
 manifest), or the token should not live in `localStorage`.
+
+---
+
+## ADR-0017
+
+### The phone keeps its own copy of the data and a queue of changes; screens never wait for the network
+
+**Accepted** · 2026-10-01 · **amends** ADR-0003
+
+**Context.** The customer drives from site to site, often without a signal. He must be able to open
+the list of objects and everything about them, and to take photos and write things down, with no
+network; the server learns of it later. Until now every screen asked the server and showed what came back.
+
+**Decision.** Screens read a local copy and write to it; the network only keeps the copy and the server
+in step.
+
+- *The copy* (`:core:data` `local/`) is one table per kind of record (objects, contacts, photos,
+  payments, extra works, materials, finance terms, payment history, tasks), each held in memory as
+  an observable map and saved as one JSON file after every change. Files on Android; memory in the
+  browser and in tests, which is why the whole thing is tested on the JVM. Rows mirror the wire DTOs,
+  so what the server sends is stored as it is and shown through the same mappers.
+- *Reads* come from the copy, with the server's own rules applied on the phone: search over address
+  and title, the four sorts, the finance sums (the contract plus the agreed extras, less what was paid),
+  the day plan's ordering. A copy that never managed to sync is reported as a network error, not as an
+  empty list; before the first attempt a screen waits.
+- *Writes* make the change in the copy at once and put it in the *outbox*, a persisted, ordered queue
+  of operations, each holding what it takes to be sent again as it was. **The queue entry is written
+  first**: a sync running in between then already knows the row is waiting and leaves it alone.
+- *Ids* of new records are UUIDs chosen on the phone, so an object can be made and photographed with
+  no signal. The server accepts the id in the create request (a query parameter for a photo); the same
+  create sent twice finds the record it made (`409` if the id belongs to another owner). A retry after
+  a lost answer therefore changes nothing.
+- *The sync engine* sends the queue in order, then copies the server's data down. An object is fetched
+  again only when its `updatedAt` moved (the server moves it on every change to anything of the object),
+  and tasks, which have no object, are always read (the open ones and a window of days around today).
+  **A row with a change still waiting is never overwritten by a copy-down**: until the server has
+  accepted it, the phone's version is the true one. No answer stops the run and keeps everything queued.
+  A 4xx is the server saying no for good: the change is marked *failed*, stays in the queue so nothing
+  the user entered vanishes silently, and does not hold up the others. A 5xx is tried a few times first.
+  A 401 stops everything and says the token was refused. Deleting what is already gone counts as done.
+- *When it runs*: at start, a moment after any change, when the settings change, every five minutes,
+  with growing pauses after a failed attempt, when Android reports a network, and, with the app closed,
+  by WorkManager as soon as there is one.
+- *Conflicts*: last write wins, as the server's `PUT`s replace whole records. The customer's business is
+  one person's, so the cases where two people edit one record are not worth a merge rule yet.
+- *What the user sees*: a small chip on every screen (no signal, N waiting, N refused, token refused),
+  a clock mark on every record not yet on the server, and a list of refused changes with retry and
+  give-up. Pictures are saved as files, shown at once with the mark, and sent in their turn.
+- *Pictures that were seen stay seen*: the image loader's disk cache lives in the app's files (the system
+  does not empty it), is 1 GB, and a prefetcher fills it with the small pictures of every object and the
+  full-size ones of the ten most recently changed.
+
+**Alternatives rejected.**
+- *A SQL database (SQLDelight, Room).* The right tool for millions of rows and ad-hoc queries; this is a few
+  hundred rows read whole. It would add a dependency, a schema and migrations for every record, and a
+  second way to run the data layer's tests (a native driver) to save writing about forty lines of file code.
+- *Caching HTTP responses and queuing requests.* Cheap, but an optimistic change would have to be patched
+  into a cached response, and search and sort offline would not work.
+- *Merging concurrent edits field by field.* Needs versions or timestamps on every field; revisit with a
+  second user.
+- *Keeping the web client in step too.* The browser has no store that survives a closed tab that is worth
+  trusting with unsent work; the web copy lives while the tab does, and the queue is worked off as long as
+  there is a signal.
+
+**Consequences.** Every repository is rewritten over the copy; the old `Invalidator` and the per-endpoint
+API classes are gone, replaced by one `RemoteApi` that speaks DTOs. A new record shows at once and is
+sent a moment later. The copy of one server is dropped when the app is pointed at another, unless changes
+are still waiting (they are kept). A photo taken offline has no width or height until the server has it.
+The payment history (`/payments/history`) is read-only on the phone: a change made offline appears in it
+after the next sync. Two phones editing one record, offline, will let the later send win.
+
+**Review when:** a second person works in the same data, the data grows beyond what is comfortable to
+read whole, or the web client must be usable offline.
 
