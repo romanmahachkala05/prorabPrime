@@ -3,6 +3,7 @@
     <!-- objectslist -->
     <string name="objectslist_title">Объекты</string>
     <string name="objectslist_tasks">Дела на день</string>
+    <string name="objectslist_expenses">Расходы</string>
     <string name="objectslist_map">Карта объектов</string>
     <string name="objectslist_settings">Настройки</string>
     <string name="objectslist_add">Добавить объект</string>

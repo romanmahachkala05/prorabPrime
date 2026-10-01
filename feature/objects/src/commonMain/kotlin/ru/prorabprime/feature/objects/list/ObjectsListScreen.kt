@@ -81,6 +81,7 @@ import ru.prorabprime.feature.objects.resources.objectslist_capture_title
 import ru.prorabprime.feature.objects.resources.objectslist_clear_search
 import ru.prorabprime.feature.objects.resources.objectslist_empty
 import ru.prorabprime.feature.objects.resources.objectslist_empty_action
+import ru.prorabprime.feature.objects.resources.objectslist_expenses
 import ru.prorabprime.feature.objects.resources.objectslist_map
 import ru.prorabprime.feature.objects.resources.objectslist_nothing_found
 import ru.prorabprime.feature.objects.resources.objectslist_search
@@ -101,8 +102,19 @@ fun ObjectsListScreen(
     onOpenMap: () -> Unit,
     onOpenTasks: () -> Unit,
     modifier: Modifier = Modifier,
+    /** Null where the report is not offered. */
+    onOpenExpenses: (() -> Unit)? = null,
 ) {
-    ObjectsListScreen(onOpenObject, onCreateObject, onOpenSettings, onOpenMap, onOpenTasks, modifier, koinViewModel())
+    ObjectsListScreen(
+        onOpenObject,
+        onCreateObject,
+        onOpenSettings,
+        onOpenMap,
+        onOpenTasks,
+        onOpenExpenses,
+        modifier,
+        koinViewModel(),
+    )
 }
 
 @Composable
@@ -112,6 +124,7 @@ private fun ObjectsListScreen(
     onOpenSettings: () -> Unit,
     onOpenMap: () -> Unit,
     onOpenTasks: () -> Unit,
+    onOpenExpenses: (() -> Unit)?,
     modifier: Modifier,
     viewModel: ObjectsListViewModel,
 ) {
@@ -125,6 +138,7 @@ private fun ObjectsListScreen(
         onOpenSettings = onOpenSettings,
         onOpenMap = onOpenMap,
         onOpenTasks = onOpenTasks,
+        onOpenExpenses = onOpenExpenses,
         onOpenCamera = camera::takePhoto,
         modifier = modifier,
     )
@@ -142,6 +156,7 @@ internal fun ObjectsListContent(
     onOpenCamera: () -> Unit = {},
     onOpenMap: () -> Unit = {},
     onOpenTasks: () -> Unit = {},
+    onOpenExpenses: (() -> Unit)? = null,
 ) {
     Scaffold(
         modifier = modifier,
@@ -151,6 +166,14 @@ internal fun ObjectsListContent(
                 actions = {
                     IconButton(onClick = onOpenTasks) {
                         Icon(ProrabIcons.Tasks, contentDescription = stringResource(Res.string.objectslist_tasks))
+                    }
+                    onOpenExpenses?.let { open ->
+                        IconButton(onClick = open) {
+                            Icon(
+                                ProrabIcons.Wallet,
+                                contentDescription = stringResource(Res.string.objectslist_expenses),
+                            )
+                        }
                     }
                     IconButton(onClick = onOpenMap) {
                         Icon(ProrabIcons.Map, contentDescription = stringResource(Res.string.objectslist_map))

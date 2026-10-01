@@ -10,6 +10,7 @@ import org.koin.dsl.koinApplication
 import org.koin.dsl.module
 import ru.prorabprime.data.di.memoryStorageModule
 import ru.prorabprime.domain.ImageCompressor
+import ru.prorabprime.domain.repository.ExpensesRepository
 import ru.prorabprime.domain.repository.ObjectsRepository
 import ru.prorabprime.domain.repository.SettingsRepository
 import ru.prorabprime.domain.usecase.UploadPhotoUseCase
@@ -37,5 +38,6 @@ class AppModulesTest {
         assertThat(koin.get<ObjectsRepository>()).isNotNull()
         assertThat(koin.get<UploadPhotoUseCase>()).isNotNull()
         assertThat(koin.get<SnackbarNotifier>()).isNotNull()
+        assertThat(koin.get<ExpensesRepository>()).isNotNull()
     }
 }

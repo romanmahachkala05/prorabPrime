@@ -28,6 +28,8 @@ class ObjectsListContentTest {
     private val opened = mutableListOf<String>()
     private var created = 0
     private var cameraOpened = 0
+    private var expensesOpened = 0
+    private var offerExpenses = false
 
     private val cards = persistentListOf(
         ObjectCardUi("1", "Кухня", "Тверская, 5", ObjectStatus.IN_PROGRESS, 3, null),
@@ -44,6 +46,7 @@ class ObjectsListContentTest {
                 onCreateObject = { created++ },
                 onOpenSettings = {},
                 onOpenCamera = { cameraOpened++ },
+                onOpenExpenses = if (offerExpenses) ({ expensesOpened++ }) else null,
             )
         }
     }
@@ -57,6 +60,22 @@ class ObjectsListContentTest {
         onNodeWithText("Кухня").performClick()
 
         assertThat(opened).containsExactly("1")
+    }
+
+    @Test
+    fun `the expenses button is only there where the report is offered`() = runComposeUiTest {
+        setContent { show(ObjectsListState(status = ObjectsListStatus.Content, items = cards)) }
+        onNodeWithContentDescription("Расходы").assertDoesNotExist()
+    }
+
+    @Test
+    fun `the expenses button opens the report`() = runComposeUiTest {
+        offerExpenses = true
+        setContent { show(ObjectsListState(status = ObjectsListStatus.Content, items = cards)) }
+
+        onNodeWithContentDescription("Расходы").performClick()
+
+        assertThat(expensesOpened).isEqualTo(1)
     }
 
     @Test
