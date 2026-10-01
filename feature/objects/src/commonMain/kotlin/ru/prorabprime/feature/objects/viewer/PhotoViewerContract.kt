@@ -31,6 +31,7 @@ internal data class ViewerPhoto(
     val id: String,
     val path: ServerFilePath,
     val quarterTurns: Int = 0,
+    val note: String? = null,
 )
 
 internal data class PhotoViewerArgs(

@@ -202,12 +202,14 @@ internal class PhotosRepositoryImpl(
         objectId: ObjectId,
         image: CompressedImage,
         kind: AttachmentKind,
+        note: String?,
     ): Result<Photo> {
         val obj = db.objects.rows.value[objectId.value] ?: return AppError.NotFound.asFailure()
         val id = ids.next()
+        val text = note?.trim()?.takeIf { it.isNotEmpty() }
         val blob = "$id.${extensionOf(image.mimeType)}"
         db.blobs.put(blob, image.bytes)
-        db.outbox.enqueue(Operation.UploadPhoto(objectId.value, id, kind.toDto(), blob, image.mimeType))
+        db.outbox.enqueue(Operation.UploadPhoto(objectId.value, id, kind.toDto(), blob, image.mimeType, text))
         val siblings = db.photos.rows.value.values.filter { it.objectId == objectId.value }
         val row = PhotoRow(
             objectId = objectId.value,
@@ -218,6 +220,7 @@ internal class PhotosRepositoryImpl(
             height = 0,
             createdAt = clock.now(),
             localBlob = blob,
+            note = text,
         )
         db.photos.upsert(row)
         // The first photo of an object without a cover becomes the cover; a receipt never does.
@@ -238,6 +241,14 @@ internal class PhotosRepositoryImpl(
         }
         db.photos.remove(id.value)
         replaceCoverIfNeeded(row)
+        return Result.success(Unit)
+    }
+
+    override suspend fun setNote(id: PhotoId, note: String?): Result<Unit> {
+        val row = db.photos.rows.value[id.value] ?: return AppError.NotFound.asFailure()
+        val text = note?.trim()?.takeIf { it.isNotEmpty() }
+        db.outbox.enqueue(Operation.SetPhotoNote(id.value, text))
+        db.photos.upsert(row.copy(note = text))
         return Result.success(Unit)
     }
 

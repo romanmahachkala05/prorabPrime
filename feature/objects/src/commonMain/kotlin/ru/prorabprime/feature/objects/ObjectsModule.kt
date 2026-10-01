@@ -50,7 +50,7 @@ val objectsModule = module {
             notifier = get(),
         )
     }
-    viewModel { (args: PhotoViewerArgs) -> PhotoViewerViewModel(args, get(), get(), get()) }
+    viewModel { (args: PhotoViewerArgs) -> PhotoViewerViewModel(args, get(), get(), get(), get()) }
     viewModel { (args: ObjectEditArgs) ->
         val stateHolder: IObjectEditStateHolder = ObjectEditStateHolder(isNew = args.objectId == null)
         ObjectEditViewModel(

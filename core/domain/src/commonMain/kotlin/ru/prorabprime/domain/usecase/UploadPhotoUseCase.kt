@@ -16,8 +16,9 @@ class UploadPhotoUseCase(
         objectId: ObjectId,
         image: LocalImageRef,
         kind: AttachmentKind = AttachmentKind.PHOTO,
+        note: String? = null,
     ): Result<Photo> {
         val compressed = compressor.compress(image).getOrElse { return Result.failure(it) }
-        return repository.upload(objectId, compressed, kind)
+        return repository.upload(objectId, compressed, kind, note)
     }
 }

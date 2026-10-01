@@ -65,6 +65,17 @@ class ExposedPhotoRepositoryTest {
     )
 
     @Test
+    fun `a note is stored, read back, and cleared`() = runTest {
+        val photo = photo(sortOrder = 1).copy(note = "Розетка слева")
+        photos.insert(photo)
+        assertThat(photos.find(photo.id)?.note).isEqualTo("Розетка слева")
+
+        assertThat(photos.setNote(photo.id, null)).isTrue()
+        assertThat(photos.find(photo.id)?.note).isNull()
+        assertThat(photos.setNote(UUID.randomUUID(), "x")).isFalse()
+    }
+
+    @Test
     fun `an inserted photo reads back unchanged`() = runTest {
         val photo = photo(sortOrder = 1)
 

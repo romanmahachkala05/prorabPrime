@@ -60,6 +60,9 @@ interface PhotoRepository {
     /** Returns false when there is no such photo. */
     suspend fun delete(id: UUID): Boolean
 
+    /** Returns false when there is no such photo. */
+    suspend fun setNote(id: UUID, note: String?): Boolean
+
     /** Points the photo at its new files (after a turn); everything else about it stays. */
     suspend fun replaceFiles(photo: PhotoRecord)
 

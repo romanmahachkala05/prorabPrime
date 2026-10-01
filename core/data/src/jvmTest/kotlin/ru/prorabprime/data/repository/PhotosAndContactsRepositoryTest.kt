@@ -75,6 +75,49 @@ class PhotosAndContactsRepositoryTest {
     }
 
     @Test
+    fun `a note written with a picture taken offline is shown at once, queued with it, and sent with it`() = runTest {
+        synced().server.offline = true
+
+        val photo = phone.photos.upload(objectId, shot, AttachmentKind.PHOTO, "  Скол на плитке ").getOrThrow()
+
+        assertThat(photo.note).isEqualTo("Скол на плитке")
+        val queued = phone.db.outbox.snapshot().single().operation as Operation.UploadPhoto
+        assertThat(queued.note).isEqualTo("Скол на плитке")
+    }
+
+    @Test
+    fun `a note changed on a picture is kept at once and queued, and a blank one clears it`() = runTest {
+        val server = phone.server
+        val photoId = "33333333-3333-3333-3333-333333333333"
+        val dto = PhotoDto(photoId, "/files/o/p.jpg", "/files/o/p_thumb.jpg", 800, 600, server.at, note = "старая")
+        server.details = server.details.copy(photos = listOf(dto))
+        server.objects = listOf(server.details)
+        synced()
+        server.offline = true
+
+        phone.photos.setNote(PhotoId(photoId), " новая ").getOrThrow()
+        assertThat(shownPhoto().note).isEqualTo("новая")
+        assertThat(phone.db.outbox.snapshot().single().operation).isEqualTo(Operation.SetPhotoNote(photoId, "новая"))
+
+        phone.photos.setNote(PhotoId(photoId), "  ").getOrThrow()
+        assertThat(shownPhoto().note).isNull()
+
+        server.offline = false
+        phone.engine.sync()
+        assertThat(server.writes.map { it.url.encodedPath }).contains("/api/photos/$photoId/note")
+        assertThat(phone.db.outbox.snapshot()).isEmpty()
+    }
+
+    @Test
+    fun `a note for a picture that is not on the phone is not found`() = runTest {
+        synced()
+
+        assertThat(phone.photos.setNote(PhotoId("nope"), "x").isFailure).isTrue()
+    }
+
+    private suspend fun shownPhoto() = phone.objects.observeObject(objectId).first().getOrThrow().photos.single()
+
+    @Test
     fun `a turned picture shows turned at once, and the server's own turn replaces it`() = runTest {
         val server = phone.server
         val photoId = "22222222-2222-2222-2222-222222222222"

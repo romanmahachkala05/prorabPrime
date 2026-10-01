@@ -44,6 +44,7 @@ class ExposedPhotoRepository(
                 it[height] = photo.height
                 it[sortOrder] = photo.sortOrder
                 it[kind] = photo.kind.name
+                it[note] = photo.note
                 it[createdAt] = photo.createdAt.toJavaInstant()
             }
         }
@@ -66,6 +67,10 @@ class ExposedPhotoRepository(
         }
     }
 
+    override suspend fun setNote(id: UUID, note: String?): Boolean = db.query {
+        PhotosTable.update({ PhotosTable.id eq id }) { it[PhotosTable.note] = note } > 0
+    }
+
     override suspend fun nextSortOrder(objectId: UUID): Int = db.query {
         val max = PhotosTable.sortOrder.max()
         val highest = PhotosTable.select(max).where { PhotosTable.objectId eq objectId }.single()[max]
@@ -84,5 +89,6 @@ internal fun ResultRow.toPhotoRecord() = PhotoRecord(
     height = this[PhotosTable.height],
     sortOrder = this[PhotosTable.sortOrder],
     kind = AttachmentKindDto.valueOf(this[PhotosTable.kind]),
+    note = this[PhotosTable.note],
     createdAt = this[PhotosTable.createdAt].toKotlinInstant(),
 )

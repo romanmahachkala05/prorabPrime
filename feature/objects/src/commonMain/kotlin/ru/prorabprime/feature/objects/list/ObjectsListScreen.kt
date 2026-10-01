@@ -33,6 +33,7 @@ import androidx.compose.material3.LargeFloatingActionButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -68,10 +69,12 @@ import ru.prorabprime.domain.model.AttachmentKind
 import ru.prorabprime.domain.model.ObjectSort
 import ru.prorabprime.domain.model.ObjectStatus
 import ru.prorabprime.feature.objects.components.label
+import ru.prorabprime.feature.objects.photos.PHOTO_NOTE_LIMIT
 import ru.prorabprime.feature.objects.photos.rememberPhotoSources
 import ru.prorabprime.feature.objects.resources.Res
 import ru.prorabprime.feature.objects.resources.objectslist_add
 import ru.prorabprime.feature.objects.resources.objectslist_camera
+import ru.prorabprime.feature.objects.resources.objectslist_capture_note
 import ru.prorabprime.feature.objects.resources.objectslist_capture_photo
 import ru.prorabprime.feature.objects.resources.objectslist_capture_receipt
 import ru.prorabprime.feature.objects.resources.objectslist_capture_title
@@ -353,6 +356,13 @@ private fun CaptureSheet(
                     label = { Text(stringResource(Res.string.objectslist_capture_receipt)) },
                 )
             }
+            OutlinedTextField(
+                value = capture.note,
+                onValueChange = { onEvent(ObjectsListEvent.CaptureNoteChanged(it.take(PHOTO_NOTE_LIMIT))) },
+                label = { Text(stringResource(Res.string.objectslist_capture_note)) },
+                maxLines = NOTE_LINES,
+                modifier = Modifier.fillMaxWidth(),
+            )
             // The same two-column tiles as the main screen, so choosing an object needs little scrolling.
             LazyVerticalGrid(
                 columns = GridCells.Fixed(GRID_COLUMNS),
@@ -369,6 +379,7 @@ private fun CaptureSheet(
 }
 
 private const val GRID_COLUMNS = 2
+private const val NOTE_LINES = 3
 private val TILE_THUMB_SIZE = 56.dp
 private const val TILE_THUMB_RADIUS = 8
 private val CAPTURE_LIST_MAX_HEIGHT = 360.dp

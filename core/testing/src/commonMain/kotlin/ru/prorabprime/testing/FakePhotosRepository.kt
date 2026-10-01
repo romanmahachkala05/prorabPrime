@@ -16,6 +16,8 @@ class FakePhotosRepository : PhotosRepository {
 
     val uploaded = mutableListOf<Pair<ObjectId, CompressedImage>>()
     val uploadedKinds = mutableListOf<AttachmentKind>()
+    val uploadedNotes = mutableListOf<String?>()
+    val notes = mutableListOf<Pair<PhotoId, String?>>()
     val deleted = mutableListOf<PhotoId>()
     val rotated = mutableListOf<PhotoId>()
     val covers = mutableListOf<Pair<ObjectId, PhotoId>>()
@@ -24,16 +26,24 @@ class FakePhotosRepository : PhotosRepository {
         objectId: ObjectId,
         image: CompressedImage,
         kind: AttachmentKind,
+        note: String?,
     ): Result<Photo> {
         error?.let { return it.asFailure() }
         uploaded += objectId to image
         uploadedKinds += kind
+        uploadedNotes += note
         return Result.success(aPhoto(id = "uploaded-${uploaded.size}", objectId = objectId.value))
     }
 
     override suspend fun delete(id: PhotoId): Result<Unit> {
         error?.let { return it.asFailure() }
         deleted += id
+        return Result.success(Unit)
+    }
+
+    override suspend fun setNote(id: PhotoId, note: String?): Result<Unit> {
+        error?.let { return it.asFailure() }
+        notes += id to note
         return Result.success(Unit)
     }
 

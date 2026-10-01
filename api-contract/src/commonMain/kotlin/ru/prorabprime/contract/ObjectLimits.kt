@@ -19,4 +19,5 @@ object ContactLimits {
 
 object PhotoLimits {
     const val MAX_UPLOAD_BYTES = 15L * 1024 * 1024
+    const val NOTE = 1_000
 }

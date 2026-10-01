@@ -122,6 +122,12 @@ class FakePhotoRepository : PhotoRepository {
 
     override suspend fun delete(id: UUID): Boolean = records.remove(id) != null
 
+    override suspend fun setNote(id: UUID, note: String?): Boolean {
+        val record = records[id] ?: return false
+        records[id] = record.copy(note = note)
+        return true
+    }
+
     override suspend fun replaceFiles(photo: PhotoRecord) {
         records[photo.id] = photo
     }

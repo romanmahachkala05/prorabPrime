@@ -177,6 +177,21 @@ class ObjectsListViewModelTest {
     }
 
     @Test
+    fun `a note written before choosing goes with the picture`() = runVmTest {
+        objects.objects.value = listOf(anObjectSummary(id = "a"))
+        advanceTimeBy(301)
+        runCurrent()
+        viewModel.onEvent(ObjectsListEvent.PhotosCaptured(listOf(LocalImageRef("file:///shot.jpg"))))
+
+        viewModel.onEvent(ObjectsListEvent.CaptureNoteChanged("Розетка не по плану"))
+        assertThat(state.capture?.note).isEqualTo("Розетка не по плану")
+        viewModel.onEvent(ObjectsListEvent.CaptureTargetChosen("a"))
+        runCurrent()
+
+        assertThat(photos.uploadedNotes).containsExactly("Розетка не по плану")
+    }
+
+    @Test
     fun `the folder can be switched to receipts before choosing`() = runVmTest {
         objects.objects.value = listOf(anObjectSummary(id = "a"))
         advanceTimeBy(301)

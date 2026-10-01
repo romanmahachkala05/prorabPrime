@@ -207,6 +207,48 @@ class PhotoServiceTest {
         assertThat(service.delete(UUID.randomUUID()).serviceError()).isInstanceOf(ServiceError.NotFound::class.java)
     }
 
+    // --- note ---
+
+    @Test
+    fun `a note sent with the upload is kept, trimmed, and a blank one is no note`() = runTest {
+        val noted = service.upload(objectId, bytes, note = "  Трещина над окном ").getOrThrow()
+        val blank = service.upload(objectId, bytes, note = "   ").getOrThrow()
+
+        assertThat(photos.records.getValue(noted.id).note).isEqualTo("Трещина над окном")
+        assertThat(photos.records.getValue(blank.id).note).isNull()
+    }
+
+    @Test
+    fun `a note that is too long is refused and nothing is stored`() = runTest {
+        val result = service.upload(objectId, bytes, note = "а".repeat(PhotoLimits.NOTE + 1))
+
+        assertThat(result.serviceError()).isInstanceOf(ServiceError.Validation::class.java)
+        assertThat(photos.records).isEmpty()
+        assertThat(storage.files).isEmpty()
+    }
+
+    @Test
+    fun `a note is set and cleared later, and either moves the object's update time`() = runTest {
+        val id = upload()
+        clock.now = FIXED_NOW + 5.minutes
+
+        service.setNote(id, "Договорились на пятницу").getOrThrow()
+        assertThat(photos.records.getValue(id).note).isEqualTo("Договорились на пятницу")
+        assertThat(objects.records.getValue(objectId).updatedAt).isEqualTo(FIXED_NOW + 5.minutes)
+
+        service.setNote(id, "").getOrThrow()
+        assertThat(photos.records.getValue(id).note).isNull()
+    }
+
+    @Test
+    fun `a note for an unknown photo is not found, and a long one is refused`() = runTest {
+        assertThat(service.setNote(UUID.randomUUID(), "x").serviceError())
+            .isInstanceOf(ServiceError.NotFound::class.java)
+        val id = upload()
+        assertThat(service.setNote(id, "а".repeat(PhotoLimits.NOTE + 1)).serviceError())
+            .isInstanceOf(ServiceError.Validation::class.java)
+    }
+
     // --- rotate ---
 
     @Test

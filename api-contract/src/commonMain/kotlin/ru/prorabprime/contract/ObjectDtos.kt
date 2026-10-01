@@ -62,6 +62,8 @@ data class PhotoDto(
     val height: Int,
     val createdAt: Instant,
     val kind: AttachmentKindDto = AttachmentKindDto.PHOTO,
+    /** What the foreman wrote about it; absent when nothing is written. */
+    val note: String? = null,
 )
 
 /** Body of `POST /api/objects` and `PUT /api/objects/{id}`; a PUT replaces every field. */
@@ -95,6 +97,12 @@ data class ObjectCreatedDto(
 @Serializable
 data class SetCoverRequestDto(
     val photoId: String,
+)
+
+/** Body of `PUT /api/photos/{id}/note`; an empty or missing note clears it. */
+@Serializable
+data class PhotoNoteRequestDto(
+    val note: String? = null,
 )
 
 /**

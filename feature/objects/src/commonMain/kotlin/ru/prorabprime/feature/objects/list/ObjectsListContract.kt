@@ -47,6 +47,8 @@ internal data class ObjectCardUi(
 internal data class CaptureUi(
     val images: ImmutableList<LocalImageRef>,
     val kind: AttachmentKind = AttachmentKind.PHOTO,
+    /** Written for every picture of this batch; empty is no note. */
+    val note: String = "",
 )
 
 @Immutable
@@ -81,6 +83,10 @@ internal sealed interface ObjectsListEvent {
 
     data class CaptureKindChanged(
         val kind: AttachmentKind,
+    ) : ObjectsListEvent
+
+    data class CaptureNoteChanged(
+        val note: String,
     ) : ObjectsListEvent
 
     data class CaptureTargetChosen(

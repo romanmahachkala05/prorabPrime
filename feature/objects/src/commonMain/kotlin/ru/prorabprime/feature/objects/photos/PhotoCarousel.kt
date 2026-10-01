@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.CircularProgressIndicator
@@ -53,6 +54,7 @@ import ru.prorabprime.feature.objects.resources.Res
 import ru.prorabprime.feature.objects.resources.objectdetails_add_photo
 import ru.prorabprime.feature.objects.resources.objectdetails_cover
 import ru.prorabprime.feature.objects.resources.objectdetails_delete_photo
+import ru.prorabprime.feature.objects.resources.objectdetails_has_note
 import ru.prorabprime.feature.objects.resources.objectdetails_make_cover
 import ru.prorabprime.feature.objects.resources.objectdetails_upload_dismiss
 import ru.prorabprime.feature.objects.resources.objectdetails_upload_retry
@@ -136,6 +138,7 @@ private fun PhotoTile(
         }
         if (photo.isCover) CoverBadge(Modifier.align(Alignment.BottomStart).padding(Spacing.xs))
         if (photo.isPending) PendingBadge(Modifier.align(Alignment.TopEnd).padding(Spacing.xs))
+        if (photo.hasNote) NoteBadge(Modifier.align(Alignment.TopStart).padding(Spacing.xs))
         DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
             if (canMakeCover && !photo.isCover) {
                 DropdownMenuItem(
@@ -152,6 +155,21 @@ private fun PhotoTile(
                     menuOpen = false
                     onDelete()
                 },
+            )
+        }
+    }
+}
+
+/** Says the picture has a note, which is read in the viewer. */
+@Composable
+private fun NoteBadge(modifier: Modifier) {
+    Surface(color = MaterialTheme.colorScheme.primary, shape = MaterialTheme.shapes.small, modifier = modifier) {
+        Box(Modifier.padding(horizontal = 6.dp, vertical = 2.dp), contentAlignment = Alignment.Center) {
+            Icon(
+                Icons.Default.Edit,
+                contentDescription = stringResource(Res.string.objectdetails_has_note),
+                tint = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.size(14.dp),
             )
         }
     }

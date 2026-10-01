@@ -76,6 +76,9 @@ internal class ObjectsListViewModel(
             is ObjectsListEvent.CaptureKindChanged ->
                 state.value.capture?.let { stateHolder.setCapture(it.copy(kind = event.kind)) }
 
+            is ObjectsListEvent.CaptureNoteChanged ->
+                state.value.capture?.let { stateHolder.setCapture(it.copy(note = event.note)) }
+
             is ObjectsListEvent.CaptureTargetChosen -> uploadCapture(event.objectId)
 
             ObjectsListEvent.CaptureDismissed -> stateHolder.setCapture(null)
@@ -100,7 +103,7 @@ internal class ObjectsListViewModel(
         stateHolder.setCapture(null)
         launchCatching(onFailure = { errorHandler.onUploadFailure(it.asAppError()) }) {
             capture.images.forEach { image ->
-                uploadPhoto(ObjectId(objectId), image, capture.kind)
+                uploadPhoto(ObjectId(objectId), image, capture.kind, capture.note)
                     .onSuccess { notifier.showSuccess(uploadedMessage(capture.kind, target.title)) }
                     .onFailure { errorHandler.onUploadFailure(it.asAppError()) }
             }

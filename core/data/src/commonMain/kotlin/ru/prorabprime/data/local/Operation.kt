@@ -81,6 +81,16 @@ internal sealed interface Operation {
         val kind: AttachmentKindDto,
         val blob: String,
         val mimeType: String,
+        val note: String? = null,
+    ) : Operation {
+        override val touched get() = listOf(Keys.photo(photoId))
+    }
+
+    /** An empty [note] clears it. */
+    @Serializable
+    data class SetPhotoNote(
+        val photoId: String,
+        val note: String?,
     ) : Operation {
         override val touched get() = listOf(Keys.photo(photoId))
     }

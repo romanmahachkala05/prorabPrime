@@ -10,6 +10,7 @@ import ru.prorabprime.domain.model.PhotoId
 import ru.prorabprime.domain.model.ServerFilePath
 import ru.prorabprime.domain.usecase.ObserveObjectUseCase
 import ru.prorabprime.domain.usecase.RotatePhotoUseCase
+import ru.prorabprime.domain.usecase.SetPhotoNoteUseCase
 import ru.prorabprime.testing.FakeObjectsRepository
 import ru.prorabprime.testing.FakePhotosRepository
 import ru.prorabprime.testing.FakeSnackbarNotifier
@@ -80,6 +81,30 @@ class PhotoViewerViewModelTest {
         assertThat(viewModel("p1").state.value.photos.single().quarterTurns).isEqualTo(1)
     }
 
+    @Test
+    fun `saving a note passes it on, and a failure says so`() {
+        val viewModel = viewModel("p2")
+
+        viewModel.saveNote("p2", "Скол на плитке")
+        assertThat(photos.notes).containsExactly(PhotoId("p2") to "Скол на плитке")
+
+        photos.error = AppError.Network
+        viewModel.saveNote("p2", "ещё")
+        assertThat(notifier.errors).hasSize(1)
+    }
+
+    @Test
+    fun `a photo with a note is shown with it`() {
+        objects.details.value = mapOf(
+            ObjectId("o1") to anObjectDetails(
+                id = "o1",
+                photos = persistentListOf(aPhoto("p1", "o1").copy(note = "Трещина")),
+            ),
+        )
+
+        assertThat(viewModel("p1").state.value.photos.single().note).isEqualTo("Трещина")
+    }
+
     private val photos = FakePhotosRepository()
     private val notifier = FakeSnackbarNotifier()
 
@@ -87,6 +112,7 @@ class PhotoViewerViewModelTest {
         PhotoViewerArgs("o1", photoId),
         ObserveObjectUseCase(objects),
         RotatePhotoUseCase(photos),
+        SetPhotoNoteUseCase(photos),
         notifier,
     )
 }

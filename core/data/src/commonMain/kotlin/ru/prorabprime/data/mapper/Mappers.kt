@@ -71,6 +71,7 @@ internal fun PhotoDto.toDomain() = Photo(
     height = height,
     createdAt = createdAt,
     kind = kind.toDomain(),
+    note = note,
 )
 
 internal fun ObjectDraft.toRequestDto() = ObjectRequestDto(
