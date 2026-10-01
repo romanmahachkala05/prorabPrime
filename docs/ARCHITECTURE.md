@@ -458,6 +458,7 @@ The server has no counterpart in CatsListKMP (ADR-0005). It depends on
       service/         — business rules (cover logic, validation)
       repository/      — interfaces + Exposed implementations
       storage/         — FileStorage interface + LocalFileStorage (disk) + thumbnails
+      (service/)       — also the Geocoder port, with the Nominatim implementation (ADR-0013)
       error/           — sealed ServiceError, mapped to HTTP in one place (StatusPages)
       di/              — Koin modules
 

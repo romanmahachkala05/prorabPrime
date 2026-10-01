@@ -1,8 +1,11 @@
 # ProrabPrime
 
-An app for a small renovation business: a list of the owner's sites, a card per site with its
-client and notes, and photos taken on site. Stage 1: a Ktor server on the owner's computer and
-an Android app talking to it over the local Wi-Fi.
+An app for a small renovation business: the owner's sites as a grid you can pick from at a glance,
+and a card per site with its client and other contacts (tap to call), a link to its chat, photos
+and receipts, the books (payments to the crew and from the client, with a history, and extra works),
+and a materials checklist. A big camera button shoots first and asks where the picture goes. Sites
+are on a map (OpenStreetMap), and there is a plan for the day with reminders. Stage 1: a Ktor server
+on the owner's computer and an Android app talking to it over the local Wi-Fi.
 
 - Architecture — [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 - Why it is built this way — [`docs/DECISIONS.md`](docs/DECISIONS.md)
@@ -29,6 +32,10 @@ python -c "import secrets; print(secrets.token_urlsafe(24))"
 ```
 
 `.env` is gitignored; it never leaves the computer.
+
+**Map pins.** To put an object on the map the server looks its address up on OpenStreetMap's
+public Nominatim, which means **the address is sent to nominatim.openstreetmap.org**. If you would
+rather keep addresses on this computer, set `GEOCODER_URL=off` in `.env`: objects then have no pins.
 
 ## 2. Start the server
 
