@@ -35,6 +35,7 @@ internal fun PhotoRow.toDomain(blobs: BlobStore) = Photo(
     createdAt = createdAt,
     kind = kind.toDomain(),
     isPending = localBlob != null,
+    quarterTurns = quarterTurns,
 )
 
 internal fun ObjectRow.toSummary(

@@ -17,6 +17,7 @@ class FakePhotosRepository : PhotosRepository {
     val uploaded = mutableListOf<Pair<ObjectId, CompressedImage>>()
     val uploadedKinds = mutableListOf<AttachmentKind>()
     val deleted = mutableListOf<PhotoId>()
+    val rotated = mutableListOf<PhotoId>()
     val covers = mutableListOf<Pair<ObjectId, PhotoId>>()
 
     override suspend fun upload(
@@ -33,6 +34,12 @@ class FakePhotosRepository : PhotosRepository {
     override suspend fun delete(id: PhotoId): Result<Unit> {
         error?.let { return it.asFailure() }
         deleted += id
+        return Result.success(Unit)
+    }
+
+    override suspend fun rotate(id: PhotoId): Result<Unit> {
+        error?.let { return it.asFailure() }
+        rotated += id
         return Result.success(Unit)
     }
 

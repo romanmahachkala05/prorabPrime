@@ -8,11 +8,11 @@ import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -40,10 +40,11 @@ import ru.prorabprime.designsystem.components.ErrorMessage
 import ru.prorabprime.designsystem.components.LoadingBox
 import ru.prorabprime.designsystem.components.ServerImage
 import ru.prorabprime.designsystem.components.TopAppBar
-import ru.prorabprime.domain.model.ServerFilePath
+import ru.prorabprime.designsystem.components.quarterTurns
 import ru.prorabprime.feature.objects.resources.Res
 import ru.prorabprime.feature.objects.resources.photoviewer_back
 import ru.prorabprime.feature.objects.resources.photoviewer_position
+import ru.prorabprime.feature.objects.resources.photoviewer_rotate
 
 @Composable
 fun PhotoViewerScreen(
@@ -56,7 +57,7 @@ fun PhotoViewerScreen(
         parametersOf(PhotoViewerArgs(objectId, photoId))
     }
     val state by viewModel.state.collectAsStateWithLifecycle()
-    PhotoViewerContent(state, onBack, modifier)
+    PhotoViewerContent(state, onBack, onRotate = viewModel::rotate, modifier = modifier)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -64,11 +65,12 @@ fun PhotoViewerScreen(
 internal fun PhotoViewerContent(
     state: PhotoViewerState,
     onBack: () -> Unit,
+    onRotate: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier.fillMaxSize().background(Color.Black)) {
         when (val status = state.status) {
-            PhotoViewerStatus.Content -> Pages(state, onBack)
+            PhotoViewerStatus.Content -> Pages(state, onBack, onRotate)
             PhotoViewerStatus.Loading -> LoadingBox()
             is PhotoViewerStatus.Error -> ErrorMessage(status.message, onRetry = onBack)
         }
@@ -77,13 +79,17 @@ internal fun PhotoViewerContent(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun Pages(state: PhotoViewerState, onBack: () -> Unit) {
+private fun Pages(
+    state: PhotoViewerState,
+    onBack: () -> Unit,
+    onRotate: (String) -> Unit,
+) {
     val pager = rememberPagerState(initialPage = state.initialPage) { state.photos.size }
     // A zoomed photo takes the drag for panning; the pager only swipes at normal size.
     var zoomed by remember { mutableStateOf(false) }
     HorizontalPager(state = pager, userScrollEnabled = !zoomed, modifier = Modifier.fillMaxSize()) { page ->
         ZoomableImage(
-            path = state.photos[page],
+            photo = state.photos[page],
             onZoomChanged = { if (page == pager.currentPage) zoomed = it },
         )
     }
@@ -103,6 +109,11 @@ private fun Pages(state: PhotoViewerState, onBack: () -> Unit) {
                 )
             }
         },
+        actions = {
+            IconButton(onClick = { state.photos.getOrNull(pager.currentPage)?.let { onRotate(it.id) } }) {
+                Icon(Icons.Default.Refresh, stringResource(Res.string.photoviewer_rotate), tint = Color.White)
+            }
+        },
         containerColor = BAR_SCRIM,
         contentColor = Color.White,
     )
@@ -110,7 +121,7 @@ private fun Pages(state: PhotoViewerState, onBack: () -> Unit) {
 
 /** Pinch to zoom, drag to pan while zoomed, double tap to go back to fit. */
 @Composable
-private fun ZoomableImage(path: ServerFilePath, onZoomChanged: (Boolean) -> Unit) {
+private fun ZoomableImage(photo: ViewerPhoto, onZoomChanged: (Boolean) -> Unit) {
     var scale by remember { mutableFloatStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
     Box(
@@ -142,12 +153,12 @@ private fun ZoomableImage(path: ServerFilePath, onZoomChanged: (Boolean) -> Unit
         contentAlignment = Alignment.Center,
     ) {
         ServerImage(
-            path = path,
+            path = photo.path,
             contentDescription = null,
             contentScale = ContentScale.Fit,
             modifier = Modifier
                 .fillMaxSize()
-                .padding()
+                .quarterTurns(photo.quarterTurns)
                 .graphicsLayer {
                     scaleX = scale
                     scaleY = scale

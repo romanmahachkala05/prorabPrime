@@ -68,6 +68,7 @@ internal data class PhotoUi(
     val thumb: ServerFilePath,
     val isCover: Boolean,
     val isPending: Boolean = false,
+    val quarterTurns: Int = 0,
 )
 
 /** A picture on its way to the server, shown in the carousel until it arrives as a [PhotoUi]. */

@@ -9,9 +9,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import ru.prorabprime.domain.model.ObjectId
+import ru.prorabprime.domain.model.PhotoId
 import ru.prorabprime.domain.model.asAppError
 import ru.prorabprime.domain.usecase.ObserveObjectUseCase
+import ru.prorabprime.domain.usecase.RotatePhotoUseCase
+import ru.prorabprime.ui.SnackbarNotifier
 import ru.prorabprime.ui.StateOwner
 import ru.prorabprime.ui.toUiText
 
@@ -22,6 +26,8 @@ import ru.prorabprime.ui.toUiText
 internal class PhotoViewerViewModel(
     args: PhotoViewerArgs,
     observeObject: ObserveObjectUseCase,
+    private val rotatePhoto: RotatePhotoUseCase,
+    private val notifier: SnackbarNotifier,
 ) : ViewModel(),
     StateOwner<PhotoViewerState> {
 
@@ -40,9 +46,7 @@ internal class PhotoViewerViewModel(
                         _state.update {
                             PhotoViewerState(
                                 PhotoViewerStatus.Content,
-                                folder.map { p ->
-                                    p.path
-                                }.toImmutableList(),
+                                folder.map { ViewerPhoto(it.id.value, it.path, it.quarterTurns) }.toImmutableList(),
                                 index,
                             )
                         }
@@ -50,5 +54,11 @@ internal class PhotoViewerViewModel(
                         _state.update { it.copy(status = PhotoViewerStatus.Error(failure.asAppError().toUiText())) }
                     }
             }.launchIn(viewModelScope)
+    }
+
+    fun rotate(photoId: String) {
+        viewModelScope.launch {
+            rotatePhoto(PhotoId(photoId)).onFailure { notifier.showError(it.asAppError().toUiText()) }
+        }
     }
 }

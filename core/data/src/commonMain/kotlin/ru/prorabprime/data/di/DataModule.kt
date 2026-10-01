@@ -67,6 +67,7 @@ import ru.prorabprime.domain.usecase.ObserveServerSettingsUseCase
 import ru.prorabprime.domain.usecase.ObserveSyncStatusUseCase
 import ru.prorabprime.domain.usecase.RefreshObjectsUseCase
 import ru.prorabprime.domain.usecase.RetryFailedChangesUseCase
+import ru.prorabprime.domain.usecase.RotatePhotoUseCase
 import ru.prorabprime.domain.usecase.SaveContactUseCase
 import ru.prorabprime.domain.usecase.SaveExtraWorkUseCase
 import ru.prorabprime.domain.usecase.SaveFinanceTermsUseCase
@@ -123,6 +124,7 @@ val dataModule: Module = module {
     factory { UploadPhotoUseCase(get(), get()) }
     factory { DeletePhotoUseCase(get()) }
     factory { SetCoverPhotoUseCase(get()) }
+    factory { RotatePhotoUseCase(get()) }
     factory { SaveContactUseCase(get()) }
     factory { DeleteContactUseCase(get()) }
     factory { GeocodeObjectUseCase(get()) }

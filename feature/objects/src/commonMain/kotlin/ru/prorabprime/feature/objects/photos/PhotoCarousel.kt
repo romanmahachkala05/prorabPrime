@@ -44,6 +44,7 @@ import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import ru.prorabprime.designsystem.components.PendingBadge
 import ru.prorabprime.designsystem.components.ServerImage
+import ru.prorabprime.designsystem.components.quarterTurns
 import ru.prorabprime.designsystem.theme.Corners
 import ru.prorabprime.designsystem.theme.Spacing
 import ru.prorabprime.feature.objects.details.PhotoUi
@@ -121,14 +122,18 @@ private fun PhotoTile(
     // Whether the long-press menu is open is view state with no meaning beyond this tile.
     var menuOpen by remember { mutableStateOf(false) }
     Box {
-        ServerImage(
-            path = photo.thumb,
-            contentDescription = null,
-            modifier = Modifier
+        Box(
+            Modifier
                 .size(TILE_SIZE)
                 .clip(TILE_SHAPE)
                 .combinedClickable(onClick = onClick, onLongClick = { menuOpen = true }),
-        )
+        ) {
+            ServerImage(
+                path = photo.thumb,
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize().quarterTurns(photo.quarterTurns),
+            )
+        }
         if (photo.isCover) CoverBadge(Modifier.align(Alignment.BottomStart).padding(Spacing.xs))
         if (photo.isPending) PendingBadge(Modifier.align(Alignment.TopEnd).padding(Spacing.xs))
         DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {

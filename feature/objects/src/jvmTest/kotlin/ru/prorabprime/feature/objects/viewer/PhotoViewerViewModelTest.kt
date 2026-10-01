@@ -4,10 +4,15 @@ import com.google.common.truth.Truth.assertThat
 import kotlinx.collections.immutable.persistentListOf
 import org.junit.Rule
 import org.junit.Test
+import ru.prorabprime.domain.model.AppError
 import ru.prorabprime.domain.model.ObjectId
+import ru.prorabprime.domain.model.PhotoId
 import ru.prorabprime.domain.model.ServerFilePath
 import ru.prorabprime.domain.usecase.ObserveObjectUseCase
+import ru.prorabprime.domain.usecase.RotatePhotoUseCase
 import ru.prorabprime.testing.FakeObjectsRepository
+import ru.prorabprime.testing.FakePhotosRepository
+import ru.prorabprime.testing.FakeSnackbarNotifier
 import ru.prorabprime.testing.MainDispatcherRule
 import ru.prorabprime.testing.aPhoto
 import ru.prorabprime.testing.anObjectDetails
@@ -29,18 +34,59 @@ class PhotoViewerViewModelTest {
 
     @Test
     fun `opens at the tapped photo, showing full-size pictures`() {
-        val viewModel = PhotoViewerViewModel(PhotoViewerArgs("o1", "p2"), ObserveObjectUseCase(objects))
+        val viewModel = viewModel("p2")
 
         val state = viewModel.state.value
         assertThat(state.status).isEqualTo(PhotoViewerStatus.Content)
         assertThat(state.initialPage).isEqualTo(1)
-        assertThat(state.photos.first()).isEqualTo(ServerFilePath("/files/o1/p1.jpg"))
+        assertThat(state.photos.first().path).isEqualTo(ServerFilePath("/files/o1/p1.jpg"))
     }
 
     @Test
     fun `a photo that is gone opens at the first one`() {
-        val viewModel = PhotoViewerViewModel(PhotoViewerArgs("o1", "missing"), ObserveObjectUseCase(objects))
+        val viewModel = viewModel("missing")
 
         assertThat(viewModel.state.value.initialPage).isEqualTo(0)
     }
+
+    @Test
+    fun `rotating asks the repository to turn that photo`() {
+        val viewModel = viewModel("p2")
+
+        viewModel.rotate("p2")
+
+        assertThat(photos.rotated).containsExactly(PhotoId("p2"))
+    }
+
+    @Test
+    fun `a rotation that fails says so`() {
+        photos.error = AppError.Network
+        val viewModel = viewModel("p2")
+
+        viewModel.rotate("p2")
+
+        assertThat(notifier.errors).hasSize(1)
+    }
+
+    @Test
+    fun `a photo waiting for a turn is shown with it`() {
+        objects.details.value = mapOf(
+            ObjectId("o1") to anObjectDetails(
+                id = "o1",
+                photos = persistentListOf(aPhoto("p1", "o1").copy(quarterTurns = 1)),
+            ),
+        )
+
+        assertThat(viewModel("p1").state.value.photos.single().quarterTurns).isEqualTo(1)
+    }
+
+    private val photos = FakePhotosRepository()
+    private val notifier = FakeSnackbarNotifier()
+
+    private fun viewModel(photoId: String) = PhotoViewerViewModel(
+        PhotoViewerArgs("o1", photoId),
+        ObserveObjectUseCase(objects),
+        RotatePhotoUseCase(photos),
+        notifier,
+    )
 }

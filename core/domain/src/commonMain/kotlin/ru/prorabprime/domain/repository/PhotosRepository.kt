@@ -16,5 +16,8 @@ interface PhotosRepository {
 
     suspend fun delete(id: PhotoId): Result<Unit>
 
+    /** One quarter turn clockwise, kept: the server makes new files, and the phone shows the turn at once. */
+    suspend fun rotate(id: PhotoId): Result<Unit>
+
     suspend fun setCover(objectId: ObjectId, photoId: PhotoId): Result<Unit>
 }
