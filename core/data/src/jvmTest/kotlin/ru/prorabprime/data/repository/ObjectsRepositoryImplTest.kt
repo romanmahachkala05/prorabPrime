@@ -71,6 +71,18 @@ class ObjectsRepositoryImplTest {
     }
 
     @Test
+    fun `the list can be narrowed to some statuses`() = runTest {
+        phone.objects.create(ObjectDraft(address = "Арбат, 3", status = ObjectStatus.DONE)).getOrThrow()
+        phone.objects.create(ObjectDraft(address = "Тверская, 5", status = ObjectStatus.PAUSED)).getOrThrow()
+        phone.objects.create(ObjectDraft(address = "Бульвар, 1", status = ObjectStatus.PLANNED)).getOrThrow()
+
+        val query = ObjectQuery(sort = ObjectSort.ADDRESS_ASC, statuses = setOf(ObjectStatus.DONE, ObjectStatus.PAUSED))
+        val shown = phone.objects.observeObjects(query).first().getOrThrow()
+
+        assertThat(shown.map { it.address }).containsExactly("Арбат, 3", "Тверская, 5").inOrder()
+    }
+
+    @Test
     fun `a change is written to the copy and queued, and a new address drops the old pin`() = runTest {
         phone.engine.sync()
         val id = ObjectId(phone.server.objectId)

@@ -2,7 +2,9 @@ package ru.prorabprime.feature.objects.list
 
 import androidx.compose.runtime.Immutable
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentSetOf
 import ru.prorabprime.domain.model.AttachmentKind
 import ru.prorabprime.domain.model.LocalImageRef
 import ru.prorabprime.domain.model.ObjectSort
@@ -59,6 +61,10 @@ internal data class ObjectsListState(
     val sort: ObjectSort = ObjectSort.DEFAULT,
     val isRefreshing: Boolean = false,
     val capture: CaptureUi? = null,
+    /** Only these statuses are listed; empty is all of them. */
+    val statuses: ImmutableSet<ObjectStatus> = persistentSetOf(),
+    /** The search line is shown only when asked for, so it takes no room otherwise. */
+    val searchOpen: Boolean = false,
 )
 
 internal sealed interface ObjectsListEvent {
@@ -69,6 +75,17 @@ internal sealed interface ObjectsListEvent {
     data class SortSelected(
         val sort: ObjectSort,
     ) : ObjectsListEvent
+
+    /** The search icon: shows the search line, or hides it and forgets what was typed. */
+    data object SearchToggled : ObjectsListEvent
+
+    /** A status chip: adds the status to the filter, or takes it out. */
+    data class StatusToggled(
+        val status: ObjectStatus,
+    ) : ObjectsListEvent
+
+    /** The "all" chip. */
+    data object FiltersCleared : ObjectsListEvent
 
     /** Pull-to-refresh. */
     data object Refresh : ObjectsListEvent

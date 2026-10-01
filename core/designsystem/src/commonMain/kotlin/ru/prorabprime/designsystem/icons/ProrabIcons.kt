@@ -45,6 +45,11 @@ object ProrabIcons {
         )
     }
 
+    /** Lines of falling length: sorting. */
+    val Sort: ImageVector by lazy {
+        icon("Sort", "M3,18h6v-2H3V18zM3,6v2h18V6H3zM3,13h12v-2H3V13z")
+    }
+
     val Map: ImageVector by lazy {
         icon(
             "Map",

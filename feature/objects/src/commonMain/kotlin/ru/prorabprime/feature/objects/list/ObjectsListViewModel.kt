@@ -53,7 +53,10 @@ internal class ObjectsListViewModel(
         val search = state.map { it.search.trim() }.distinctUntilChanged().debounce(SEARCH_DEBOUNCE_MS)
 
         @OptIn(ExperimentalCoroutinesApi::class)
-        combine(search, sort) { text, order -> ObjectQuery(text, order) }
+        val statuses = state.map { it.statuses }.distinctUntilChanged()
+
+        @OptIn(ExperimentalCoroutinesApi::class)
+        combine(search, sort, statuses) { text, order, only -> ObjectQuery(text, order, only) }
             .distinctUntilChanged()
             .flatMapLatest { observeObjects(it) }
             .onEach(::render)
@@ -65,6 +68,12 @@ internal class ObjectsListViewModel(
             is ObjectsListEvent.SearchChanged -> stateHolder.setSearch(event.text)
 
             is ObjectsListEvent.SortSelected -> saveSort(event)
+
+            ObjectsListEvent.SearchToggled -> stateHolder.toggleSearch()
+
+            is ObjectsListEvent.StatusToggled -> stateHolder.toggleStatus(event.status)
+
+            ObjectsListEvent.FiltersCleared -> stateHolder.clearStatuses()
 
             ObjectsListEvent.Refresh -> refresh()
 

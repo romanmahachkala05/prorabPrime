@@ -3,8 +3,11 @@ package ru.prorabprime.feature.objects.list
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -13,6 +16,7 @@ import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.v2.runComposeUiTest
 import com.google.common.truth.Truth.assertThat
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentSetOf
 import org.junit.Test
 import ru.prorabprime.designsystem.theme.ProrabTheme
 import ru.prorabprime.domain.model.AttachmentKind
@@ -58,7 +62,8 @@ class ObjectsListContentTest {
         setContent { show(ObjectsListState(status = ObjectsListStatus.Content, items = cards)) }
 
         onNodeWithText("Арбат, 3").assertIsDisplayed()
-        onNodeWithText("В работе").assertIsDisplayed()
+        // The chip of the filter row has the same words, so the tile is the last one.
+        onAllNodesWithText("В работе").onLast().assertIsDisplayed()
         onNodeWithText("Кухня").performClick()
 
         assertThat(opened).containsExactly("1")
@@ -107,12 +112,42 @@ class ObjectsListContentTest {
     }
 
     @Test
-    fun `typing sends the search text`() = runComposeUiTest {
+    fun `the search line is hidden until its icon is tapped, and then takes the typing`() = runComposeUiTest {
         setContent { show(ObjectsListState(status = ObjectsListStatus.Content, items = cards)) }
+
+        onNode(hasSetTextAction()).assertDoesNotExist()
+        onNodeWithContentDescription("Поиск").performClick()
+        assertThat(events).containsExactly(ObjectsListEvent.SearchToggled)
+    }
+
+    @Test
+    fun `an open search line sends the search text`() = runComposeUiTest {
+        setContent { show(ObjectsListState(status = ObjectsListStatus.Content, items = cards, searchOpen = true)) }
 
         onNode(hasSetTextAction()).performTextInput("лен")
 
         assertThat(events).containsExactly(ObjectsListEvent.SearchChanged("лен"))
+    }
+
+    @Test
+    fun `the status chips send their choice, and the all chip clears them`() = runComposeUiTest {
+        setContent {
+            show(
+                ObjectsListState(
+                    status = ObjectsListStatus.Content,
+                    items = cards,
+                    statuses = persistentSetOf(ObjectStatus.DONE),
+                ),
+            )
+        }
+
+        onAllNodes(hasText("В работе") and hasClickAction()).onFirst().performClick()
+        onNode(hasText("Все") and hasClickAction()).performClick()
+
+        assertThat(events).containsExactly(
+            ObjectsListEvent.StatusToggled(ObjectStatus.IN_PROGRESS),
+            ObjectsListEvent.FiltersCleared,
+        ).inOrder()
     }
 
     @Test

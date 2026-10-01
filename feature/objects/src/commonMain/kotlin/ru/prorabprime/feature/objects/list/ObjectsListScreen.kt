@@ -1,6 +1,7 @@
 package ru.prorabprime.feature.objects.list
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,11 +17,13 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
@@ -56,6 +59,7 @@ import org.koin.compose.viewmodel.koinViewModel
 import ru.prorabprime.designsystem.components.CompactTextField
 import ru.prorabprime.designsystem.components.EmptyMessage
 import ru.prorabprime.designsystem.components.ErrorMessage
+import ru.prorabprime.designsystem.components.FilterChip
 import ru.prorabprime.designsystem.components.LoadingBox
 import ru.prorabprime.designsystem.components.PendingMark
 import ru.prorabprime.designsystem.components.SearchField
@@ -81,9 +85,12 @@ import ru.prorabprime.feature.objects.resources.objectslist_clear_search
 import ru.prorabprime.feature.objects.resources.objectslist_empty
 import ru.prorabprime.feature.objects.resources.objectslist_empty_action
 import ru.prorabprime.feature.objects.resources.objectslist_expenses
+import ru.prorabprime.feature.objects.resources.objectslist_filter_all
 import ru.prorabprime.feature.objects.resources.objectslist_map
 import ru.prorabprime.feature.objects.resources.objectslist_nothing_found
 import ru.prorabprime.feature.objects.resources.objectslist_search
+import ru.prorabprime.feature.objects.resources.objectslist_search_close
+import ru.prorabprime.feature.objects.resources.objectslist_search_open
 import ru.prorabprime.feature.objects.resources.objectslist_settings
 import ru.prorabprime.feature.objects.resources.objectslist_sort_address_asc
 import ru.prorabprime.feature.objects.resources.objectslist_sort_address_desc
@@ -167,34 +174,7 @@ internal fun ObjectsListContent(
     Scaffold(
         modifier = modifier,
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(Res.string.objectslist_title)) },
-                actions = {
-                    IconButton(onClick = onOpenTasks) {
-                        Icon(ProrabIcons.Tasks, contentDescription = stringResource(Res.string.objectslist_tasks))
-                    }
-                    onOpenExpenses?.let { open ->
-                        IconButton(onClick = open) {
-                            Icon(
-                                ProrabIcons.Wallet,
-                                contentDescription = stringResource(Res.string.objectslist_expenses),
-                            )
-                        }
-                    }
-                    IconButton(onClick = onOpenMap) {
-                        Icon(ProrabIcons.Map, contentDescription = stringResource(Res.string.objectslist_map))
-                    }
-                    IconButton(onClick = onCreateObject) {
-                        Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.objectslist_add))
-                    }
-                    IconButton(onClick = onOpenSettings) {
-                        Icon(
-                            Icons.Default.Settings,
-                            contentDescription = stringResource(Res.string.objectslist_settings),
-                        )
-                    }
-                },
-            )
+            ListTopBar(state, onEvent, onCreateObject, onOpenSettings, onOpenMap, onOpenTasks, onOpenExpenses)
         },
         floatingActionButton = {
             // Side by side under the thumb: a photo of the object, then a receipt. The button sets the kind.
@@ -208,17 +188,66 @@ internal fun ObjectsListContent(
         },
     ) { padding ->
         Column(Modifier.padding(padding).fillMaxSize()) {
-            Row(
-                modifier = Modifier.padding(horizontal = Spacing.m, vertical = Spacing.s),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                SearchField(state.search, onEvent, Modifier.weight(1f))
-                SortMenu(state.sort, onSelect = { onEvent(ObjectsListEvent.SortSelected(it)) })
+            if (state.searchOpen) {
+                SearchField(
+                    state.search,
+                    onEvent,
+                    Modifier.padding(horizontal = Spacing.m, vertical = Spacing.s),
+                )
             }
+            FilterRow(state, onEvent)
             ListBody(state, onEvent, onOpenObject, onCreateObject)
         }
     }
     state.capture?.let { CaptureSheet(it, state.items, onEvent) }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ListTopBar(
+    state: ObjectsListState,
+    onEvent: (ObjectsListEvent) -> Unit,
+    onCreateObject: () -> Unit,
+    onOpenSettings: () -> Unit,
+    onOpenMap: () -> Unit,
+    onOpenTasks: () -> Unit,
+    onOpenExpenses: (() -> Unit)?,
+) {
+    TopAppBar(
+        title = { Text(stringResource(Res.string.objectslist_title)) },
+        actions = {
+            IconButton(onClick = { onEvent(ObjectsListEvent.SearchToggled) }) {
+                if (state.searchOpen) {
+                    Icon(Icons.Default.Clear, stringResource(Res.string.objectslist_search_close))
+                } else {
+                    Icon(Icons.Default.Search, stringResource(Res.string.objectslist_search_open))
+                }
+            }
+            IconButton(onClick = onOpenTasks) {
+                Icon(ProrabIcons.Tasks, contentDescription = stringResource(Res.string.objectslist_tasks))
+            }
+            onOpenExpenses?.let { open ->
+                IconButton(onClick = open) {
+                    Icon(
+                        ProrabIcons.Wallet,
+                        contentDescription = stringResource(Res.string.objectslist_expenses),
+                    )
+                }
+            }
+            IconButton(onClick = onOpenMap) {
+                Icon(ProrabIcons.Map, contentDescription = stringResource(Res.string.objectslist_map))
+            }
+            IconButton(onClick = onCreateObject) {
+                Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.objectslist_add))
+            }
+            IconButton(onClick = onOpenSettings) {
+                Icon(
+                    Icons.Default.Settings,
+                    contentDescription = stringResource(Res.string.objectslist_settings),
+                )
+            }
+        },
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -252,52 +281,6 @@ private fun ListBody(
             is ObjectsListStatus.Error -> ErrorMessage(status.message, onRetry = {
                 onEvent(ObjectsListEvent.Retry)
             })
-        }
-    }
-}
-
-@Composable
-private fun SearchField(
-    text: String,
-    onEvent: (ObjectsListEvent) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    SearchField(
-        value = text,
-        onValueChange = { onEvent(ObjectsListEvent.SearchChanged(it)) },
-        placeholder = stringResource(Res.string.objectslist_search),
-        clearDescription = stringResource(Res.string.objectslist_clear_search),
-        modifier = modifier,
-    )
-}
-
-internal val ObjectSort.label: StringResource
-    get() = when (this) {
-        ObjectSort.ADDRESS_ASC -> Res.string.objectslist_sort_address_asc
-        ObjectSort.ADDRESS_DESC -> Res.string.objectslist_sort_address_desc
-        ObjectSort.CREATED_NEWEST -> Res.string.objectslist_sort_created
-        ObjectSort.UPDATED_NEWEST -> Res.string.objectslist_sort_updated
-    }
-
-@Composable
-private fun SortMenu(selected: ObjectSort, onSelect: (ObjectSort) -> Unit) {
-    // Whether the menu is open is view state with no meaning beyond this composable.
-    var expanded by remember { mutableStateOf(false) }
-    Box {
-        IconButton(onClick = { expanded = true }) {
-            Icon(Icons.Default.ArrowDropDown, contentDescription = stringResource(selected.label))
-        }
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            ObjectSort.entries.forEach { sort ->
-                DropdownMenuItem(
-                    text = { Text(stringResource(sort.label)) },
-                    leadingIcon = { if (sort == selected) Icon(Icons.Default.Check, contentDescription = null) },
-                    onClick = {
-                        expanded = false
-                        onSelect(sort)
-                    },
-                )
-            }
         }
     }
 }
