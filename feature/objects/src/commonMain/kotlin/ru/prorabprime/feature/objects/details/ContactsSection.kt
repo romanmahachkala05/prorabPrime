@@ -19,6 +19,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -68,7 +69,7 @@ internal fun ContactsSection(
 ) {
     val uriHandler = LocalUriHandler.current
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-        Row(Modifier.padding(horizontal = Spacing.m)) {
+        Row(Modifier.padding(horizontal = Spacing.m), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 stringResource(Res.string.objectdetails_contacts),
                 style = MaterialTheme.typography.titleMedium,

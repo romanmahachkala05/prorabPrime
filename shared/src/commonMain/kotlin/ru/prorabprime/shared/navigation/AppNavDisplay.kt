@@ -1,8 +1,12 @@
 package ru.prorabprime.shared.navigation
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -23,6 +27,7 @@ import androidx.navigation3.ui.NavDisplay
 import androidx.savedstate.serialization.SavedStateConfiguration
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
+import ru.prorabprime.designsystem.components.topBarColor
 import ru.prorabprime.feature.finance.FinanceNavKey
 import ru.prorabprime.feature.finance.FinanceScreen
 import ru.prorabprime.feature.map.MapNavKey
@@ -62,7 +67,11 @@ fun AppNavDisplay(notifier: SnackbarNotifier, modifier: Modifier = Modifier) {
     Scaffold(modifier = modifier, snackbarHost = { SnackbarHost(snackbarHostState) }) {
         // No padding from this Scaffold: each screen has its own, with its own top bar. On a wide
         // screen (the web client) the app stays a phone-shaped column in the middle.
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+        BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+            if (maxWidth > MAX_CONTENT_WIDTH) {
+                // The bar goes on across the whole window, so the column does not look cut out of it.
+                Box(Modifier.fillMaxWidth().height(BAR_HEIGHT).background(topBarColor()))
+            }
             NavDisplay(
                 backStack = backStack,
                 onBack = { backStack.pop() },
@@ -78,6 +87,7 @@ fun AppNavDisplay(notifier: SnackbarNotifier, modifier: Modifier = Modifier) {
 }
 
 private val MAX_CONTENT_WIDTH = 840.dp
+private val BAR_HEIGHT = 64.dp
 
 /** Every screen of the app, with the callbacks that move between them. */
 private fun appEntries(backStack: NavBackStack<NavKey>) = entryProvider<NavKey> {

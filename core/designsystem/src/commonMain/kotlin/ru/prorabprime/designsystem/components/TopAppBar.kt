@@ -26,9 +26,8 @@ fun TopAppBar(
     contentColor: Color? = null,
 ) {
     val colors = MaterialTheme.colorScheme
-    val dark = colors.background.luminance() < DARK_LUMINANCE
-    val container = containerColor ?: if (dark) colors.surfaceContainerHigh else colors.primary
-    val content = contentColor ?: if (dark) colors.onSurface else Color.White
+    val container = containerColor ?: topBarColor()
+    val content = contentColor ?: if (isDarkSurface()) colors.onSurface else Color.White
     MaterialTopAppBar(
         title = title,
         modifier = modifier,
@@ -43,5 +42,14 @@ fun TopAppBar(
         ),
     )
 }
+
+/** The bar's own color, for what has to continue it, such as the strip beside a centered column. */
+@Composable
+fun topBarColor(): Color = MaterialTheme.colorScheme.let {
+    if (isDarkSurface()) it.surfaceContainerHigh else it.primary
+}
+
+@Composable
+private fun isDarkSurface(): Boolean = MaterialTheme.colorScheme.background.luminance() < DARK_LUMINANCE
 
 private const val DARK_LUMINANCE = 0.5f
