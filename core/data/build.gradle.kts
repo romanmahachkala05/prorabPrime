@@ -1,6 +1,7 @@
 plugins {
     id("prorab.kmp.android.library")
     id("prorab.koin")
+    alias(libs.plugins.kotlin.serialization)
 }
 
 kotlin {
