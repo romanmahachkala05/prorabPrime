@@ -155,6 +155,13 @@ list where it can be retried or given up on. Pictures seen once are kept for the
 
 The browser version is online-first: its copy lives only while the tab is open.
 
+## The trash
+
+Deleting an object, or a photo or receipt, moves it to the trash instead of removing it. Open it from
+**Настройки → Корзина**: every item shows how many days it has left (thirty in all), and can be restored
+or removed for good; "Очистить" empties the trash. After thirty days the server removes what is left. The
+trash is read from the server, so it needs a signal; deleting itself still works without one (ADR-0019).
+
 ## The web app
 
 The web client is the same Compose UI compiled to WebAssembly. It needs a recent browser (Chrome,

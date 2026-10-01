@@ -22,7 +22,11 @@ import ru.prorabprime.server.model.ReceiptData
 import ru.prorabprime.server.model.TaskFields
 import ru.prorabprime.server.model.TaskQuery
 import ru.prorabprime.server.model.TaskRecord
+import ru.prorabprime.server.model.TrashedObject
+import ru.prorabprime.server.model.TrashedPhoto
 
+// The trash is part of what an object's store does: it is the same rows, marked.
+@Suppress("TooManyFunctions")
 interface ObjectRepository {
     suspend fun list(query: ObjectListQuery): List<ObjectListItem>
 
@@ -37,7 +41,22 @@ interface ObjectRepository {
         updatedAt: Instant,
     ): Boolean
 
-    /** Deletes the object and, by cascade, its photo rows. Returns false when there is no such object. */
+    /** Like [find], but also an object that is in the trash: for a create that is retried after a delete. */
+    suspend fun findAny(id: UUID): ObjectRecord?
+
+    /** Puts a live object in the trash. Returns false when there is no such live object. */
+    suspend fun trash(id: UUID, at: Instant): Boolean
+
+    /** Takes an object out of the trash. Returns false when it is not there. */
+    suspend fun restore(id: UUID): Boolean
+
+    /** An object in the trash. */
+    suspend fun findTrashed(id: UUID): ObjectRecord?
+
+    /** Most recently deleted first. */
+    suspend fun listTrashed(): List<TrashedObject>
+
+    /** Deletes the object for good and, by cascade, its photo rows. Returns false when there is no such object. */
     suspend fun delete(id: UUID): Boolean
 
     /** The database rejects a photo of another object (composite foreign key). */
@@ -50,15 +69,32 @@ interface ObjectRepository {
     suspend fun touch(id: UUID, at: Instant)
 }
 
+// The trash is part of what a photo's store does: it is the same rows, marked.
+@Suppress("TooManyFunctions")
 interface PhotoRepository {
     /** In carousel order. */
     suspend fun listByObject(objectId: UUID): List<PhotoRecord>
 
     suspend fun find(id: UUID): PhotoRecord?
 
+    /** Like [find], but also a photo that is in the trash. */
+    suspend fun findAny(id: UUID): PhotoRecord?
+
     suspend fun insert(photo: PhotoRecord)
 
-    /** Returns false when there is no such photo. */
+    /** Puts a live photo in the trash. Returns false when there is no such live photo. */
+    suspend fun trash(id: UUID, at: Instant): Boolean
+
+    /** Takes a photo out of the trash. Returns false when it is not there. */
+    suspend fun restore(id: UUID): Boolean
+
+    /** A photo in the trash. */
+    suspend fun findTrashed(id: UUID): PhotoRecord?
+
+    /** The trashed photos of objects that are not themselves in the trash; most recently deleted first. */
+    suspend fun listTrashed(): List<TrashedPhoto>
+
+    /** Deletes the photo for good. Returns false when there is no such photo. */
     suspend fun delete(id: UUID): Boolean
 
     /** Returns false when there is no such photo. */

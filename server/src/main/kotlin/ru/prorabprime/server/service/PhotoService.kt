@@ -49,7 +49,7 @@ class PhotoService(
 
         objects.find(objectId) == null -> objectNotFound(objectId)
 
-        else -> alreadyCreated(clientId?.let { photos.find(it) }) { it.objectId == objectId }
+        else -> alreadyCreated(clientId?.let { photos.findAny(it) }) { it.objectId == objectId }
     }
 
     suspend fun upload(
@@ -111,11 +111,12 @@ class PhotoService(
         }
     }
 
+    /** Only moves the photo to the trash, files and all; [TrashService] is what removes anything for good. */
     suspend fun delete(photoId: UUID): Result<Unit> {
-        val photo = transactor.inTransaction {
+        transactor.inTransaction {
             val photo = photos.find(photoId) ?: return@inTransaction null
             val wasCover = objects.find(photo.objectId)?.coverPhotoId == photoId
-            photos.delete(photoId)
+            photos.trash(photoId, clock.now())
             // A deleted cover is replaced by the newest remaining photo, or by none.
             if (wasCover) {
                 objects.setCover(
@@ -128,8 +129,6 @@ class PhotoService(
             objects.touch(photo.objectId, clock.now())
             photo
         } ?: return ServiceError.NotFound("No photo $photoId").asFailure()
-
-        deleteFilesQuietly(photo.objectId, listOf(photo.fileName, photo.thumbFileName))
         return Result.success(Unit)
     }
 

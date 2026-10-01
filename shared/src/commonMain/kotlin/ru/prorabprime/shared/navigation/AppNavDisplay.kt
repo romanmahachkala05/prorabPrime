@@ -58,6 +58,8 @@ import ru.prorabprime.feature.settings.SettingsScreen
 import ru.prorabprime.feature.sync.SyncStatusHost
 import ru.prorabprime.feature.tasks.TasksNavKey
 import ru.prorabprime.feature.tasks.TasksScreen
+import ru.prorabprime.feature.trash.TrashNavKey
+import ru.prorabprime.feature.trash.TrashScreen
 import ru.prorabprime.ui.SnackbarNotifier
 import ru.prorabprime.ui.isWebClient
 import ru.prorabprime.ui.load
@@ -188,7 +190,10 @@ private fun EntryProviderScope<NavKey>.toolEntries(backStack: NavBackStack<NavKe
         )
     }
     entry<MaterialsNavKey> { key -> MaterialsScreen(objectId = key.objectId, onBack = { backStack.pop() }) }
-    entry<SettingsNavKey> { SettingsScreen(onBack = { backStack.pop() }) }
+    entry<SettingsNavKey> {
+        SettingsScreen(onBack = { backStack.pop() }, onOpenTrash = { backStack.add(TrashNavKey) })
+    }
+    entry<TrashNavKey> { TrashScreen(onBack = { backStack.pop() }) }
 }
 
 /** Never pops the last screen: the system back gesture closes the app from there instead. */
@@ -215,6 +220,7 @@ private val NAV_KEYS = SavedStateConfiguration {
             subclass(PlacePickerNavKey::class, PlacePickerNavKey.serializer())
             subclass(TasksNavKey::class, TasksNavKey.serializer())
             subclass(ExpensesNavKey::class, ExpensesNavKey.serializer())
+            subclass(TrashNavKey::class, TrashNavKey.serializer())
         }
     }
 }

@@ -1,9 +1,7 @@
 package ru.prorabprime.server.service
 
-import io.ktor.util.logging.KtorSimpleLogger
 import java.util.UUID
 import kotlin.time.Clock
-import kotlinx.coroutines.CancellationException
 import ru.prorabprime.contract.ObjectRequestDto
 import ru.prorabprime.server.error.ServiceError
 import ru.prorabprime.server.error.asFailure
@@ -15,13 +13,11 @@ import ru.prorabprime.server.model.ObjectRecord
 import ru.prorabprime.server.repository.ContactRepository
 import ru.prorabprime.server.repository.ObjectRepository
 import ru.prorabprime.server.repository.PhotoRepository
-import ru.prorabprime.server.storage.FileStorage
 
 class ObjectService(
     private val objects: ObjectRepository,
     private val photos: PhotoRepository,
     private val contacts: ContactRepository,
-    private val storage: FileStorage,
     private val clock: Clock,
     private val geocoder: Geocoder = NoGeocoder,
     private val newId: () -> UUID = UUID::randomUUID,
@@ -36,7 +32,7 @@ class ObjectService(
     suspend fun create(request: ObjectRequestDto): Result<ObjectRecord> {
         val fields = validateObject(request).getOrElse { return Result.failure(it) }
         val clientId = parseClientId(request.id).getOrElse { return Result.failure(it) }
-        alreadyCreated(clientId?.let { objects.find(it) }) { true }?.let { return it }
+        alreadyCreated(clientId?.let { objects.findAny(it) }) { true }?.let { return it }
         val now = clock.now()
         val record =
             ObjectRecord(
@@ -93,13 +89,9 @@ class ObjectService(
         objects.setCoordinates(id, geocoder.locate(address))
     }
 
-    /** The row (and, by cascade, its photo rows) first, then the files: an orphan file is harmless. */
-    suspend fun delete(id: UUID): Result<Unit> {
-        if (!objects.delete(id)) return notFound(id)
-        runCatching { storage.deleteAll(id) }
-            .onFailure { if (it is CancellationException) throw it else log.warn("Could not delete files of $id", it) }
-        return Result.success(Unit)
-    }
+    /** Only moves the object to the trash; [TrashService] is what removes anything for good. */
+    suspend fun delete(id: UUID): Result<Unit> =
+        if (objects.trash(id, clock.now())) Result.success(Unit) else notFound(id)
 
     private fun <T> notFound(id: UUID): Result<T> = ServiceError.NotFound("No object $id").asFailure()
 
@@ -112,7 +104,5 @@ class ObjectService(
     private companion object {
         val LAT_RANGE = -90.0..90.0
         val LON_RANGE = -180.0..180.0
-
-        val log = KtorSimpleLogger(ObjectService::class.qualifiedName!!)
     }
 }

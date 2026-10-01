@@ -37,6 +37,7 @@ entries below are the points where this project departs from it or goes beyond i
 | [0016](#adr-0016) | The web client is the same UI as Kotlin/Wasm, served by the server | Accepted, **amends** 0004 |
 | [0017](#adr-0017) | The phone keeps its own copy of the data and a queue of changes; screens never wait for the network | Accepted, **amends** 0003 |
 | [0018](#adr-0018) | A photo is turned by the server, which makes new files named by the client | Accepted |
+| [0019](#adr-0019) | A deleted object or photo waits thirty days in a trash kept by the server | Accepted |
 
 ---
 
@@ -632,3 +633,50 @@ and one more generation of loss is added per turn. Each turn on the phone is its
 
 **Review when:** pictures are turned often enough for the re-encoding loss to show, or the server no
 longer owns the files.
+
+---
+
+## ADR-0019
+
+### A deleted object or photo waits thirty days in a trash kept by the server
+
+**Accepted** · 2026-10-02
+
+**Context.** Deleting an object removed it, its photos and its files at once, and the app asks for one
+confirmation. One wrong tap on a site with a year of receipts is unrecoverable. The foreman wants a trash,
+as on a phone: what is deleted can be got back for a while, and the trash can be emptied by hand.
+
+**Decision.** Deleting only marks.
+
+- `objects` and `photos` get a nullable `deleted_at` (migration V12). Every ordinary query leaves out a
+  marked row: the list, `find`, a photo's neighbors, the photo count and cover of the list. `DELETE
+  /api/objects/{id}` and `DELETE /api/photos/{id}` keep their shape and now mean "to the trash"; files stay on
+  disk, and the object's `updated_at` moves as before, so phones learn of it the way they always did.
+- `TrashService` is the only place anything is removed for good: `DELETE /api/trash/objects/{id}`,
+  `DELETE /api/trash/photos/{id}` and `DELETE /api/trash` (empty it), each in the order the architecture asks
+  for (the row, then the files; a file that will not go is logged). Only what is in the trash can be removed there.
+- `POST /api/trash/{objects,photos}/{id}/restore` clears the mark and moves `updated_at`, so the phone's
+  next sync brings the object back. A photo can be restored only while its object is not itself in the trash;
+  an object in the trash carries its photos with it and they are not listed alone.
+- The server removes what has waited thirty days (`TrashLimits.RETENTION_DAYS`), at start and every six hours.
+  `GET /api/trash` carries `daysLeft` computed by the server's clock, never by the phone's.
+- On the phone the trash is not part of the offline copy (ADR-0017): the screen asks the server each time and
+  says so with a network error when there is none. A delete made without a signal still works, since it is
+  the same queued request as before; only looking into the trash needs a connection. A restore has the phone
+  copy the server down at once.
+- A create retried with the id of an object in the trash finds that object instead of failing on the key.
+
+**Alternatives rejected.**
+- *Keeping the trash on the phone too.* It would double the rows of the copy and need its own queue for
+  restore and removal; the server is where the files are, and the trash is rarely opened.
+- *Moving deleted rows to separate tables.* A second schema to keep in step for every column added later,
+  and a restore that re-inserts and can clash with ids.
+- *Deleting files at once and keeping only rows.* A restored photo without its picture is no restore.
+
+**Consequences.** Deleted data takes disk for thirty days. Search, counts and the web report ignore it;
+a deleted object's payments and receipts leave the expenses with it and come back with it. `ObjectService`
+no longer touches the files. The trash is reached from the settings screen.
+
+**Review when:** the trash is wanted offline, or a second person works in the same data and one's delete
+should not be undoable by the other.
+

@@ -157,14 +157,15 @@ class PhotoServiceTest {
     // --- delete ---
 
     @Test
-    fun `deleting removes the row and the files`() = runTest {
+    fun `deleting puts the photo in the trash and keeps its files`() = runTest {
         upload()
         val second = upload()
 
         assertThat(service.delete(second).isSuccess).isTrue()
 
-        assertThat(photos.records.keys).doesNotContain(second)
-        assertThat(storage.namesOf(objectId)).containsNoneOf("$second.jpg", "${second}_thumb.jpg")
+        assertThat(photos.trashedAt).containsKey(second)
+        assertThat(photos.listByObject(objectId).map { it.id }).doesNotContain(second)
+        assertThat(storage.namesOf(objectId)).containsAtLeast("$second.jpg", "${second}_thumb.jpg")
     }
 
     @Test
@@ -198,12 +199,11 @@ class PhotoServiceTest {
     }
 
     @Test
-    fun `a file that cannot be deleted does not fail the request`() = runTest {
+    fun `deleting a photo already in the trash is not found`() = runTest {
         val id = upload()
-        storage.failDeletes = true
+        service.delete(id)
 
-        assertThat(service.delete(id).isSuccess).isTrue()
-        assertThat(photos.records).isEmpty()
+        assertThat(service.delete(id).serviceError()).isInstanceOf(ServiceError.NotFound::class.java)
     }
 
     @Test

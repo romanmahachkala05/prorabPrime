@@ -17,11 +17,14 @@ import ru.prorabprime.ui.UiText
 class SettingsContentTest {
 
     private val events = mutableListOf<SettingsEvent>()
+    private var trashOpened = 0
     private val content = SettingsState(status = SettingsStatus.Content, baseUrl = "http://h:1", apiToken = "t")
 
     @Composable
     private fun show(state: SettingsState) {
-        ProrabTheme { SettingsContent(state = state, onEvent = { events += it }, onBack = {}) }
+        ProrabTheme {
+            SettingsContent(state = state, onEvent = { events += it }, onBack = {}, onOpenTrash = { trashOpened++ })
+        }
     }
 
     @Test
@@ -41,6 +44,15 @@ class SettingsContentTest {
         onNodeWithText("Сохранить").performClick()
 
         assertThat(events).containsExactly(SettingsEvent.CheckClicked, SettingsEvent.SaveClicked).inOrder()
+    }
+
+    @Test
+    fun `the trash button opens the trash`() = runComposeUiTest {
+        setContent { show(content) }
+
+        onNodeWithText("Корзина").performClick()
+
+        assertThat(trashOpened).isEqualTo(1)
     }
 
     @Test

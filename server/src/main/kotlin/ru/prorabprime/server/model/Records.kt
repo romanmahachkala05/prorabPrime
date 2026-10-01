@@ -41,6 +41,22 @@ data class ObjectListItem(
     val photoCount: Int,
 )
 
+/** An object in the trash, with what the trash shows about it. */
+data class TrashedObject(
+    val record: ObjectRecord,
+    val coverThumbFileName: String?,
+    val photoCount: Int,
+    val deletedAt: Instant,
+)
+
+/** A photo in the trash whose object is not: [objectTitle] says where it came from. */
+data class TrashedPhoto(
+    val photo: PhotoRecord,
+    val objectTitle: String?,
+    val objectAddress: String,
+    val deletedAt: Instant,
+)
+
 data class ObjectDetails(
     val record: ObjectRecord,
     val contacts: List<ContactRecord>,

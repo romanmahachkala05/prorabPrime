@@ -28,6 +28,7 @@ import ru.prorabprime.data.repository.PhotosRepositoryImpl
 import ru.prorabprime.data.repository.PlacesRepositoryImpl
 import ru.prorabprime.data.repository.SyncRepositoryImpl
 import ru.prorabprime.data.repository.TasksRepositoryImpl
+import ru.prorabprime.data.repository.TrashRepositoryImpl
 import ru.prorabprime.data.sync.OperationRunner
 import ru.prorabprime.data.sync.SyncCoordinator
 import ru.prorabprime.data.sync.SyncEngine
@@ -43,6 +44,7 @@ import ru.prorabprime.domain.repository.PlacesRepository
 import ru.prorabprime.domain.repository.SettingsRepository
 import ru.prorabprime.domain.repository.SyncRepository
 import ru.prorabprime.domain.repository.TasksRepository
+import ru.prorabprime.domain.repository.TrashRepository
 import ru.prorabprime.domain.usecase.AddDefaultMaterialsUseCase
 import ru.prorabprime.domain.usecase.CheckConnectionUseCase
 import ru.prorabprime.domain.usecase.CreateObjectUseCase
@@ -56,6 +58,7 @@ import ru.prorabprime.domain.usecase.DeleteTaskUseCase
 import ru.prorabprime.domain.usecase.DiscardFailedChangeUseCase
 import ru.prorabprime.domain.usecase.FindAddressUseCase
 import ru.prorabprime.domain.usecase.GeocodeObjectUseCase
+import ru.prorabprime.domain.usecase.LoadTrashUseCase
 import ru.prorabprime.domain.usecase.ObserveDayTasksUseCase
 import ru.prorabprime.domain.usecase.ObserveExpensesUseCase
 import ru.prorabprime.domain.usecase.ObserveFailedChangesUseCase
@@ -70,7 +73,9 @@ import ru.prorabprime.domain.usecase.ObservePaymentHistoryUseCase
 import ru.prorabprime.domain.usecase.ObserveServerSettingsUseCase
 import ru.prorabprime.domain.usecase.ObserveSyncStatusUseCase
 import ru.prorabprime.domain.usecase.ObserveTasksRangeUseCase
+import ru.prorabprime.domain.usecase.PurgeFromTrashUseCase
 import ru.prorabprime.domain.usecase.RefreshObjectsUseCase
+import ru.prorabprime.domain.usecase.RestoreFromTrashUseCase
 import ru.prorabprime.domain.usecase.RetryFailedChangesUseCase
 import ru.prorabprime.domain.usecase.RotatePhotoUseCase
 import ru.prorabprime.domain.usecase.SaveContactUseCase
@@ -121,6 +126,7 @@ val dataModule: Module = module {
     single<MaterialsRepository> { MaterialsRepositoryImpl(get(), get()) }
     single<TasksRepository> { TasksRepositoryImpl(get(), get()) }
     single<ExpensesRepository> { ExpensesRepositoryImpl(get()) }
+    single<TrashRepository> { TrashRepositoryImpl(get(), get()) }
     single<ConnectionChecker> { KtorConnectionChecker(get()) }
 
     factory { ObserveObjectsUseCase(get()) }
@@ -153,6 +159,9 @@ val dataModule: Module = module {
     factory { DeleteExtraWorkUseCase(get()) }
     factory { ObserveMaterialsUseCase(get()) }
     factory { ObserveExpensesUseCase(get()) }
+    factory { LoadTrashUseCase(get()) }
+    factory { RestoreFromTrashUseCase(get()) }
+    factory { PurgeFromTrashUseCase(get()) }
     factory { SaveMaterialUseCase(get()) }
     factory { DeleteMaterialUseCase(get()) }
     factory { AddDefaultMaterialsUseCase(get()) }

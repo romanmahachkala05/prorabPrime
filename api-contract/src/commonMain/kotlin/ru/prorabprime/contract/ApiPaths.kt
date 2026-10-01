@@ -27,6 +27,11 @@ object ApiPaths {
     const val PHOTO_ROTATE = "/api/photos/{id}/rotate"
     const val PHOTO_NOTE = "/api/photos/{id}/note"
     const val PHOTO_RECEIPT = "/api/photos/{id}/receipt"
+    const val TRASH = "/api/trash"
+    const val TRASH_OBJECT = "/api/trash/objects/{id}"
+    const val TRASH_OBJECT_RESTORE = "/api/trash/objects/{id}/restore"
+    const val TRASH_PHOTO = "/api/trash/photos/{id}"
+    const val TRASH_PHOTO_RESTORE = "/api/trash/photos/{id}/restore"
     const val FILE = "/files/{objectId}/{fileName}"
 }
 

@@ -26,7 +26,7 @@ class ContactServiceTest {
     private val contacts = FakeContactRepository()
     private val objects = FakeObjectRepository(FakePhotoRepository())
     private val clock = FixedClock()
-    private val objectService = ObjectService(objects, FakePhotoRepository(), contacts, FakeFileStorage(), clock)
+    private val objectService = ObjectService(objects, FakePhotoRepository(), contacts, clock)
     private val service = ContactService(objects, contacts, clock)
 
     private fun Result<*>.serviceError() = (exceptionOrNull() as? ServiceException)?.error

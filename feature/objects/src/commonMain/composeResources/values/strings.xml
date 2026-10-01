@@ -44,9 +44,9 @@
     <string name="objectdetails_phone">Телефон</string>
     <string name="objectdetails_notes">Заметки</string>
     <string name="objectdetails_delete_title">Удалить объект?</string>
-    <string name="objectdetails_delete_message">Объект и все его фото будут удалены без возможности восстановления.</string>
+    <string name="objectdetails_delete_message">Объект уйдёт в корзину на 30 дней, там его можно восстановить.</string>
     <string name="objectdetails_delete_confirm">Удалить</string>
-    <string name="objectdetails_deleted">Объект удалён</string>
+    <string name="objectdetails_deleted">Объект в корзине</string>
     <string name="objectdetails_error_gone">Этот объект удалён.</string>
     <string name="objectdetails_add_photo">Добавить фото</string>
     <string name="objectdetails_take_photo">Сфотографировать</string>
@@ -57,7 +57,7 @@
     <string name="objectdetails_cover_set">Обложка обновлена</string>
     <string name="objectdetails_delete_photo">Удалить фото</string>
     <string name="objectdetails_delete_photo_title">Удалить фото?</string>
-    <string name="objectdetails_delete_photo_message">Фото будет удалено с сервера.</string>
+    <string name="objectdetails_delete_photo_message">Фото уйдёт в корзину на 30 дней, там его можно восстановить.</string>
     <string name="objectdetails_upload_retry">Повторить загрузку</string>
     <string name="objectdetails_upload_dismiss">Убрать</string>
     <string name="objectdetails_upload_unreadable">Не удалось прочитать фото</string>
@@ -96,7 +96,7 @@
     <string name="gallery_selected">Выбрано: %1$d</string>
     <string name="gallery_delete">Удалить выбранные</string>
     <string name="gallery_delete_title">Удалить выбранное?</string>
-    <string name="gallery_delete_message">Будет удалено: %1$d.</string>
+    <string name="gallery_delete_message">В корзину уйдёт: %1$d. Там их можно восстановить 30 дней.</string>
     <string name="gallery_delete_confirm">Удалить</string>
     <!-- photoviewer -->
     <string name="photoviewer_back">Назад</string>
