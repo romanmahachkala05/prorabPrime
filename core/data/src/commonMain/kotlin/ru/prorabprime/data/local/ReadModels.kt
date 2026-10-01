@@ -94,7 +94,7 @@ internal fun ObjectRow.toDetails(
     )
 }
 
-/** The list a query asks for: filtered by what is in the address or title, sorted as the server sorts. */
+/** The list a query asks for: by what is in the address or title and by status, sorted as the server sorts. */
 internal fun List<ObjectSummary>.matching(query: ObjectQuery): List<ObjectSummary> {
     val needle = query.search.trim().lowercase()
     val found = if (needle.isEmpty()) {
@@ -104,6 +104,7 @@ internal fun List<ObjectSummary>.matching(query: ObjectQuery): List<ObjectSummar
             "${it.address} ${it.title.orEmpty()}".lowercase().contains(needle)
         }
     }
+    val kept = found.filter { query.statuses.isEmpty() || it.status in query.statuses }
     val order: Comparator<ObjectSummary> = when (query.sort) {
         ObjectSort.ADDRESS_ASC -> compareBy { it.address.lowercase() }
         ObjectSort.ADDRESS_DESC -> compareByDescending { it.address.lowercase() }
@@ -111,5 +112,5 @@ internal fun List<ObjectSummary>.matching(query: ObjectQuery): List<ObjectSummar
         ObjectSort.UPDATED_NEWEST -> compareByDescending { it.updatedAt }
     }
     // The id breaks ties, so equal addresses or timestamps keep a stable order.
-    return found.sortedWith(order.thenBy { it.id.value })
+    return kept.sortedWith(order.thenBy { it.id.value })
 }

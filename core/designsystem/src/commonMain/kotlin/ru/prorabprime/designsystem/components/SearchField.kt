@@ -17,8 +17,12 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.dp
 import ru.prorabprime.designsystem.theme.Spacing
@@ -31,7 +35,11 @@ fun SearchField(
     placeholder: String,
     clearDescription: String,
     modifier: Modifier = Modifier,
+    /** Takes the keyboard as soon as it appears, for a line that was asked for with an icon. */
+    autoFocus: Boolean = false,
 ) {
+    val focus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { if (autoFocus) focus.requestFocus() }
     val colors = MaterialTheme.colorScheme
     val shape = MaterialTheme.shapes.small
     BasicTextField(
@@ -40,7 +48,7 @@ fun SearchField(
         singleLine = true,
         textStyle = MaterialTheme.typography.bodyLarge.copy(color = colors.onSurface),
         cursorBrush = SolidColor(colors.primary),
-        modifier = modifier.fillMaxWidth().heightIn(min = FieldHeight),
+        modifier = modifier.fillMaxWidth().heightIn(min = FieldHeight).focusRequester(focus),
         decorationBox = { inner ->
             Row(
                 modifier = Modifier.fillMaxWidth().heightIn(min = FieldHeight)

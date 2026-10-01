@@ -8,6 +8,9 @@
     <string name="objectslist_settings">Настройки</string>
     <string name="objectslist_add">Добавить объект</string>
     <string name="objectslist_search">Адрес или название</string>
+    <string name="objectslist_search_open">Поиск</string>
+    <string name="objectslist_search_close">Закрыть поиск</string>
+    <string name="objectslist_filter_all">Все</string>
     <string name="objectslist_clear_search">Очистить поиск</string>
     <string name="objectslist_sort_address_asc">Адрес А–Я</string>
     <string name="objectslist_sort_address_desc">Адрес Я–А</string>

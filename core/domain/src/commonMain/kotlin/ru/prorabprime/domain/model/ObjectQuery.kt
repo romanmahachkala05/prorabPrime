@@ -1,9 +1,13 @@
 package ru.prorabprime.domain.model
 
-/** What the objects list asks the server for. Search is case-insensitive over address and title. */
+/**
+ * What the objects list asks for. Search is case-insensitive over address and title; [statuses] keeps
+ * only objects in one of them, and empty means every status.
+ */
 data class ObjectQuery(
     val search: String = "",
     val sort: ObjectSort = ObjectSort.DEFAULT,
+    val statuses: Set<ObjectStatus> = emptySet(),
 )
 
 /** The sort options the list offers; dates always sort newest first. */
