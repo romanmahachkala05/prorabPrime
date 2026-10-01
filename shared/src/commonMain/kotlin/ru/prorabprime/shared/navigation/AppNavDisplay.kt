@@ -90,7 +90,10 @@ fun AppNavDisplay(notifier: SnackbarNotifier, modifier: Modifier = Modifier) {
                 )
                 SyncStatusHost(
                     onOpenSettings = { backStack.add(SettingsNavKey) },
-                    modifier = Modifier.align(Alignment.BottomStart).padding(Spacing.m).navigationBarsPadding(),
+                    // Above the place a Snackbar takes, so the two never lie over one another.
+                    modifier = Modifier.align(Alignment.BottomStart)
+                        .padding(start = Spacing.m, bottom = SNACKBAR_CLEARANCE)
+                        .navigationBarsPadding(),
                 )
             }
         }
@@ -99,6 +102,7 @@ fun AppNavDisplay(notifier: SnackbarNotifier, modifier: Modifier = Modifier) {
 
 private val MAX_CONTENT_WIDTH = 840.dp
 private val BAR_HEIGHT = 64.dp
+private val SNACKBAR_CLEARANCE = 72.dp
 
 /** Every screen of the app, with the callbacks that move between them. */
 private fun appEntries(backStack: NavBackStack<NavKey>) = entryProvider<NavKey> {
