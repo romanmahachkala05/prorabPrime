@@ -94,14 +94,14 @@ class FinanceMaterialsTasksRepositoryTest {
     @Test
     fun `the checklist is edited on the phone, and the usual materials skip what is already there`() = runTest {
         offlineAndSynced()
-        phone.materials.add(objectId, MaterialDraft(MaterialDefaults.TITLES.first().uppercase())).getOrThrow()
+        phone.materials.add(objectId, MaterialDraft(MaterialDefaults.TITLES[1].uppercase())).getOrThrow()
 
         phone.materials.addDefaults(objectId).getOrThrow()
 
         val list = phone.materials.observeMaterials(objectId).first().getOrThrow()
-        // The server had one ("Ламинат") already, the phone added one of the usual by hand: neither is doubled.
+        // The server had one of the usual ("Ламинат") and the phone added another by hand: neither is doubled.
         assertThat(list.map { it.title.lowercase() }.distinct()).hasSize(list.size)
-        assertThat(list.size).isEqualTo(MaterialDefaults.TITLES.size + 1)
+        assertThat(list.size).isEqualTo(MaterialDefaults.TITLES.size)
         assertThat(phone.db.outbox.snapshot().last().operation).isEqualTo(Operation.AddDefaultMaterials(objectId.value))
     }
 

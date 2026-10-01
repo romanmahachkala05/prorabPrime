@@ -77,12 +77,13 @@ class MaterialServiceTest {
     @Test
     fun `the defaults fill an empty list and never duplicate a title already there`() = runTest {
         val id = anObject()
-        service.create(id, MaterialRequestDto("плитка", MaterialStatusDto.CHOSEN)).getOrThrow()
+        val usual = DEFAULT_MATERIALS.first().lowercase()
+        service.create(id, MaterialRequestDto(usual, MaterialStatusDto.CHOSEN)).getOrThrow()
 
         val list = service.addDefaults(id).getOrThrow()
 
         assertThat(list).hasSize(DEFAULT_MATERIALS.size)
-        assertThat(list.count { it.fields.title.equals("плитка", ignoreCase = true) }).isEqualTo(1)
+        assertThat(list.count { it.fields.title.equals(usual, ignoreCase = true) }).isEqualTo(1)
         assertThat(list.first().fields.status).isEqualTo(MaterialStatusDto.CHOSEN)
         assertThat(list.map { it.sortOrder }).isInOrder()
         assertThat(service.addDefaults(id).getOrThrow()).hasSize(DEFAULT_MATERIALS.size)

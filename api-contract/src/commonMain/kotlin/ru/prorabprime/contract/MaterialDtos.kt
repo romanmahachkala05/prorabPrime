@@ -26,22 +26,34 @@ data class MaterialRequestDto(
     val id: String? = null,
 )
 
-/** The usual things a renovation needs picked, offered to a fresh checklist; the phone offers them offline too. */
+/**
+ * The finishing materials a customer usually brings, offered to a fresh checklist; the phone offers them
+ * offline too. The plumbing is split into the pieces that are bought one by one.
+ */
 object MaterialDefaults {
     val TITLES: List<String> = listOf(
-        "Плитка",
-        "Ламинат или паркет",
-        "Обои или краска",
-        "Двери",
-        "Розетки и выключатели",
-        "Светильники",
-        "Ванна или душевая",
-        "Унитаз",
-        "Раковина и смеситель",
-        "Натяжной потолок",
-        "Плинтусы",
-        "Подоконники",
-        "Радиаторы",
+        "Ламинат",
+        "Паркет",
+        "Кварцвинил",
+        "Плинтус",
+        "Межкомнатные двери",
+        "Краска",
+        "Обои",
+        "Декоративные панели (3D, гипсовые, дюрополимерные)",
+        "Декор",
+        "Приборы освещения",
+        "Розетки",
+        "Выключатели",
+        "Душевой смеситель 1",
+        "Душевой смеситель 2",
+        "Раковина",
+        "Тумба для раковины",
+        "Смеситель для раковины",
+        "Сифон для раковины",
+        "Ванна",
+        "Сифон для ванны",
+        "Тёплые полы",
+        "Терморегуляторы",
     )
 }
 
