@@ -127,7 +127,7 @@ private fun WorkDialog(editor: FinanceEditorUi.Work, onEvent: (FinanceEvent) -> 
             onChange = { onEvent(WorkEvent.AmountChanged(it)) },
         )
         Label(Res.string.finance_extra_status)
-        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
             ExtraWorkStatus.entries.forEach { status ->
                 FilterChip(
                     selected = status == editor.status,
