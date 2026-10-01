@@ -26,12 +26,13 @@ internal interface ITasksStateHolder : StateOwner<TasksState> {
 
     fun showMarks(marks: ImmutableMap<LocalDay, DayMarkUi>)
 
-    fun openEditor(editor: TaskEditorUi)
+    fun showNextPlan(plan: NextPlanUi?)
+
+    /** Opens the form, or closes it when null. */
+    fun setEditor(editor: TaskEditorUi?)
 
     /** Applies [transform] to the open form; does nothing when none is open. */
     fun editForm(transform: (TaskEditorUi) -> TaskEditorUi)
-
-    fun closeEditor()
 
     fun askToDelete(dialog: DialogModel, taskId: String)
 
@@ -62,13 +63,13 @@ internal class TasksStateHolder(
 
     override fun showMarks(marks: ImmutableMap<LocalDay, DayMarkUi>) = _state.update { it.copy(marks = marks) }
 
-    override fun openEditor(editor: TaskEditorUi) = _state.update { it.copy(editor = editor) }
+    override fun showNextPlan(plan: NextPlanUi?) = _state.update { it.copy(nextPlan = plan) }
+
+    override fun setEditor(editor: TaskEditorUi?) = _state.update { it.copy(editor = editor) }
 
     override fun editForm(transform: (TaskEditorUi) -> TaskEditorUi) = _state.update { state ->
         state.copy(editor = state.editor?.let(transform))
     }
-
-    override fun closeEditor() = _state.update { it.copy(editor = null) }
 
     override fun askToDelete(dialog: DialogModel, taskId: String) = _state.update {
         it.copy(dialog = dialog, pendingDeleteId = taskId)

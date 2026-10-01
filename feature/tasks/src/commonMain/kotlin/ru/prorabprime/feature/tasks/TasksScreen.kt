@@ -34,7 +34,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import ru.prorabprime.designsystem.components.DialogHost
-import ru.prorabprime.designsystem.components.EmptyMessage
 import ru.prorabprime.designsystem.components.ErrorMessage
 import ru.prorabprime.designsystem.components.LoadingBox
 import ru.prorabprime.designsystem.components.PendingMark
@@ -150,7 +149,7 @@ private fun DayBar(state: TasksState, onEvent: (TasksEvent) -> Unit) {
 @Composable
 private fun TaskList(state: TasksState, onEvent: (TasksEvent) -> Unit) {
     if (state.tasks.isEmpty() && state.overdue.isEmpty()) {
-        EmptyMessage(UiText.Resource(Res.string.tasks_empty))
+        EmptyDay(state.nextPlan) { onEvent(TasksEvent.DayPicked(it)) }
         return
     }
     LazyColumn(Modifier.fillMaxSize()) {

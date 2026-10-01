@@ -35,6 +35,12 @@
     <string name="tasks_add">Добавить дело</string>
     <string name="tasks_edit">Дело</string>
     <string name="tasks_empty">На этот день дел нет</string>
+    <plurals name="tasks_next_plan">
+        <item quantity="one">Ближайшие планы — через %1$d день</item>
+        <item quantity="few">Ближайшие планы — через %1$d дня</item>
+        <item quantity="many">Ближайшие планы — через %1$d дней</item>
+        <item quantity="other">Ближайшие планы — через %1$d дня</item>
+    </plurals>
     <string name="tasks_overdue">Не сделано раньше</string>
     <string name="tasks_done">Сделано</string>
     <string name="tasks_mark_done">Отметить сделанным</string>

@@ -90,6 +90,26 @@ class TasksContentTest {
     }
 
     @Test
+    fun `an empty day names the nearest plan, and its button goes to that day`() = runComposeUiTest {
+        val plan = NextPlanUi(today.plusDays(3), "Заказать двери", 3)
+        setContent {
+            ProrabTheme {
+                TasksContent(
+                    TasksState(status = TasksStatus.Content, day = today, today = today, nextPlan = plan),
+                    { events += it },
+                    { },
+                )
+            }
+        }
+
+        onNodeWithText("На этот день дел нет").assertIsDisplayed()
+        onNodeWithText("Ближайшие планы — через 3 дня").assertIsDisplayed()
+        onNodeWithText("Заказать двери", substring = true).performClick()
+
+        assertThat(events).containsExactly(TasksEvent.DayPicked(today.plusDays(3)))
+    }
+
+    @Test
     fun `another day is named by its weekday and offers a way back to today`() = runComposeUiTest {
         show(state(day = LocalDay.of(2026, 9, 28)))
 

@@ -8,6 +8,7 @@ import org.koin.dsl.module
 import ru.prorabprime.domain.repository.TasksRepository
 import ru.prorabprime.domain.usecase.DeleteTaskUseCase
 import ru.prorabprime.domain.usecase.ObserveDayTasksUseCase
+import ru.prorabprime.domain.usecase.ObserveNextTaskUseCase
 import ru.prorabprime.domain.usecase.ObserveOverdueTasksUseCase
 import ru.prorabprime.domain.usecase.ObserveTasksRangeUseCase
 import ru.prorabprime.domain.usecase.SaveTaskUseCase
@@ -27,6 +28,7 @@ class TasksModuleTest {
         factory { ObserveDayTasksUseCase(get()) }
         factory { ObserveOverdueTasksUseCase(get()) }
         factory { ObserveTasksRangeUseCase(get()) }
+        factory { ObserveNextTaskUseCase(get()) }
         factory { SaveTaskUseCase(get()) }
         factory { DeleteTaskUseCase(get()) }
         single<SnackbarNotifier> { FakeSnackbarNotifier() }

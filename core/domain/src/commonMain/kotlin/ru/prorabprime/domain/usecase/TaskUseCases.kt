@@ -2,6 +2,7 @@ package ru.prorabprime.domain.usecase
 
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import ru.prorabprime.domain.model.AppError
 import ru.prorabprime.domain.model.LocalDay
 import ru.prorabprime.domain.model.Task
@@ -22,6 +23,16 @@ class ObserveOverdueTasksUseCase(
     private val repository: TasksRepository,
 ) {
     operator fun invoke(day: LocalDay): Flow<Result<ImmutableList<Task>>> = repository.observeOverdue(day)
+}
+
+/** The nearest open task after a day: what to look forward to when the day itself is empty. */
+class ObserveNextTaskUseCase(
+    private val repository: TasksRepository,
+) {
+    operator fun invoke(after: LocalDay): Flow<Result<Task?>> =
+        repository.observeOpenFrom(after.plusDays(1)).map { result ->
+            result.map { tasks -> tasks.minByOrNull { it.day } }
+        }
 }
 
 class ObserveTasksRangeUseCase(

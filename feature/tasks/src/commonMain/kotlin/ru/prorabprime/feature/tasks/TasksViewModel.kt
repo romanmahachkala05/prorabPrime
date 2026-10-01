@@ -35,6 +35,7 @@ internal class TasksViewModel(
     )
     private var loadJob: Job? = null
     private var marksJob: Job? = null
+    private var nextJob: Job? = null
 
     /** The failure last reported, so one outage seen by both flows is said once. */
     private var reportedFailure: AppError? = null
@@ -67,11 +68,23 @@ internal class TasksViewModel(
     private fun load() {
         loadJob?.cancel()
         val shown = state.value
+        watchNextPlan(shown.day)
         val overdue: Flow<Result<ImmutableList<Task>>> =
             if (shown.isToday) actions.observeOverdue(shown.day) else flowOf(Result.success(persistentListOf()))
         loadJob = combine(actions.observeDay(shown.day), overdue) { day, late -> day to late }
             .onEach { (day, late) -> render(shown.day, day, late) }
             .launchIn(viewModelScope)
+    }
+
+    /** The nearest later plan, so an empty day can point at it. */
+    private fun watchNextPlan(day: LocalDay) {
+        nextJob?.cancel()
+        nextJob = actions.observeNext(day)
+            .onEach { result ->
+                result.onSuccess { task ->
+                    stateHolder.showNextPlan(task?.let { NextPlanUi(it.day, it.title, it.day.epochDay - day.epochDay) })
+                }
+            }.launchIn(viewModelScope)
     }
 
     private fun render(
