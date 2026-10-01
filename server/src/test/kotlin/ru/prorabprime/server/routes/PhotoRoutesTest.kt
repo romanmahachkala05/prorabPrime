@@ -32,6 +32,7 @@ import ru.prorabprime.contract.ObjectDetailsDto
 import ru.prorabprime.contract.ObjectStatusDto
 import ru.prorabprime.contract.PhotoDto
 import ru.prorabprime.contract.PhotoLimits
+import ru.prorabprime.contract.PhotoNoteRequestDto
 import ru.prorabprime.contract.RotatePhotoRequestDto
 import ru.prorabprime.contract.SetCoverRequestDto
 import ru.prorabprime.server.TEST_TOKEN
@@ -220,6 +221,48 @@ class PhotoRoutesTest {
         assertThat(turned.url).contains(rotation)
         assertThat(turned.width to turned.height).isEqualTo(20 to 40)
         assertThat(again).isEqualTo(turned)
+    }
+
+    @Test
+    fun `a note sent with the upload comes back on the photo, and PUT changes and clears it`() = server { client ->
+        val response = client.submitFormWithBinaryData(
+            url = "/api/objects/$objectId/photos",
+            formData = formData {
+                append("note", "Скол на плитке")
+                append(
+                    "file",
+                    TestImages.jpeg(10, 10),
+                    Headers.build {
+                        append(HttpHeaders.ContentType, "image/jpeg")
+                        append(HttpHeaders.ContentDisposition, "filename=\"photo.jpg\"")
+                    },
+                )
+            },
+        ) { bearerAuth(TEST_TOKEN) }
+        val photo = response.body<PhotoDto>()
+        assertThat(photo.note).isEqualTo("Скол на плитке")
+
+        suspend fun putNote(note: String?) = client.put("/api/photos/${photo.id}/note") {
+            bearerAuth(TEST_TOKEN)
+            contentType(ContentType.Application.Json)
+            setBody(PhotoNoteRequestDto(note))
+        }
+
+        assertThat(putNote("Заменить до пятницы").status).isEqualTo(HttpStatusCode.NoContent)
+        assertThat(client.details().photos.single().note).isEqualTo("Заменить до пятницы")
+        assertThat(putNote(null).status).isEqualTo(HttpStatusCode.NoContent)
+        assertThat(client.details().photos.single().note).isNull()
+    }
+
+    @Test
+    fun `a note for an unknown photo is 404`() = server { client ->
+        val response = client.put("/api/photos/${UUID.randomUUID()}/note") {
+            bearerAuth(TEST_TOKEN)
+            contentType(ContentType.Application.Json)
+            setBody(PhotoNoteRequestDto("x"))
+        }
+
+        assertThat(response.status).isEqualTo(HttpStatusCode.NotFound)
     }
 
     @Test

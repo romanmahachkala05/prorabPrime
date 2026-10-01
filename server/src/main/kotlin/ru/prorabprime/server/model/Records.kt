@@ -75,6 +75,7 @@ data class PhotoRecord(
     val sortOrder: Int,
     val createdAt: Instant,
     val kind: AttachmentKindDto = AttachmentKindDto.PHOTO,
+    val note: String? = null,
 )
 
 data class ObjectListQuery(

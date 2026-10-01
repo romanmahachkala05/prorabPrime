@@ -54,19 +54,25 @@ class PhotoService(
         bytes: ByteArray,
         kind: AttachmentKindDto = AttachmentKindDto.PHOTO,
         clientId: UUID? = null,
-    ): Result<PhotoRecord> = refusalOrExisting(objectId, bytes, clientId)
-        ?: images.process(bytes).fold(
-            onSuccess = { image -> store(objectId, bytes, image, kind, clientId ?: newId()) },
-            onFailure = { Result.failure(it) },
-        )
+        note: String? = null,
+    ): Result<PhotoRecord> {
+        val cleanNote = normalizedNote(note).getOrElse { return Result.failure(it) }
+        return refusalOrExisting(objectId, bytes, clientId)
+            ?: images.process(bytes).fold(
+                onSuccess = { image ->
+                    store(objectId, bytes, image, UploadMeta(kind, clientId ?: newId(), cleanNote))
+                },
+                onFailure = { Result.failure(it) },
+            )
+    }
 
     private suspend fun store(
         objectId: UUID,
         bytes: ByteArray,
         image: ProcessedImage,
-        kind: AttachmentKindDto,
-        id: UUID,
+        meta: UploadMeta,
     ): Result<PhotoRecord> {
+        val (kind, id, note) = meta
         val fileName = "$id.${image.format.extension}"
         val thumbFileName = "${id}_thumb.jpg"
         return withFilesCompensated(objectId, listOf(fileName, thumbFileName)) {
@@ -86,6 +92,7 @@ class PhotoService(
                     sortOrder = photos.nextSortOrder(objectId),
                     createdAt = now,
                     kind = kind,
+                    note = note,
                 )
                 photos.insert(photo)
                 // The first photo of an object without a cover becomes the cover; a receipt never does.
@@ -117,6 +124,17 @@ class PhotoService(
         } ?: return ServiceError.NotFound("No photo $photoId").asFailure()
 
         deleteFilesQuietly(photo.objectId, listOf(photo.fileName, photo.thumbFileName))
+        return Result.success(Unit)
+    }
+
+    /** An empty note clears it. */
+    suspend fun setNote(photoId: UUID, note: String?): Result<Unit> {
+        val clean = normalizedNote(note).getOrElse { return Result.failure(it) }
+        val photo = photos.find(photoId) ?: return ServiceError.NotFound("No photo $photoId").asFailure()
+        transactor.inTransaction {
+            photos.setNote(photoId, clean)
+            objects.touch(photo.objectId, clock.now())
+        }
         return Result.success(Unit)
     }
 
@@ -207,5 +225,22 @@ class PhotoService(
         const val MIN_TURNS = 1
         const val MAX_TURNS = 3
         val log = KtorSimpleLogger(PhotoService::class.qualifiedName!!)
+    }
+}
+
+/** What an upload brings besides the bytes. */
+private data class UploadMeta(
+    val kind: AttachmentKindDto,
+    val id: UUID,
+    val note: String?,
+)
+
+/** Trimmed; blank is no note; too long is refused rather than cut. */
+private fun normalizedNote(raw: String?): Result<String?> {
+    val note = raw?.trim()?.takeIf { it.isNotEmpty() }
+    return if (note != null && note.length > PhotoLimits.NOTE) {
+        ServiceError.Validation("A note may be at most ${PhotoLimits.NOTE} characters").asFailure()
+    } else {
+        Result.success(note)
     }
 }

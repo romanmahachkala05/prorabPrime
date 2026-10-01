@@ -53,6 +53,7 @@ fun PhotoRecord.toDto() = PhotoDto(
     height = height,
     createdAt = createdAt,
     kind = kind,
+    note = note,
 )
 
 fun ContactRecord.toDto() = ContactDto(

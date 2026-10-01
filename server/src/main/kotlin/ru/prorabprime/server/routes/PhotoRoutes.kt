@@ -25,6 +25,7 @@ import ru.prorabprime.contract.ApiPaths
 import ru.prorabprime.contract.ApiQuery
 import ru.prorabprime.contract.AttachmentKindDto
 import ru.prorabprime.contract.PhotoLimits
+import ru.prorabprime.contract.PhotoNoteRequestDto
 import ru.prorabprime.contract.RotatePhotoRequestDto
 import ru.prorabprime.contract.SetCoverRequestDto
 import ru.prorabprime.server.error.ServiceError
@@ -38,13 +39,17 @@ fun Route.photoRoutes() {
 
     post(ApiPaths.OBJECT_PHOTOS) {
         val objectId = call.uuidParam(ApiParams.ID)
-        val bytes = call.receiveUploadedFile()
+        val file = call.receiveUploadedFile()
         val clientId = parseClientId(call.request.queryParameters[ApiQuery.ID]).getOrThrow()
-        val photo = service.upload(objectId, bytes, call.attachmentKind(), clientId).getOrThrow()
+        val photo = service.upload(objectId, file.bytes, call.attachmentKind(), clientId, file.note).getOrThrow()
         call.respond(HttpStatusCode.Created, photo.toDto())
     }
     delete(ApiPaths.PHOTO) {
         service.delete(call.uuidParam(ApiParams.ID)).getOrThrow()
+        call.respond(HttpStatusCode.NoContent)
+    }
+    put(ApiPaths.PHOTO_NOTE) {
+        service.setNote(call.uuidParam(ApiParams.ID), call.receive<PhotoNoteRequestDto>().note).getOrThrow()
         call.respond(HttpStatusCode.NoContent)
     }
     post(ApiPaths.PHOTO_ROTATE) {
@@ -80,19 +85,32 @@ fun Route.fileRoutes() {
     }
 }
 
+/** The `file` part's bytes and the optional `note` part's text. */
+private class UploadedFile(
+    val bytes: ByteArray,
+    val note: String?,
+)
+
 /**
- * The `file` part's bytes. Reads at most one byte past the limit, so an oversized upload is
- * recognized without buffering all of it.
+ * Reads at most one byte past the limit of the file, so an oversized upload is recognized without
+ * buffering all of it.
  */
-private suspend fun RoutingCall.receiveUploadedFile(): ByteArray {
+private suspend fun RoutingCall.receiveUploadedFile(): UploadedFile {
     var bytes: ByteArray? = null
+    var note: String? = null
     receiveMultipart(formFieldLimit = PhotoLimits.MAX_UPLOAD_BYTES + 1).forEachPart { part ->
-        if (part is PartData.FileItem && part.name == ApiMultipart.FILE && bytes == null) {
-            bytes = part.provider().readBuffer(PhotoLimits.MAX_UPLOAD_BYTES + 1).readByteArray()
+        when {
+            part is PartData.FileItem && part.name == ApiMultipart.FILE && bytes == null ->
+                bytes = part.provider().readBuffer(PhotoLimits.MAX_UPLOAD_BYTES + 1).readByteArray()
+
+            part is PartData.FormItem && part.name == ApiMultipart.NOTE -> note = part.value
         }
         part.release()
     }
-    return bytes ?: throw ServiceException(ServiceError.Validation("Expected a multipart '${ApiMultipart.FILE}' part"))
+    val file = bytes ?: throw ServiceException(
+        ServiceError.Validation("Expected a multipart '${ApiMultipart.FILE}' part"),
+    )
+    return UploadedFile(file, note)
 }
 
 private fun RoutingCall.attachmentKind(): AttachmentKindDto {

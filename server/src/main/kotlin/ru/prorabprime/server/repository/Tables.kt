@@ -36,6 +36,7 @@ object PhotosTable : Table("photos") {
     val height = integer("height")
     val sortOrder = integer("sort_order")
     val kind = varchar("kind", 20)
+    val note = text("note").nullable()
     val createdAt = timestamp("created_at")
 
     override val primaryKey = PrimaryKey(id)

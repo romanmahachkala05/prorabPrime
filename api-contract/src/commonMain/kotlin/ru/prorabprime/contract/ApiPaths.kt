@@ -25,6 +25,7 @@ object ApiPaths {
     const val TASK = "/api/tasks/{id}"
     const val PHOTO = "/api/photos/{id}"
     const val PHOTO_ROTATE = "/api/photos/{id}/rotate"
+    const val PHOTO_NOTE = "/api/photos/{id}/note"
     const val FILE = "/files/{objectId}/{fileName}"
 }
 
@@ -53,4 +54,7 @@ object ApiQuery {
 
 object ApiMultipart {
     const val FILE = "file"
+
+    /** An optional text part of an upload: the photo's note. */
+    const val NOTE = "note"
 }
