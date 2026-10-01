@@ -18,6 +18,10 @@ kotlin {
             implementation(project(":core:designsystem"))
             implementation(project(":feature:objects"))
             implementation(project(":feature:settings"))
+            implementation(project(":feature:finance"))
+            implementation(project(":feature:materials"))
+            implementation(project(":feature:map"))
+            implementation(project(":feature:tasks"))
 
             implementation(libs.koin.compose)
             implementation(libs.androidx.navigation3.runtime)

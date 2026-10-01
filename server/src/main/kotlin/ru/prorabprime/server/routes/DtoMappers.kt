@@ -1,9 +1,11 @@
 package ru.prorabprime.server.routes
 
 import java.util.UUID
+import ru.prorabprime.contract.ContactDto
 import ru.prorabprime.contract.ObjectDetailsDto
 import ru.prorabprime.contract.ObjectSummaryDto
 import ru.prorabprime.contract.PhotoDto
+import ru.prorabprime.server.model.ContactRecord
 import ru.prorabprime.server.model.ObjectDetails
 import ru.prorabprime.server.model.ObjectListItem
 import ru.prorabprime.server.model.PhotoRecord
@@ -19,6 +21,8 @@ fun ObjectListItem.toSummaryDto() = ObjectSummaryDto(
     clientName = record.fields.clientName,
     coverThumbUrl = coverThumbFileName?.let { fileUrl(record.id, it) },
     photoCount = photoCount,
+    latitude = record.coordinates?.latitude,
+    longitude = record.coordinates?.longitude,
     createdAt = record.createdAt,
     updatedAt = record.updatedAt,
 )
@@ -31,7 +35,11 @@ fun ObjectDetails.toDetailsDto() = ObjectDetailsDto(
     clientName = record.fields.clientName,
     clientPhone = record.fields.clientPhone,
     notes = record.fields.notes,
+    chatLink = record.fields.chatLink,
+    latitude = record.coordinates?.latitude,
+    longitude = record.coordinates?.longitude,
     coverPhotoId = record.coverPhotoId?.toString(),
+    contacts = contacts.map { it.toDto() },
     photos = photos.map { it.toDto() },
     createdAt = record.createdAt,
     updatedAt = record.updatedAt,
@@ -44,4 +52,12 @@ fun PhotoRecord.toDto() = PhotoDto(
     width = width,
     height = height,
     createdAt = createdAt,
+    kind = kind,
+)
+
+fun ContactRecord.toDto() = ContactDto(
+    id = id.toString(),
+    name = fields.name,
+    phone = fields.phone,
+    role = fields.role,
 )

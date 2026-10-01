@@ -27,6 +27,16 @@ kotlin {
             implementation(libs.androidx.datastore.preferences.core)
         }
 
+        // The browser: fetch for HTTP; settings, images and the like are the browser's own APIs.
+        wasmJsMain.dependencies {
+            implementation(libs.ktor.client.js)
+        }
+
+        // The reminders: alarm clock, notifications and a place to remember them across a reboot.
+        androidMain.dependencies {
+            implementation(libs.androidx.core.ktx)
+        }
+
         jvmTest.dependencies {
             implementation(project(":core:testing"))
             implementation(libs.junit)

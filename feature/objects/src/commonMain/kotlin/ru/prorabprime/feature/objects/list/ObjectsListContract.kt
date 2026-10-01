@@ -3,6 +3,8 @@ package ru.prorabprime.feature.objects.list
 import androidx.compose.runtime.Immutable
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
+import ru.prorabprime.domain.model.AttachmentKind
+import ru.prorabprime.domain.model.LocalImageRef
 import ru.prorabprime.domain.model.ObjectSort
 import ru.prorabprime.domain.model.ObjectStatus
 import ru.prorabprime.domain.model.ServerFilePath
@@ -38,6 +40,13 @@ internal data class ObjectCardUi(
     val cover: ServerFilePath?,
 )
 
+/** A picture just taken, waiting for the user to say which object and folder it goes to. */
+@Immutable
+internal data class CaptureUi(
+    val images: ImmutableList<LocalImageRef>,
+    val kind: AttachmentKind = AttachmentKind.PHOTO,
+)
+
 @Immutable
 internal data class ObjectsListState(
     val status: ObjectsListStatus = ObjectsListStatus.Loading,
@@ -45,6 +54,7 @@ internal data class ObjectsListState(
     val search: String = "",
     val sort: ObjectSort = ObjectSort.DEFAULT,
     val isRefreshing: Boolean = false,
+    val capture: CaptureUi? = null,
 )
 
 internal sealed interface ObjectsListEvent {
@@ -61,4 +71,19 @@ internal sealed interface ObjectsListEvent {
 
     /** The retry button of the error state. */
     data object Retry : ObjectsListEvent
+
+    /** Pictures came back from the camera. */
+    data class PhotosCaptured(
+        val images: List<LocalImageRef>,
+    ) : ObjectsListEvent
+
+    data class CaptureKindChanged(
+        val kind: AttachmentKind,
+    ) : ObjectsListEvent
+
+    data class CaptureTargetChosen(
+        val objectId: String,
+    ) : ObjectsListEvent
+
+    data object CaptureDismissed : ObjectsListEvent
 }

@@ -12,6 +12,7 @@ data class ObjectDraft(
     val clientName: String? = null,
     val clientPhone: String? = null,
     val notes: String? = null,
+    val chatLink: String? = null,
 ) {
     /** Trims every field and turns blank optional fields into `null`. */
     fun normalized(): ObjectDraft = copy(
@@ -20,6 +21,7 @@ data class ObjectDraft(
         clientName = clientName.trimToNull(),
         clientPhone = clientPhone.trimToNull(),
         notes = notes.trimToNull(),
+        chatLink = chatLink.trimToNull(),
     )
 
     /** Problems the server would reject, checked before sending. Empty when the draft is valid. */
@@ -30,6 +32,13 @@ data class ObjectDraft(
             if ((title?.length ?: 0) > MAX_TITLE) put(ObjectField.TITLE, FieldProblem.TOO_LONG)
             if ((clientName?.length ?: 0) > MAX_CLIENT_NAME) put(ObjectField.CLIENT_NAME, FieldProblem.TOO_LONG)
             if ((clientPhone?.length ?: 0) > MAX_CLIENT_PHONE) put(ObjectField.CLIENT_PHONE, FieldProblem.TOO_LONG)
+            chatLink?.let { link ->
+                if (link.length > MAX_CHAT_LINK) {
+                    put(ObjectField.CHAT_LINK, FieldProblem.TOO_LONG)
+                } else if (CHAT_LINK_SCHEMES.none { link.startsWith(it, ignoreCase = true) }) {
+                    put(ObjectField.CHAT_LINK, FieldProblem.INVALID)
+                }
+            }
         }
         return if (problems.isEmpty()) persistentMapOf() else problems.toImmutableMap()
     }
@@ -41,6 +50,8 @@ data class ObjectDraft(
         const val MAX_ADDRESS = 500
         const val MAX_CLIENT_NAME = 200
         const val MAX_CLIENT_PHONE = 50
+        const val MAX_CHAT_LINK = 500
+        val CHAT_LINK_SCHEMES = listOf("https://", "http://", "tg://", "max://")
     }
 }
 
@@ -50,6 +61,19 @@ enum class ObjectField {
     CLIENT_NAME,
     CLIENT_PHONE,
     NOTES,
+    CONTACT_NAME,
+    CONTACT_PHONE,
+    CHAT_LINK,
+    PAYMENT_AMOUNT,
+    PAYMENT_DATE,
+    PAYMENT_NOTE,
+    WORK_TITLE,
+    WORK_AMOUNT,
+    TOTAL_AMOUNT,
+    MATERIAL_TITLE,
+    TASK_TITLE,
+    TASK_DAY,
+    TASK_TIME,
 }
 
 enum class FieldProblem {

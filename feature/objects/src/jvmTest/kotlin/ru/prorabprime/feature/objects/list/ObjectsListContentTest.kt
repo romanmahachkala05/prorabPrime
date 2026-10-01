@@ -3,6 +3,7 @@ package ru.prorabprime.feature.objects.list
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
@@ -11,6 +12,8 @@ import com.google.common.truth.Truth.assertThat
 import kotlinx.collections.immutable.persistentListOf
 import org.junit.Test
 import ru.prorabprime.designsystem.theme.ProrabTheme
+import ru.prorabprime.domain.model.AttachmentKind
+import ru.prorabprime.domain.model.LocalImageRef
 import ru.prorabprime.domain.model.ObjectSort
 import ru.prorabprime.domain.model.ObjectStatus
 import ru.prorabprime.ui.UiText
@@ -21,6 +24,7 @@ class ObjectsListContentTest {
     private val events = mutableListOf<ObjectsListEvent>()
     private val opened = mutableListOf<String>()
     private var created = 0
+    private var cameraOpened = 0
 
     private val cards = persistentListOf(
         ObjectCardUi("1", "Кухня", "Тверская, 5", ObjectStatus.IN_PROGRESS, 3, null),
@@ -36,27 +40,20 @@ class ObjectsListContentTest {
                 onOpenObject = { opened += it },
                 onCreateObject = { created++ },
                 onOpenSettings = {},
+                onOpenCamera = { cameraOpened++ },
             )
         }
     }
 
     @Test
-    fun `cards show title, address, status and photo count, and open on tap`() = runComposeUiTest {
+    fun `tiles show title and status, and open on tap`() = runComposeUiTest {
         setContent { show(ObjectsListState(status = ObjectsListStatus.Content, items = cards)) }
 
-        onNodeWithText("Тверская, 5").assertIsDisplayed()
+        onNodeWithText("Арбат, 3").assertIsDisplayed()
         onNodeWithText("В работе").assertIsDisplayed()
-        onNodeWithText("3 фото").assertIsDisplayed()
         onNodeWithText("Кухня").performClick()
 
         assertThat(opened).containsExactly("1")
-    }
-
-    @Test
-    fun `an object without photos says so rather than zero`() = runComposeUiTest {
-        setContent { show(ObjectsListState(status = ObjectsListStatus.Content, items = persistentListOf(cards[1]))) }
-
-        onNodeWithText("Нет фото").assertIsDisplayed()
     }
 
     @Test
@@ -100,18 +97,42 @@ class ObjectsListContentTest {
             show(ObjectsListState(status = ObjectsListStatus.Content, items = cards, sort = ObjectSort.UPDATED_NEWEST))
         }
 
-        onNodeWithText("Недавно изменённые").performClick()
+        onNodeWithContentDescription("Недавно изменённые").performClick()
         onNodeWithText("Адрес Я–А").performClick()
 
         assertThat(events).containsExactly(ObjectsListEvent.SortSelected(ObjectSort.ADDRESS_DESC))
     }
 
     @Test
-    fun `the button adds an object`() = runComposeUiTest {
+    fun `the top bar adds an object`() = runComposeUiTest {
         setContent { show(ObjectsListState(status = ObjectsListStatus.Content, items = cards)) }
 
-        onNodeWithText("Добавить объект", useUnmergedTree = true).performClick()
+        onNodeWithContentDescription("Добавить объект").performClick()
 
         assertThat(created).isEqualTo(1)
+    }
+
+    @Test
+    fun `the camera button opens the camera`() = runComposeUiTest {
+        setContent { show(ObjectsListState(status = ObjectsListStatus.Content, items = cards)) }
+
+        onNodeWithContentDescription("Сфотографировать").performClick()
+
+        assertThat(cameraOpened).isEqualTo(1)
+    }
+
+    @Test
+    fun `a captured picture asks where it goes and sends the chosen object`() = runComposeUiTest {
+        val capture = CaptureUi(persistentListOf(LocalImageRef("file:///shot.jpg")))
+        setContent { show(ObjectsListState(status = ObjectsListStatus.Content, items = cards, capture = capture)) }
+
+        onNodeWithText("Куда отправить снимок?").assertIsDisplayed()
+        onNodeWithText("Чек").performClick()
+        onNodeWithText("Тверская, 5").performClick()
+
+        assertThat(events).containsExactly(
+            ObjectsListEvent.CaptureKindChanged(AttachmentKind.RECEIPT),
+            ObjectsListEvent.CaptureTargetChosen("1"),
+        ).inOrder()
     }
 }

@@ -15,10 +15,14 @@ class MainActivity : ComponentActivity() {
     // the server does not answer, which is true from the app's side.
     private val localNetworkPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
 
+    // Same for reminders: without it an alarm rings into the void, and the task still shows in the list.
+    private val notificationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         requestLocalNetworkAccess()
+        requestNotifications()
         setContent { App() }
     }
 
@@ -29,7 +33,15 @@ class MainActivity : ComponentActivity() {
         localNetworkPermission.launch(LOCAL_NETWORK)
     }
 
+    /** From Android 13 a notification needs the user's say-so. */
+    private fun requestNotifications() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        if (checkSelfPermission(NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) return
+        notificationPermission.launch(NOTIFICATIONS)
+    }
+
     private companion object {
+        const val NOTIFICATIONS = "android.permission.POST_NOTIFICATIONS"
         const val LOCAL_NETWORK = "android.permission.ACCESS_LOCAL_NETWORK"
         const val ANDROID_17 = 37
     }

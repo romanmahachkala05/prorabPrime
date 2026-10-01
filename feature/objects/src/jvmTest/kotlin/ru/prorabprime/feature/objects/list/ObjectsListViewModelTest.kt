@@ -9,13 +9,19 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
 import ru.prorabprime.domain.model.AppError
+import ru.prorabprime.domain.model.AttachmentKind
+import ru.prorabprime.domain.model.LocalImageRef
+import ru.prorabprime.domain.model.ObjectId
 import ru.prorabprime.domain.model.ObjectQuery
 import ru.prorabprime.domain.model.ObjectSort
 import ru.prorabprime.domain.usecase.ObserveObjectSortUseCase
 import ru.prorabprime.domain.usecase.ObserveObjectsUseCase
 import ru.prorabprime.domain.usecase.RefreshObjectsUseCase
 import ru.prorabprime.domain.usecase.SaveObjectSortUseCase
+import ru.prorabprime.domain.usecase.UploadPhotoUseCase
+import ru.prorabprime.testing.FakeImageCompressor
 import ru.prorabprime.testing.FakeObjectsRepository
+import ru.prorabprime.testing.FakePhotosRepository
 import ru.prorabprime.testing.FakeSettingsRepository
 import ru.prorabprime.testing.FakeSnackbarNotifier
 import ru.prorabprime.testing.MainDispatcherRule
@@ -32,6 +38,8 @@ class ObjectsListViewModelTest {
     private val objects = FakeObjectsRepository()
     private val settings = FakeSettingsRepository()
     private val notifier = FakeSnackbarNotifier()
+    private val photos = FakePhotosRepository()
+    private val compressor = FakeImageCompressor()
 
     private val viewModel by lazy {
         val holder = ObjectsListStateHolder()
@@ -42,6 +50,8 @@ class ObjectsListViewModelTest {
             refreshObjects = RefreshObjectsUseCase(objects),
             observeObjectSort = ObserveObjectSortUseCase(settings),
             saveObjectSort = SaveObjectSortUseCase(settings),
+            uploadPhoto = UploadPhotoUseCase(compressor, photos),
+            notifier = notifier,
         )
     }
 
@@ -145,5 +155,55 @@ class ObjectsListViewModelTest {
         assertThat(state.status).isEqualTo(ObjectsListStatus.Loading)
         runCurrent()
         assertThat(objects.refreshCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `a captured picture waits for a target and is uploaded to the chosen object as a photo`() = runVmTest {
+        objects.objects.value = listOf(anObjectSummary(id = "a", title = "Кухня"), anObjectSummary(id = "b"))
+        advanceTimeBy(301)
+        runCurrent()
+
+        viewModel.onEvent(ObjectsListEvent.PhotosCaptured(listOf(LocalImageRef("file:///shot.jpg"))))
+        assertThat(state.capture?.kind).isEqualTo(AttachmentKind.PHOTO)
+        assertThat(photos.uploaded).isEmpty()
+
+        viewModel.onEvent(ObjectsListEvent.CaptureTargetChosen("a"))
+        runCurrent()
+
+        assertThat(state.capture).isNull()
+        assertThat(photos.uploaded.map { it.first }).containsExactly(ObjectId("a"))
+        assertThat(photos.uploadedKinds).containsExactly(AttachmentKind.PHOTO)
+        assertThat(notifier.shown).hasSize(1)
+    }
+
+    @Test
+    fun `the folder can be switched to receipts before choosing`() = runVmTest {
+        objects.objects.value = listOf(anObjectSummary(id = "a"))
+        advanceTimeBy(301)
+        runCurrent()
+        viewModel.onEvent(ObjectsListEvent.PhotosCaptured(listOf(LocalImageRef("file:///shot.jpg"))))
+
+        viewModel.onEvent(ObjectsListEvent.CaptureKindChanged(AttachmentKind.RECEIPT))
+        viewModel.onEvent(ObjectsListEvent.CaptureTargetChosen("a"))
+        runCurrent()
+
+        assertThat(photos.uploadedKinds).containsExactly(AttachmentKind.RECEIPT)
+    }
+
+    @Test
+    fun `dismissing the sheet drops the picture, and a failed upload says so`() = runVmTest {
+        objects.objects.value = listOf(anObjectSummary(id = "a"))
+        advanceTimeBy(301)
+        runCurrent()
+        viewModel.onEvent(ObjectsListEvent.PhotosCaptured(listOf(LocalImageRef("file:///shot.jpg"))))
+        viewModel.onEvent(ObjectsListEvent.CaptureDismissed)
+        assertThat(state.capture).isNull()
+
+        photos.error = AppError.Network
+        viewModel.onEvent(ObjectsListEvent.PhotosCaptured(listOf(LocalImageRef("file:///shot.jpg"))))
+        viewModel.onEvent(ObjectsListEvent.CaptureTargetChosen("a"))
+        runCurrent()
+
+        assertThat(notifier.shown).containsExactly(AppError.Network.toUiText())
     }
 }

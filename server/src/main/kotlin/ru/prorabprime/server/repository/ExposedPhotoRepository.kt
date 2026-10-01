@@ -11,6 +11,7 @@ import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.selectAll
+import ru.prorabprime.contract.AttachmentKindDto
 import ru.prorabprime.server.db.DbExecutor
 import ru.prorabprime.server.model.PhotoRecord
 
@@ -41,6 +42,7 @@ class ExposedPhotoRepository(
                 it[width] = photo.width
                 it[height] = photo.height
                 it[sortOrder] = photo.sortOrder
+                it[kind] = photo.kind.name
                 it[createdAt] = photo.createdAt.toJavaInstant()
             }
         }
@@ -67,5 +69,6 @@ internal fun ResultRow.toPhotoRecord() = PhotoRecord(
     width = this[PhotosTable.width],
     height = this[PhotosTable.height],
     sortOrder = this[PhotosTable.sortOrder],
+    kind = AttachmentKindDto.valueOf(this[PhotosTable.kind]),
     createdAt = this[PhotosTable.createdAt].toKotlinInstant(),
 )

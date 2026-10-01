@@ -97,6 +97,7 @@ internal fun ObjectDetails.toForm() = ObjectForm(
     clientName = clientName.orEmpty(),
     clientPhone = clientPhone.orEmpty(),
     notes = notes.orEmpty(),
+    chatLink = chatLink.orEmpty(),
 )
 
 internal fun ObjectForm.toDraft() = ObjectDraft(
@@ -106,6 +107,7 @@ internal fun ObjectForm.toDraft() = ObjectDraft(
     clientName = clientName,
     clientPhone = clientPhone,
     notes = notes,
+    chatLink = chatLink,
 )
 
 private const val DRAFT_STATUS = "draft_status"
@@ -125,6 +127,7 @@ private fun SavedStateHandle.restoreDraft(): ObjectForm? {
         clientName = value(ObjectField.CLIENT_NAME),
         clientPhone = value(ObjectField.CLIENT_PHONE),
         notes = value(ObjectField.NOTES),
+        chatLink = value(ObjectField.CHAT_LINK),
     )
 }
 
@@ -141,4 +144,6 @@ internal fun ObjectForm.valueOf(field: ObjectField): String = when (field) {
     ObjectField.CLIENT_NAME -> clientName
     ObjectField.CLIENT_PHONE -> clientPhone
     ObjectField.NOTES -> notes
+    ObjectField.CHAT_LINK -> chatLink
+    else -> ""
 }

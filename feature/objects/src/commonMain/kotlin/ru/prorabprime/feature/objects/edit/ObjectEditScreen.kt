@@ -46,6 +46,7 @@ import ru.prorabprime.feature.objects.components.message
 import ru.prorabprime.feature.objects.resources.Res
 import ru.prorabprime.feature.objects.resources.objectedit_address
 import ru.prorabprime.feature.objects.resources.objectedit_back
+import ru.prorabprime.feature.objects.resources.objectedit_chat_link
 import ru.prorabprime.feature.objects.resources.objectedit_client_name
 import ru.prorabprime.feature.objects.resources.objectedit_client_phone
 import ru.prorabprime.feature.objects.resources.objectedit_notes
@@ -152,6 +153,13 @@ private fun Form(
             ObjectField.CLIENT_PHONE,
             Res.string.objectedit_client_phone,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+        )
+        FormField(
+            state,
+            onEvent,
+            ObjectField.CHAT_LINK,
+            Res.string.objectedit_chat_link,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
         )
         FormField(state, onEvent, ObjectField.NOTES, Res.string.objectedit_notes, singleLine = false)
         Button(

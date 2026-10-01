@@ -2,6 +2,8 @@ package ru.prorabprime.server.model
 
 import java.util.UUID
 import kotlin.time.Instant
+import ru.prorabprime.contract.AttachmentKindDto
+import ru.prorabprime.contract.ContactRoleDto
 import ru.prorabprime.contract.ObjectStatusDto
 import ru.prorabprime.contract.SortFieldDto
 import ru.prorabprime.contract.SortOrderDto
@@ -14,6 +16,13 @@ data class ObjectFields(
     val clientName: String?,
     val clientPhone: String?,
     val notes: String?,
+    val chatLink: String? = null,
+)
+
+/** A point on the map. */
+data class Coordinates(
+    val latitude: Double,
+    val longitude: Double,
 )
 
 data class ObjectRecord(
@@ -22,6 +31,7 @@ data class ObjectRecord(
     val coverPhotoId: UUID?,
     val createdAt: Instant,
     val updatedAt: Instant,
+    val coordinates: Coordinates? = null,
 )
 
 /** A row of the objects list, with what the list shows about the object's photos. */
@@ -33,8 +43,24 @@ data class ObjectListItem(
 
 data class ObjectDetails(
     val record: ObjectRecord,
+    val contacts: List<ContactRecord>,
     /** In carousel order. */
     val photos: List<PhotoRecord>,
+)
+
+/** The editable fields of a contact, already trimmed and validated. */
+data class ContactFields(
+    val name: String,
+    val phone: String?,
+    val role: ContactRoleDto,
+)
+
+data class ContactRecord(
+    val id: UUID,
+    val objectId: UUID,
+    val fields: ContactFields,
+    val sortOrder: Int,
+    val createdAt: Instant,
 )
 
 data class PhotoRecord(
@@ -48,6 +74,7 @@ data class PhotoRecord(
     val height: Int,
     val sortOrder: Int,
     val createdAt: Instant,
+    val kind: AttachmentKindDto = AttachmentKindDto.PHOTO,
 )
 
 data class ObjectListQuery(

@@ -56,4 +56,37 @@ class ObjectValidationTest {
             FieldErrorDto(ObjectFieldDto.CLIENT_PHONE, FieldProblemDto.TOO_LONG),
         )
     }
+
+    @Test
+    fun `a chat link is trimmed and must use a known scheme`() {
+        val fields = validateObject(
+            ObjectRequestDto(address = "Тверская, 5", status = ObjectStatusDto.PLANNED, chatLink = " https://t.me/x "),
+        ).getOrThrow()
+        assertThat(fields.chatLink).isEqualTo("https://t.me/x")
+
+        val blank = validateObject(
+            ObjectRequestDto(address = "Тверская, 5", status = ObjectStatusDto.PLANNED, chatLink = "  "),
+        ).getOrThrow()
+        assertThat(blank.chatLink).isNull()
+
+        val invalid = validateObject(
+            ObjectRequestDto(
+                address = "Тверская, 5",
+                status = ObjectStatusDto.PLANNED,
+                chatLink = "javascript:alert(1)",
+            ),
+        )
+        assertThat(invalid.fieldErrors())
+            .containsExactly(FieldErrorDto(ObjectFieldDto.CHAT_LINK, FieldProblemDto.INVALID))
+
+        val tooLong = validateObject(
+            ObjectRequestDto(
+                address = "Тверская, 5",
+                status = ObjectStatusDto.PLANNED,
+                chatLink = "https://" + "a".repeat(ObjectLimits.CHAT_LINK),
+            ),
+        )
+        assertThat(tooLong.fieldErrors())
+            .contains(FieldErrorDto(ObjectFieldDto.CHAT_LINK, FieldProblemDto.TOO_LONG))
+    }
 }

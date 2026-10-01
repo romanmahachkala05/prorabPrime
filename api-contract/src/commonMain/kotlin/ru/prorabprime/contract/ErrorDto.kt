@@ -34,6 +34,19 @@ enum class ObjectFieldDto {
     CLIENT_NAME,
     CLIENT_PHONE,
     NOTES,
+    CONTACT_NAME,
+    CONTACT_PHONE,
+    CHAT_LINK,
+    PAYMENT_AMOUNT,
+    PAYMENT_DATE,
+    PAYMENT_NOTE,
+    WORK_TITLE,
+    WORK_AMOUNT,
+    TOTAL_AMOUNT,
+    MATERIAL_TITLE,
+    TASK_TITLE,
+    TASK_DAY,
+    TASK_TIME,
 }
 
 @Serializable

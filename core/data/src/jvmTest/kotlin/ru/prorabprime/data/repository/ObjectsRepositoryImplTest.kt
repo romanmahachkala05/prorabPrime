@@ -15,6 +15,7 @@ import ru.prorabprime.data.TestHttp
 import ru.prorabprime.data.json
 import ru.prorabprime.data.remote.ServerApi
 import ru.prorabprime.domain.model.CompressedImage
+import ru.prorabprime.domain.model.GeoPoint
 import ru.prorabprime.domain.model.ObjectDraft
 import ru.prorabprime.domain.model.ObjectId
 import ru.prorabprime.domain.model.ObjectQuery
@@ -65,6 +66,7 @@ class ObjectsRepositoryImplTest {
         assertThat(summary.id).isEqualTo(ObjectId("o1"))
         assertThat(summary.status).isEqualTo(ObjectStatus.DONE)
         assertThat(summary.coverThumbPath).isEqualTo(ServerFilePath("/files/o1/p1_thumb.jpg"))
+        assertThat(summary.point).isEqualTo(GeoPoint(55.76, 37.61))
     }
 
     @Test
@@ -120,13 +122,26 @@ class ObjectsRepositoryImplTest {
         assertThat(request.body.contentType?.contentType).isEqualTo("multipart")
     }
 
+    @Test
+    fun `geocoding posts to the object and makes the flows reload`() = runTest {
+        val before = invalidator.changes.value
+
+        objects.geocode(ObjectId("o1")).getOrThrow()
+
+        val request = http.requests.single()
+        assertThat(request.method).isEqualTo(HttpMethod.Post)
+        assertThat(request.url.encodedPath).isEqualTo("/api/objects/o1/geocode")
+        assertThat(invalidator.changes.value).isEqualTo(before + 1)
+    }
+
     private companion object {
         const val PHOTO =
             """{"id":"p1","url":"/files/o1/p1.jpg","thumbUrl":"/files/o1/p1_thumb.jpg","width":4,"height":3,""" +
                 """"createdAt":"2026-09-25T10:00:00Z"}"""
         const val SUMMARIES =
             """[{"id":"o1","address":"Тверская, 5","status":"DONE","coverThumbUrl":"/files/o1/p1_thumb.jpg",""" +
-                """"photoCount":1,"createdAt":"2026-09-25T10:00:00Z","updatedAt":"2026-09-25T10:00:00Z"}]"""
+                """"photoCount":1,"latitude":55.76,"longitude":37.61,""" +
+                """"createdAt":"2026-09-25T10:00:00Z","updatedAt":"2026-09-25T10:00:00Z"}]"""
         const val DETAILS =
             """{"id":"o1","address":"Тверская, 5","status":"IN_PROGRESS","coverPhotoId":"p1","photos":[$PHOTO],""" +
                 """"createdAt":"2026-09-25T10:00:00Z","updatedAt":"2026-09-25T10:00:00Z"}"""

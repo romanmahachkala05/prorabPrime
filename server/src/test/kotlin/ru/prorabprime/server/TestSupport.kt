@@ -19,6 +19,8 @@ val testConfig = AppConfig(
     database = DatabaseConfig(url = "jdbc:postgresql://unused/test", user = "test", password = "test"),
     storageDir = "build/test-uploads",
     apiToken = TEST_TOKEN,
+    // A test must never reach the real Nominatim; a fake geocoder is wired where one is needed.
+    geocoderUrl = null,
 )
 
 /**

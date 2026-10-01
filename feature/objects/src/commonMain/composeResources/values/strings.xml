@@ -2,6 +2,8 @@
 <resources>
     <!-- objectslist -->
     <string name="objectslist_title">Объекты</string>
+    <string name="objectslist_tasks">Дела на день</string>
+    <string name="objectslist_map">Карта объектов</string>
     <string name="objectslist_settings">Настройки</string>
     <string name="objectslist_add">Добавить объект</string>
     <string name="objectslist_search">Поиск по адресу или названию</string>
@@ -12,6 +14,12 @@
     <string name="objectslist_sort_updated">Недавно изменённые</string>
     <string name="objectslist_empty">Пока нет ни одного объекта</string>
     <string name="objectslist_empty_action">Добавить первый объект</string>
+    <string name="objectslist_camera">Сфотографировать</string>
+    <string name="objectslist_capture_title">Куда отправить снимок?</string>
+    <string name="objectslist_capture_photo">Фото объекта</string>
+    <string name="objectslist_capture_receipt">Чек</string>
+    <string name="objectslist_photo_uploaded">Фото добавлено: %1$s</string>
+    <string name="objectslist_receipt_uploaded">Чек добавлен: %1$s</string>
     <string name="objectslist_nothing_found">Ничего не найдено</string>
     <!-- Russian plurals have no "zero" form; zero is its own string. -->
     <string name="objectslist_no_photos">Нет фото</string>
@@ -48,6 +56,29 @@
     <string name="objectdetails_upload_dismiss">Убрать</string>
     <string name="objectdetails_upload_unreadable">Не удалось прочитать фото</string>
 
+    <string name="objectdetails_photos">Фотографии объекта</string>
+    <string name="objectdetails_receipts">Чеки</string>
+    <string name="objectdetails_add_receipt">Добавить чек</string>
+    <string name="objectdetails_finance">Финансы объекта</string>
+    <string name="objectdetails_materials">Материалы</string>
+    <string name="objectdetails_open_chat">Открыть чат</string>
+    <string name="objectdetails_contacts">Контакты</string>
+    <string name="objectdetails_contacts_empty">Пока нет контактов</string>
+    <string name="objectdetails_add_contact">Добавить контакт</string>
+    <string name="objectdetails_call">Позвонить</string>
+    <string name="objectdetails_edit_contact">Изменить контакт</string>
+    <string name="objectdetails_delete_contact_title">Удалить контакт?</string>
+    <string name="objectdetails_delete_contact_message">Контакт будет удалён из объекта.</string>
+    <string name="contact_name">Имя *</string>
+    <string name="contact_phone">Телефон</string>
+    <string name="contact_role">Кто это</string>
+    <string name="contact_role_client">Заказчик</string>
+    <string name="contact_role_executor">Исполнитель</string>
+    <string name="contact_role_other">Другое</string>
+    <string name="contact_save">Сохранить</string>
+    <string name="contact_delete">Удалить</string>
+    <string name="contact_cancel">Отмена</string>
+
     <!-- photoviewer -->
     <string name="photoviewer_back">Назад</string>
     <string name="photoviewer_position">%1$d из %2$d</string>
@@ -57,6 +88,7 @@
     <string name="objectedit_title_edit">Редактирование</string>
     <string name="objectedit_back">Назад</string>
     <string name="objectedit_title">Название</string>
+    <string name="objectedit_chat_link">Ссылка на чат (Telegram, Max)</string>
     <string name="objectedit_address">Адрес *</string>
     <string name="objectedit_status">Статус</string>
     <string name="objectedit_client_name">Имя клиента</string>

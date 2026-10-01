@@ -33,11 +33,14 @@ internal class PhotoViewerViewModel(
             .onEach { result ->
                 result
                     .onSuccess { details ->
-                        val index = details.photos.indexOfFirst { it.id.value == args.photoId }.coerceAtLeast(0)
+                        // Photos and receipts are separate folders: page through the tapped one's.
+                        val kind = details.photos.find { it.id.value == args.photoId }?.kind
+                        val folder = details.photos.filter { kind == null || it.kind == kind }
+                        val index = folder.indexOfFirst { it.id.value == args.photoId }.coerceAtLeast(0)
                         _state.update {
                             PhotoViewerState(
                                 PhotoViewerStatus.Content,
-                                details.photos.map { p ->
+                                folder.map { p ->
                                     p.path
                                 }.toImmutableList(),
                                 index,

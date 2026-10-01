@@ -18,6 +18,12 @@ import androidx.navigation3.ui.NavDisplay
 import androidx.savedstate.serialization.SavedStateConfiguration
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
+import ru.prorabprime.feature.finance.FinanceNavKey
+import ru.prorabprime.feature.finance.FinanceScreen
+import ru.prorabprime.feature.map.MapNavKey
+import ru.prorabprime.feature.map.MapScreen
+import ru.prorabprime.feature.materials.MaterialsNavKey
+import ru.prorabprime.feature.materials.MaterialsScreen
 import ru.prorabprime.feature.objects.details.ObjectDetailsNavKey
 import ru.prorabprime.feature.objects.details.ObjectDetailsScreen
 import ru.prorabprime.feature.objects.edit.ObjectEditNavKey
@@ -28,6 +34,8 @@ import ru.prorabprime.feature.objects.viewer.PhotoViewerNavKey
 import ru.prorabprime.feature.objects.viewer.PhotoViewerScreen
 import ru.prorabprime.feature.settings.SettingsNavKey
 import ru.prorabprime.feature.settings.SettingsScreen
+import ru.prorabprime.feature.tasks.TasksNavKey
+import ru.prorabprime.feature.tasks.TasksScreen
 import ru.prorabprime.ui.SnackbarNotifier
 import ru.prorabprime.ui.load
 
@@ -59,6 +67,8 @@ fun AppNavDisplay(notifier: SnackbarNotifier, modifier: Modifier = Modifier) {
                         onOpenObject = { backStack.add(ObjectDetailsNavKey(it)) },
                         onCreateObject = { backStack.add(ObjectEditNavKey()) },
                         onOpenSettings = { backStack.add(SettingsNavKey) },
+                        onOpenMap = { backStack.add(MapNavKey) },
+                        onOpenTasks = { backStack.add(TasksNavKey) },
                     )
                 }
                 entry<ObjectDetailsNavKey> { key ->
@@ -66,9 +76,17 @@ fun AppNavDisplay(notifier: SnackbarNotifier, modifier: Modifier = Modifier) {
                         objectId = key.objectId,
                         onEdit = { backStack.add(ObjectEditNavKey(key.objectId)) },
                         onOpenPhoto = { backStack.add(PhotoViewerNavKey(key.objectId, it)) },
+                        onOpenFinance = { backStack.add(FinanceNavKey(key.objectId)) },
+                        onOpenMaterials = { backStack.add(MaterialsNavKey(key.objectId)) },
                         onClose = { backStack.pop() },
                     )
                 }
+                entry<FinanceNavKey> { key -> FinanceScreen(objectId = key.objectId, onBack = { backStack.pop() }) }
+                entry<MapNavKey> {
+                    MapScreen(onOpenObject = { backStack.add(ObjectDetailsNavKey(it)) }, onBack = { backStack.pop() })
+                }
+                entry<TasksNavKey> { TasksScreen(onBack = { backStack.pop() }) }
+                entry<MaterialsNavKey> { key -> MaterialsScreen(objectId = key.objectId, onBack = { backStack.pop() }) }
                 entry<PhotoViewerNavKey> { key ->
                     PhotoViewerScreen(objectId = key.objectId, photoId = key.photoId, onBack = { backStack.pop() })
                 }
@@ -107,6 +125,10 @@ private val NAV_KEYS = SavedStateConfiguration {
             subclass(ObjectEditNavKey::class, ObjectEditNavKey.serializer())
             subclass(PhotoViewerNavKey::class, PhotoViewerNavKey.serializer())
             subclass(SettingsNavKey::class, SettingsNavKey.serializer())
+            subclass(FinanceNavKey::class, FinanceNavKey.serializer())
+            subclass(MaterialsNavKey::class, MaterialsNavKey.serializer())
+            subclass(MapNavKey::class, MapNavKey.serializer())
+            subclass(TasksNavKey::class, TasksNavKey.serializer())
         }
     }
 }

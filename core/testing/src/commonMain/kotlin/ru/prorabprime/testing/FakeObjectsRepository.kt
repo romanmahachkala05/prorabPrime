@@ -35,6 +35,7 @@ class FakeObjectsRepository : ObjectsRepository {
     val created = mutableListOf<ObjectDraft>()
     val updated = mutableListOf<Pair<ObjectId, ObjectDraft>>()
     val deleted = mutableListOf<ObjectId>()
+    val geocoded = mutableListOf<ObjectId>()
     var refreshCount = 0
         private set
 
@@ -60,6 +61,12 @@ class FakeObjectsRepository : ObjectsRepository {
     override suspend fun update(id: ObjectId, draft: ObjectDraft): Result<Unit> {
         writeError?.let { return it.asFailure() }
         updated += id to draft
+        return Result.success(Unit)
+    }
+
+    override suspend fun geocode(id: ObjectId): Result<Unit> {
+        writeError?.let { return it.asFailure() }
+        geocoded += id
         return Result.success(Unit)
     }
 

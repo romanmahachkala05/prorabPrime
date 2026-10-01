@@ -1,8 +1,11 @@
 # ProrabPrime
 
-An app for a small renovation business: a list of the owner's sites, a card per site with its
-client and notes, and photos taken on site. Stage 1: a Ktor server on the owner's computer and
-an Android app talking to it over the local Wi-Fi.
+An app for a small renovation business: the owner's sites as a grid you can pick from at a glance,
+and a card per site with its client and other contacts (tap to call), a link to its chat, photos
+and receipts, the books (payments to the crew and from the client, with a history, and extra works),
+and a materials checklist. A big camera button shoots first and asks where the picture goes. Sites
+are on a map (OpenStreetMap), and there is a plan for the day with reminders. Stage 1: a Ktor server
+on the owner's computer and an Android app talking to it over the local Wi-Fi.
 
 - Architecture — [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 - Why it is built this way — [`docs/DECISIONS.md`](docs/DECISIONS.md)
@@ -13,6 +16,9 @@ an Android app talking to it over the local Wi-Fi.
 - **JDK 17 or newer** to start Gradle. The build provisions JDK 17 for itself.
 - **Android SDK** (Android Studio installs it), with `sdk.dir` in `local.properties`.
 - **Docker** — optional. Without it the server runs over an embedded PostgreSQL (below).
+
+The same screens run in a browser: the server serves the web app (Kotlin/Wasm, Compose), see
+[the web app](#the-web-app) below.
 
 ## 1. Configure the server
 
@@ -29,6 +35,10 @@ python -c "import secrets; print(secrets.token_urlsafe(24))"
 ```
 
 `.env` is gitignored; it never leaves the computer.
+
+**Map pins.** To put an object on the map the server looks its address up on OpenStreetMap's
+public Nominatim, which means **the address is sent to nominatim.openstreetmap.org**. If you would
+rather keep addresses on this computer, set `GEOCODER_URL=off` in `.env`: objects then have no pins.
 
 ## 2. Start the server
 
@@ -130,3 +140,23 @@ The phone and the computer must be on the same Wi-Fi network.
 Formatting, static analysis, every unit test and the debug APK; the server's PostgreSQL tests run
 in Docker, or over embedded PostgreSQL when Docker is missing (ADR-0006, ADR-0007). See
 [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+## The web app
+
+The web client is the same Compose UI compiled to WebAssembly. It needs a recent browser (Chrome,
+Edge or Firefox from the last two years, Safari 18.2+). The server serves it, so the page and the API
+share an address and nothing needs CORS.
+
+```bash
+./gradlew :web:wasmJsBrowserDistribution
+```
+
+builds the site into `web/build/dist/wasmJs/productionExecutable` (the first build downloads Node.js,
+Yarn and Binaryen into `~/.gradle`). `.env.example` points `WEB_DIR` at that folder; start the server
+and open `http://<this computer>:8080/` in a browser. The first time, open the settings (the gear),
+type the API token, and press save: it is kept in that browser's `localStorage`. The server address
+is the one the page came from.
+
+In the browser the camera button opens the file chooser (a phone's browser goes straight to the
+camera), and the day plan has no alarms: reminders are an Android feature.
+

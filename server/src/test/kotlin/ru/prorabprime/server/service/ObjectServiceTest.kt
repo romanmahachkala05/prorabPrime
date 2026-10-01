@@ -10,6 +10,7 @@ import ru.prorabprime.contract.ObjectStatusDto
 import ru.prorabprime.server.error.ServiceError
 import ru.prorabprime.server.error.ServiceException
 import ru.prorabprime.server.fakes.FIXED_NOW
+import ru.prorabprime.server.fakes.FakeContactRepository
 import ru.prorabprime.server.fakes.FakeFileStorage
 import ru.prorabprime.server.fakes.FakeObjectRepository
 import ru.prorabprime.server.fakes.FakePhotoRepository
@@ -23,7 +24,7 @@ class ObjectServiceTest {
     private val clock = FixedClock()
     private val id = UUID.fromString("00000000-0000-0000-0000-000000000001")
     private val storage = FakeFileStorage()
-    private val service = ObjectService(objects, photos, storage, clock, newId = { id })
+    private val service = ObjectService(objects, photos, FakeContactRepository(), storage, clock, newId = { id })
 
     private val request = ObjectRequestDto(address = "Тверская, 5", status = ObjectStatusDto.IN_PROGRESS)
 

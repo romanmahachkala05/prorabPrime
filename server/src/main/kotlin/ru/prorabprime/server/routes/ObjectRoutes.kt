@@ -40,6 +40,9 @@ fun Route.objectRoutes() {
         val id = call.uuidParam(ApiParams.ID)
         call.respond(service.update(id, call.receive<ObjectRequestDto>()).getOrThrow().toDetailsDto())
     }
+    post(ApiPaths.OBJECT_GEOCODE) {
+        call.respond(service.geocode(call.uuidParam(ApiParams.ID)).getOrThrow().toDetailsDto())
+    }
     delete(ApiPaths.OBJECT) {
         service.delete(call.uuidParam(ApiParams.ID)).getOrThrow()
         call.respond(HttpStatusCode.NoContent)

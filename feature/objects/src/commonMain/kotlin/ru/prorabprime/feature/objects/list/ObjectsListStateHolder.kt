@@ -22,6 +22,8 @@ internal interface IObjectsListStateHolder : StateOwner<ObjectsListState> {
     fun setSort(sort: ObjectSort)
 
     fun setRefreshing(refreshing: Boolean)
+
+    fun setCapture(capture: CaptureUi?)
 }
 
 internal class ObjectsListStateHolder : IObjectsListStateHolder {
@@ -49,4 +51,6 @@ internal class ObjectsListStateHolder : IObjectsListStateHolder {
     override fun setSort(sort: ObjectSort) = _state.update { it.copy(sort = sort) }
 
     override fun setRefreshing(refreshing: Boolean) = _state.update { it.copy(isRefreshing = refreshing) }
+
+    override fun setCapture(capture: CaptureUi?) = _state.update { it.copy(capture = capture) }
 }

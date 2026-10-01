@@ -6,9 +6,11 @@ import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import ru.prorabprime.domain.model.AttachmentKind
 import ru.prorabprime.domain.model.LocalImageRef
 import ru.prorabprime.domain.model.ObjectDetails
 import ru.prorabprime.domain.model.ObjectId
+import ru.prorabprime.domain.model.Photo
 import ru.prorabprime.domain.model.PhotoId
 import ru.prorabprime.domain.model.asAppError
 import ru.prorabprime.feature.objects.resources.Res
@@ -34,6 +36,15 @@ internal class ObjectDetailsViewModel(
 ) : ViewModel(),
     StateOwner<ObjectDetailsState> by stateHolder {
 
+    private val contacts = ContactEditorController(
+        objectId = objectId,
+        scope = viewModelScope,
+        stateHolder = stateHolder,
+        errorHandler = errorHandler,
+        saveContact = actions.saveContact,
+        deleteContact = actions.deleteContact,
+    )
+
     init {
         // The repository reloads this after any write: the form's, an upload, a new cover.
         actions.observeObject(objectId)
@@ -54,9 +65,9 @@ internal class ObjectDetailsViewModel(
 
             ObjectDetailsEvent.Retry -> retry()
 
-            is ObjectDetailsEvent.PhotosPicked -> event.images.forEach(::upload)
+            is ObjectDetailsEvent.PhotosPicked -> event.images.forEach { upload(it, event.kind) }
 
-            is ObjectDetailsEvent.RetryUpload -> upload(event.image)
+            is ObjectDetailsEvent.RetryUpload -> upload(event.image, event.kind)
 
             is ObjectDetailsEvent.DismissUpload -> stateHolder.removeUpload(event.image)
 
@@ -64,6 +75,8 @@ internal class ObjectDetailsViewModel(
 
             is ObjectDetailsEvent.DeletePhotoClicked ->
                 stateHolder.askToConfirm(DELETE_PHOTO_DIALOG, ObjectDetailsAction.DeletePhoto(event.photoId))
+
+            is ContactEvent -> contacts.onEvent(event)
         }
     }
 
@@ -81,6 +94,7 @@ internal class ObjectDetailsViewModel(
         when (action) {
             ObjectDetailsAction.DeleteObject -> deleteObject()
             is ObjectDetailsAction.DeletePhoto -> deletePhoto(action.photoId)
+            is ObjectDetailsAction.DeleteContact -> contacts.delete(action.contactId)
             null -> Unit
         }
     }
@@ -89,10 +103,10 @@ internal class ObjectDetailsViewModel(
      * Runs in `viewModelScope`, so an upload outlives a rotation; it does not outlive leaving
      * the screen, which stage 1 accepts (no background uploads yet).
      */
-    private fun upload(image: LocalImageRef) {
-        stateHolder.startUpload(image)
+    private fun upload(image: LocalImageRef, kind: AttachmentKind) {
+        stateHolder.startUpload(image, kind)
         launchCatching(onFailure = { errorHandler.onUploadFailure(image, it.asAppError()) }) {
-            actions.uploadPhoto(objectId, image)
+            actions.uploadPhoto(objectId, image, kind)
                 .onSuccess { stateHolder.removeUpload(image) }
                 .onFailure { errorHandler.onUploadFailure(image, it.asAppError()) }
         }
@@ -153,5 +167,10 @@ internal fun ObjectDetails.toUi() = ObjectDetailsUi(
     clientName = clientName,
     clientPhone = clientPhone,
     notes = notes,
-    photos = photos.map { PhotoUi(it.id.value, it.thumbPath, isCover = it.id == coverPhotoId) }.toImmutableList(),
+    chatLink = chatLink,
+    contacts = contacts.map { ContactUi(it.id.value, it.name, it.phone, it.role) }.toImmutableList(),
+    photos = photos.filter { it.kind == AttachmentKind.PHOTO }.map { it.toUi(coverPhotoId) }.toImmutableList(),
+    receipts = photos.filter { it.kind == AttachmentKind.RECEIPT }.map { it.toUi(coverPhotoId) }.toImmutableList(),
 )
+
+private fun Photo.toUi(coverPhotoId: PhotoId?) = PhotoUi(id.value, thumbPath, isCover = id == coverPhotoId)

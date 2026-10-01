@@ -78,4 +78,13 @@ class ServerAddressTest {
         assertThat(parseServerAddress("ftp://example.org")).isNull()
         assertThat(parseServerAddress("")).isNull()
     }
+
+    @Test
+    fun `every request says who it is, and a tile server never sees the token`() = runTest {
+        http.client.get("https://tile.openstreetmap.org/3/4/2.png")
+
+        val request = http.requests.single()
+        assertThat(request.headers[HttpHeaders.UserAgent]).isEqualTo(USER_AGENT)
+        assertThat(request.headers[HttpHeaders.Authorization]).isNull()
+    }
 }

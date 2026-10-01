@@ -26,6 +26,8 @@ class KmpAndroidLibraryConventionPlugin : Plugin<Project> {
 
             extensions.configure<KotlinMultiplatformExtension> {
                 jvm()
+                // Compiled only: tests run on the JVM target, so the browser's test task is off.
+                wasmJs { browser { testTask { enabled = false } } }
                 jvmAndAndroidHierarchy()
                 jvmToolchain(17)
 

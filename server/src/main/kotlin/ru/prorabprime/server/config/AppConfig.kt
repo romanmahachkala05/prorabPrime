@@ -7,6 +7,10 @@ data class AppConfig(
     val database: DatabaseConfig,
     val storageDir: String,
     val apiToken: String,
+    /** A Nominatim-compatible server that turns addresses into map points; null switches geocoding off. */
+    val geocoderUrl: String? = DEFAULT_GEOCODER_URL,
+    /** The built web app to serve at `/`; null serves none. */
+    val webDir: String? = null,
 ) {
     // Configs get logged; secrets must not be.
     override fun toString() = "AppConfig(database=$database, storageDir=$storageDir, apiToken=***)"
@@ -27,10 +31,25 @@ data class AppConfig(
                 ),
                 storageDir = config.required("prorab.storage.dir", "STORAGE_DIR"),
                 apiToken = token,
+                geocoderUrl = geocoderUrl(config),
+                webDir = config.propertyOrNull("prorab.web.dir")?.getString()?.trim()?.takeIf { it.isNotEmpty() },
             )
         }
 
+        const val DEFAULT_GEOCODER_URL = "https://nominatim.openstreetmap.org"
+
         private const val PLACEHOLDER = "change-me"
+        private const val GEOCODER_OFF = "off"
+
+        /** Unset means the public Nominatim; `off` means no geocoding at all, so no address leaves the machine. */
+        private fun geocoderUrl(config: ApplicationConfig): String? {
+            val value = config.propertyOrNull("prorab.geocoder.url")?.getString()?.trim()
+            return when {
+                value.isNullOrEmpty() -> DEFAULT_GEOCODER_URL
+                value.equals(GEOCODER_OFF, ignoreCase = true) -> null
+                else -> value
+            }
+        }
 
         private fun ApplicationConfig.required(path: String, variable: String): String =
             propertyOrNull(path)?.getString()?.takeIf { it.isNotBlank() }

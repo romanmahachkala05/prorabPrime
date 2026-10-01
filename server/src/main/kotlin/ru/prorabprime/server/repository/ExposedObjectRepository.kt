@@ -7,6 +7,7 @@ import kotlin.time.toKotlinInstant
 import org.jetbrains.exposed.v1.core.LikePattern
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.SortOrder
+import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.count
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.inList
@@ -17,10 +18,12 @@ import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.update
+import ru.prorabprime.contract.AttachmentKindDto
 import ru.prorabprime.contract.ObjectStatusDto
 import ru.prorabprime.contract.SortFieldDto
 import ru.prorabprime.contract.SortOrderDto
 import ru.prorabprime.server.db.DbExecutor
+import ru.prorabprime.server.model.Coordinates
 import ru.prorabprime.server.model.ObjectFields
 import ru.prorabprime.server.model.ObjectListItem
 import ru.prorabprime.server.model.ObjectListQuery
@@ -49,7 +52,7 @@ class ExposedObjectRepository(
         val ids = records.map { it.id }
         val photoCount = PhotosTable.objectId.count()
         val counts = PhotosTable.select(PhotosTable.objectId, photoCount)
-            .where { PhotosTable.objectId inList ids }
+            .where { (PhotosTable.objectId inList ids) and (PhotosTable.kind eq AttachmentKindDto.PHOTO.name) }
             .groupBy(PhotosTable.objectId)
             .associate { it[PhotosTable.objectId] to it[photoCount].toInt() }
         val coverIds = records.mapNotNull { it.coverPhotoId }
@@ -105,6 +108,15 @@ class ExposedObjectRepository(
         db.query { ObjectsTable.update({ ObjectsTable.id eq id }) { it[coverPhotoId] = photoId } }
     }
 
+    override suspend fun setCoordinates(id: UUID, coordinates: Coordinates?) {
+        db.query {
+            ObjectsTable.update({ ObjectsTable.id eq id }) {
+                it[latitude] = coordinates?.latitude
+                it[longitude] = coordinates?.longitude
+            }
+        }
+    }
+
     override suspend fun touch(id: UUID, at: Instant) {
         db.query { ObjectsTable.update({ ObjectsTable.id eq id }) { it[updatedAt] = at.toJavaInstant() } }
     }
@@ -116,6 +128,7 @@ class ExposedObjectRepository(
         this[ObjectsTable.clientName] = fields.clientName
         this[ObjectsTable.clientPhone] = fields.clientPhone
         this[ObjectsTable.notes] = fields.notes
+        this[ObjectsTable.chatLink] = fields.chatLink
         this[ObjectsTable.searchText] = searchTextOf(fields)
     }
 }
@@ -139,8 +152,12 @@ private fun ResultRow.toObjectRecord() = ObjectRecord(
         clientName = this[ObjectsTable.clientName],
         clientPhone = this[ObjectsTable.clientPhone],
         notes = this[ObjectsTable.notes],
+        chatLink = this[ObjectsTable.chatLink],
     ),
     coverPhotoId = this[ObjectsTable.coverPhotoId],
     createdAt = this[ObjectsTable.createdAt].toKotlinInstant(),
     updatedAt = this[ObjectsTable.updatedAt].toKotlinInstant(),
+    coordinates = this[ObjectsTable.latitude]?.let { lat ->
+        this[ObjectsTable.longitude]?.let { lon -> Coordinates(lat, lon) }
+    },
 )

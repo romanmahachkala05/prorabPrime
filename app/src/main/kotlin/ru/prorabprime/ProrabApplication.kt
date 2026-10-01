@@ -8,6 +8,10 @@ import coil3.map.Mapper
 import coil3.network.ktor3.KtorNetworkFetcherFactory
 import coil3.request.Options
 import io.ktor.client.HttpClient
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import org.koin.android.ext.android.get
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
@@ -16,6 +20,7 @@ import ru.prorabprime.data.di.androidDataModule
 import ru.prorabprime.data.network.toRequestUrl
 import ru.prorabprime.domain.model.ServerFilePath
 import ru.prorabprime.domain.model.ServerSettings
+import ru.prorabprime.domain.usecase.KeepRemindersUseCase
 import ru.prorabprime.shared.appModules
 
 /**
@@ -35,6 +40,17 @@ class ProrabApplication :
             androidContext(this@ProrabApplication)
             modules(appModules + androidDataModule(defaults))
         }
+        keepReminders()
+    }
+
+    /**
+     * Keeps the phone's alarms in step with the open tasks for as long as the process lives. A
+     * reboot restarts the process through the boot receiver, which sets the remembered alarms
+     * again at once, so the alarms do not wait for the server to answer.
+     */
+    private fun keepReminders() {
+        val keep = get<KeepRemindersUseCase>()
+        CoroutineScope(SupervisorJob() + Dispatchers.Default).launch { keep.run() }
     }
 
     /**

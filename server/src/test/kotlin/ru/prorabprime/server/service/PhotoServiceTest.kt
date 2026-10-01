@@ -7,6 +7,7 @@ import java.util.UUID
 import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
+import ru.prorabprime.contract.AttachmentKindDto
 import ru.prorabprime.contract.ObjectStatusDto
 import ru.prorabprime.contract.PhotoLimits
 import ru.prorabprime.server.error.ServiceError
@@ -230,5 +231,39 @@ class PhotoServiceTest {
     fun `a cover for an unknown object is not found`() = runTest {
         assertThat(service.setCover(UUID.randomUUID(), UUID.randomUUID()).serviceError())
             .isInstanceOf(ServiceError.NotFound::class.java)
+    }
+
+    // --- receipts ---
+
+    @Test
+    fun `a receipt is stored as a receipt and never becomes the cover`() = runTest {
+        val receipt = service.upload(objectId, bytes, AttachmentKindDto.RECEIPT).getOrThrow()
+
+        assertThat(receipt.kind).isEqualTo(AttachmentKindDto.RECEIPT)
+        assertThat(cover()).isNull()
+
+        val photo = upload()
+        assertThat(cover()).isEqualTo(photo)
+    }
+
+    @Test
+    fun `a receipt cannot be made the cover`() = runTest {
+        val receipt = service.upload(objectId, bytes, AttachmentKindDto.RECEIPT).getOrThrow()
+
+        val result = service.setCover(objectId, receipt.id)
+
+        assertThat(result.serviceError()).isInstanceOf(ServiceError.Validation::class.java)
+        assertThat(cover()).isNull()
+    }
+
+    @Test
+    fun `deleting the cover skips receipts when choosing the next one`() = runTest {
+        val cover = upload()
+        service.upload(objectId, bytes, AttachmentKindDto.RECEIPT).getOrThrow()
+        val other = upload(minutesLater = 1)
+
+        service.delete(cover).getOrThrow()
+
+        assertThat(cover()).isEqualTo(other)
     }
 }

@@ -1,6 +1,7 @@
 package ru.prorabprime.testing
 
 import ru.prorabprime.domain.model.AppError
+import ru.prorabprime.domain.model.AttachmentKind
 import ru.prorabprime.domain.model.CompressedImage
 import ru.prorabprime.domain.model.ObjectId
 import ru.prorabprime.domain.model.Photo
@@ -14,12 +15,18 @@ class FakePhotosRepository : PhotosRepository {
     var error: AppError? = null
 
     val uploaded = mutableListOf<Pair<ObjectId, CompressedImage>>()
+    val uploadedKinds = mutableListOf<AttachmentKind>()
     val deleted = mutableListOf<PhotoId>()
     val covers = mutableListOf<Pair<ObjectId, PhotoId>>()
 
-    override suspend fun upload(objectId: ObjectId, image: CompressedImage): Result<Photo> {
+    override suspend fun upload(
+        objectId: ObjectId,
+        image: CompressedImage,
+        kind: AttachmentKind,
+    ): Result<Photo> {
         error?.let { return it.asFailure() }
         uploaded += objectId to image
+        uploadedKinds += kind
         return Result.success(aPhoto(id = "uploaded-${uploaded.size}", objectId = objectId.value))
     }
 

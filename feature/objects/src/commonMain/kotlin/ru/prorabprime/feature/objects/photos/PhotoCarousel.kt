@@ -40,6 +40,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import kotlinx.collections.immutable.ImmutableList
+import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import ru.prorabprime.designsystem.components.ServerImage
 import ru.prorabprime.designsystem.theme.Spacing
@@ -66,13 +67,15 @@ internal fun PhotoCarousel(
     onRetryUpload: (UploadUi) -> Unit,
     onDismissUpload: (UploadUi) -> Unit,
     modifier: Modifier = Modifier,
+    canMakeCover: Boolean = true,
+    addLabel: StringResource = Res.string.objectdetails_add_photo,
 ) {
     LazyRow(
         modifier = modifier,
         contentPadding = PaddingValues(horizontal = Spacing.m),
         horizontalArrangement = Arrangement.spacedBy(Spacing.s),
     ) {
-        item(key = "add") { AddPhotoTile(onAddClick) }
+        item(key = "add") { AddPhotoTile(addLabel, onAddClick) }
         items(uploads, key = { "upload:" + it.image.value }) { upload ->
             UploadTile(upload, onRetry = { onRetryUpload(upload) }, onDismiss = { onDismissUpload(upload) })
         }
@@ -80,6 +83,7 @@ internal fun PhotoCarousel(
             PhotoTile(
                 photo = photo,
                 onClick = { onPhotoClick(photo) },
+                canMakeCover = canMakeCover,
                 onMakeCover = { onMakeCover(photo) },
                 onDelete = { onDelete(photo) },
             )
@@ -88,8 +92,8 @@ internal fun PhotoCarousel(
 }
 
 @Composable
-private fun AddPhotoTile(onClick: () -> Unit) {
-    val label = stringResource(Res.string.objectdetails_add_photo)
+private fun AddPhotoTile(labelRes: StringResource, onClick: () -> Unit) {
+    val label = stringResource(labelRes)
     Surface(
         onClick = onClick,
         shape = TILE_SHAPE,
@@ -107,6 +111,7 @@ private fun AddPhotoTile(onClick: () -> Unit) {
 @Composable
 private fun PhotoTile(
     photo: PhotoUi,
+    canMakeCover: Boolean,
     onClick: () -> Unit,
     onMakeCover: () -> Unit,
     onDelete: () -> Unit,
@@ -124,7 +129,7 @@ private fun PhotoTile(
         )
         if (photo.isCover) CoverBadge(Modifier.align(Alignment.BottomStart).padding(Spacing.xs))
         DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-            if (!photo.isCover) {
+            if (canMakeCover && !photo.isCover) {
                 DropdownMenuItem(
                     text = { Text(stringResource(Res.string.objectdetails_make_cover)) },
                     onClick = {
