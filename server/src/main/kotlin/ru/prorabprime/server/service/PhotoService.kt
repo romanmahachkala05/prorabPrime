@@ -11,12 +11,14 @@ import ru.prorabprime.server.db.Transactor
 import ru.prorabprime.server.error.ServiceError
 import ru.prorabprime.server.error.asFailure
 import ru.prorabprime.server.model.PhotoRecord
+import ru.prorabprime.server.model.ReceiptData
 import ru.prorabprime.server.repository.ObjectRepository
 import ru.prorabprime.server.repository.PhotoRepository
 import ru.prorabprime.server.storage.FileStorage
 import ru.prorabprime.server.storage.ImageFormat
 import ru.prorabprime.server.storage.ImageProcessor
 import ru.prorabprime.server.storage.ProcessedImage
+import ru.prorabprime.server.storage.ReceiptReader
 
 /**
  * Photos and the cover rules. Every operation touches both the database and the disk, and is
@@ -28,6 +30,7 @@ class PhotoService(
     private val photos: PhotoRepository,
     private val storage: FileStorage,
     private val images: ImageProcessor,
+    private val receipts: ReceiptReader,
     private val transactor: Transactor,
     private val clock: Clock,
     private val newId: () -> UUID = UUID::randomUUID,
@@ -60,7 +63,9 @@ class PhotoService(
         return refusalOrExisting(objectId, bytes, clientId)
             ?: images.process(bytes).fold(
                 onSuccess = { image ->
-                    store(objectId, bytes, image, UploadMeta(kind, clientId ?: newId(), cleanNote))
+                    // A receipt's code is read for the sum and date; a code that cannot be read costs nothing.
+                    val receipt = if (kind == AttachmentKindDto.RECEIPT) receipts.read(bytes) else null
+                    store(objectId, bytes, image, UploadMeta(kind, clientId ?: newId(), cleanNote, receipt))
                 },
                 onFailure = { Result.failure(it) },
             )
@@ -72,7 +77,7 @@ class PhotoService(
         image: ProcessedImage,
         meta: UploadMeta,
     ): Result<PhotoRecord> {
-        val (kind, id, note) = meta
+        val id = meta.id
         val fileName = "$id.${image.format.extension}"
         val thumbFileName = "${id}_thumb.jpg"
         return withFilesCompensated(objectId, listOf(fileName, thumbFileName)) {
@@ -91,12 +96,13 @@ class PhotoService(
                     height = image.height,
                     sortOrder = photos.nextSortOrder(objectId),
                     createdAt = now,
-                    kind = kind,
-                    note = note,
+                    kind = meta.kind,
+                    note = meta.note,
+                    receipt = meta.receipt,
                 )
                 photos.insert(photo)
                 // The first photo of an object without a cover becomes the cover; a receipt never does.
-                if (kind == AttachmentKindDto.PHOTO && objects.find(objectId)?.coverPhotoId == null) {
+                if (meta.kind == AttachmentKindDto.PHOTO && objects.find(objectId)?.coverPhotoId == null) {
                     objects.setCover(objectId, id)
                 }
                 objects.touch(objectId, now)
@@ -233,6 +239,7 @@ private data class UploadMeta(
     val kind: AttachmentKindDto,
     val id: UUID,
     val note: String?,
+    val receipt: ReceiptData?,
 )
 
 /** Trimmed; blank is no note; too long is refused rather than cut. */

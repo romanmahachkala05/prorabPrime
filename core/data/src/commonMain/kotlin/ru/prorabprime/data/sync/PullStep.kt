@@ -174,4 +174,6 @@ private fun ru.prorabprime.contract.PhotoDto.toRow(objectId: String, order: Long
     url = url,
     thumbUrl = thumbUrl,
     note = note,
+    receiptAmountKopecks = receipt?.amountKopecks,
+    receiptAt = receipt?.purchasedAt,
 )

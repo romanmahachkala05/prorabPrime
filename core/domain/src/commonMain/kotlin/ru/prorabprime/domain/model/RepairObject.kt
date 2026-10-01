@@ -86,4 +86,13 @@ data class Photo(
     val quarterTurns: Int = 0,
     /** What the foreman wrote about it. */
     val note: String? = null,
+    /** What the QR code on a receipt said; null for a photo and for a receipt with no readable code. */
+    val receipt: ReceiptInfo? = null,
+)
+
+/** The sum and the time of a purchase, read from a receipt. */
+data class ReceiptInfo(
+    val amountKopecks: Long,
+    /** Local time at the shop, `2026-10-01T15:26`; null when the code had none. */
+    val purchasedAt: String? = null,
 )

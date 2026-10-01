@@ -7,6 +7,7 @@ import org.junit.Test
 import ru.prorabprime.domain.model.AppError
 import ru.prorabprime.domain.model.ObjectId
 import ru.prorabprime.domain.model.PhotoId
+import ru.prorabprime.domain.model.ReceiptInfo
 import ru.prorabprime.domain.model.ServerFilePath
 import ru.prorabprime.domain.usecase.ObserveObjectUseCase
 import ru.prorabprime.domain.usecase.RotatePhotoUseCase
@@ -91,6 +92,18 @@ class PhotoViewerViewModelTest {
         photos.error = AppError.Network
         viewModel.saveNote("p2", "ещё")
         assertThat(notifier.errors).hasSize(1)
+    }
+
+    @Test
+    fun `a receipt is shown with its sum and time`() {
+        objects.details.value = mapOf(
+            ObjectId("o1") to anObjectDetails(
+                id = "o1",
+                photos = persistentListOf(aPhoto("p1", "o1").copy(receipt = ReceiptInfo(79_000, "2026-10-01T15:26"))),
+            ),
+        )
+
+        assertThat(viewModel("p1").state.value.photos.single().receiptLine).isEqualTo("790 ₽ · 01.10.2026 15:26")
     }
 
     @Test

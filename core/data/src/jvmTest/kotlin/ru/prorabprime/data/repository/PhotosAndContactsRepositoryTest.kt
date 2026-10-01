@@ -8,6 +8,7 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import ru.prorabprime.contract.AttachmentKindDto
 import ru.prorabprime.contract.PhotoDto
+import ru.prorabprime.contract.ReceiptDto
 import ru.prorabprime.data.local.Keys
 import ru.prorabprime.data.local.Operation
 import ru.prorabprime.domain.model.AttachmentKind
@@ -16,6 +17,7 @@ import ru.prorabprime.domain.model.ContactDraft
 import ru.prorabprime.domain.model.ContactRole
 import ru.prorabprime.domain.model.ObjectId
 import ru.prorabprime.domain.model.PhotoId
+import ru.prorabprime.domain.model.ReceiptInfo
 
 class PhotosAndContactsRepositoryTest {
 
@@ -72,6 +74,31 @@ class PhotosAndContactsRepositoryTest {
         assertThat(shown.isPending).isFalse()
         assertThat(shown.thumbPath.value).isEqualTo("/files/o/p_thumb.jpg")
         assertThat(phone.db.blobs.get("${photo.id.value}.jpg")).isNull()
+    }
+
+    @Test
+    fun `what the server read off a receipt reaches the phone, and a photo has none`() = runTest {
+        val server = phone.server
+        val receipt = PhotoDto(
+            "44444444-4444-4444-4444-444444444444",
+            "/files/o/r.jpg",
+            "/files/o/r_thumb.jpg",
+            800,
+            600,
+            server.at,
+            kind = AttachmentKindDto.RECEIPT,
+            receipt = ReceiptDto(79_000, "2026-10-01T15:26"),
+        )
+        val photo =
+            PhotoDto("55555555-5555-5555-5555-555555555555", "/files/o/p.jpg", "/files/o/p_thumb.jpg", 8, 6, server.at)
+        server.details = server.details.copy(photos = listOf(receipt, photo))
+        server.objects = listOf(server.details)
+
+        synced()
+
+        val shown = phone.objects.observeObject(objectId).first().getOrThrow().photos.associateBy { it.id.value }
+        assertThat(shown.getValue(receipt.id).receipt).isEqualTo(ReceiptInfo(79_000, "2026-10-01T15:26"))
+        assertThat(shown.getValue(photo.id).receipt).isNull()
     }
 
     @Test

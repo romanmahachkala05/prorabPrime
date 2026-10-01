@@ -70,6 +70,8 @@ internal data class PhotoUi(
     val isPending: Boolean = false,
     val quarterTurns: Int = 0,
     val hasNote: Boolean = false,
+    /** `790 ₽` for a receipt the server could read; null otherwise. */
+    val amount: String? = null,
 )
 
 /** A picture on its way to the server, shown in the carousel until it arrives as a [PhotoUi]. */

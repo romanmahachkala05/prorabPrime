@@ -13,6 +13,7 @@ import ru.prorabprime.domain.model.ObjectId
 import ru.prorabprime.domain.model.Photo
 import ru.prorabprime.domain.model.PhotoId
 import ru.prorabprime.domain.model.asAppError
+import ru.prorabprime.feature.objects.photos.amountLabel
 import ru.prorabprime.feature.objects.resources.Res
 import ru.prorabprime.feature.objects.resources.objectdetails_cover_set
 import ru.prorabprime.feature.objects.resources.objectdetails_delete_confirm
@@ -179,6 +180,6 @@ private fun Photo.toUi(coverPhotoId: PhotoId?) = PhotoUi(
     isCover = id == coverPhotoId,
     isPending = isPending,
     quarterTurns = quarterTurns,
-    hasNote =
-        note != null,
+    hasNote = note != null,
+    amount = receipt?.amountLabel(),
 )

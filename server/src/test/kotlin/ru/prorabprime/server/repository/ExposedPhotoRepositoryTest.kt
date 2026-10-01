@@ -11,12 +11,14 @@ import org.jetbrains.exposed.v1.jdbc.Database
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
+import ru.prorabprime.contract.AttachmentKindDto
 import ru.prorabprime.contract.ObjectStatusDto
 import ru.prorabprime.server.db.DbExecutor
 import ru.prorabprime.server.db.TestPostgres
 import ru.prorabprime.server.model.ObjectFields
 import ru.prorabprime.server.model.ObjectRecord
 import ru.prorabprime.server.model.PhotoRecord
+import ru.prorabprime.server.model.ReceiptData
 
 class ExposedPhotoRepositoryTest {
 
@@ -63,6 +65,17 @@ class ExposedPhotoRepositoryTest {
         sortOrder = sortOrder,
         createdAt = base,
     )
+
+    @Test
+    fun `what a receipt's code said is stored and read back`() = runTest {
+        val receipt = ReceiptData(79_000, "2026-10-01T15:26", "t=20261001T1526&s=790.00")
+        val photo = photo(sortOrder = 1).copy(kind = AttachmentKindDto.RECEIPT, receipt = receipt)
+
+        photos.insert(photo)
+
+        assertThat(photos.find(photo.id)?.receipt).isEqualTo(receipt)
+        assertThat(photos.find(photo(sortOrder = 2).also { photos.insert(it) }.id)?.receipt).isNull()
+    }
 
     @Test
     fun `a note is stored, read back, and cleared`() = runTest {

@@ -1,6 +1,9 @@
 package ru.prorabprime.server.routes
 
 import com.google.common.truth.Truth.assertThat
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.client.j2se.MatrixToImageWriter
+import com.google.zxing.qrcode.QRCodeWriter
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.bearerAuth
@@ -18,6 +21,7 @@ import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
+import java.io.ByteArrayOutputStream
 import java.util.UUID
 import kotlin.time.Clock
 import kotlinx.coroutines.Dispatchers
@@ -252,6 +256,20 @@ class PhotoRoutesTest {
         assertThat(client.details().photos.single().note).isEqualTo("Заменить до пятницы")
         assertThat(putNote(null).status).isEqualTo(HttpStatusCode.NoContent)
         assertThat(client.details().photos.single().note).isNull()
+    }
+
+    @Test
+    fun `a receipt with a fiscal code comes back with its sum and time, a photo without`() = server { client ->
+        val code = QRCodeWriter().encode("t=20261001T1526&s=790.00&n=1", BarcodeFormat.QR_CODE, 300, 300)
+        val png = ByteArrayOutputStream().also { MatrixToImageWriter.writeToStream(code, "png", it) }.toByteArray()
+
+        val receipt = client.upload(png, query = "?kind=RECEIPT").body<PhotoDto>()
+        val photo = client.upload(png, query = "?kind=PHOTO").body<PhotoDto>()
+
+        assertThat(receipt.receipt?.amountKopecks).isEqualTo(79_000L)
+        assertThat(receipt.receipt?.purchasedAt).isEqualTo("2026-10-01T15:26")
+        assertThat(photo.receipt).isNull()
+        assertThat(client.details().photos.first { it.id == receipt.id }.receipt?.amountKopecks).isEqualTo(79_000L)
     }
 
     @Test
