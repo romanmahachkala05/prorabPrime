@@ -346,13 +346,15 @@ private fun CaptureSheet(
                     label = { Text(stringResource(Res.string.objectslist_capture_receipt)) },
                 )
             }
-            LazyColumn(modifier = Modifier.heightIn(max = CAPTURE_LIST_MAX_HEIGHT)) {
+            // The same two-column tiles as the main screen, so choosing an object needs little scrolling.
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(GRID_COLUMNS),
+                modifier = Modifier.heightIn(max = CAPTURE_LIST_MAX_HEIGHT),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+                verticalArrangement = Arrangement.spacedBy(Spacing.s),
+            ) {
                 items(items, key = { it.id }) { item ->
-                    ListItem(
-                        headlineContent = { Text(item.title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                        supportingContent = item.address?.let { { Text(it, maxLines = 1) } },
-                        modifier = Modifier.clickable { onEvent(ObjectsListEvent.CaptureTargetChosen(item.id)) },
-                    )
+                    ObjectTile(item, onClick = { onEvent(ObjectsListEvent.CaptureTargetChosen(item.id)) })
                 }
             }
         }
