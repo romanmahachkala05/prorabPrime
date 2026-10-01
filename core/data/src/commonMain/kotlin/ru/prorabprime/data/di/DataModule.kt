@@ -16,15 +16,11 @@ import ru.prorabprime.data.local.MemoryPersistence
 import ru.prorabprime.data.local.Persistence
 import ru.prorabprime.data.local.RandomIds
 import ru.prorabprime.data.network.createHttpClient
-import ru.prorabprime.data.remote.FinanceApi
 import ru.prorabprime.data.remote.GeocodeApi
 import ru.prorabprime.data.remote.KtorConnectionChecker
-import ru.prorabprime.data.remote.MaterialsApi
 import ru.prorabprime.data.remote.RemoteApi
-import ru.prorabprime.data.remote.TasksApi
 import ru.prorabprime.data.repository.ContactsRepositoryImpl
 import ru.prorabprime.data.repository.FinanceRepositoryImpl
-import ru.prorabprime.data.repository.Invalidator
 import ru.prorabprime.data.repository.MaterialsRepositoryImpl
 import ru.prorabprime.data.repository.ObjectsRepositoryImpl
 import ru.prorabprime.data.repository.PhotosRepositoryImpl
@@ -86,7 +82,6 @@ val dataModule: Module = module {
         val settings = get<SettingsRepository>()
         createHttpClient(engine = get()) { settings.serverSettings.first() }
     }
-    single { Invalidator() }
     single { RemoteApi(get()) }
     single { LocalDb(get(), get()) }
     single { OperationRunner(get(), get<LocalDb>().blobs) }
@@ -101,17 +96,14 @@ val dataModule: Module = module {
         SyncCoordinator(get(), get(), get(), get(named(SYNC_SCOPE))).also { it.start() }
     }
     single { GeocodeApi(get()) }
-    single { FinanceApi(get()) }
-    single { MaterialsApi(get()) }
-    single { TasksApi(get()) }
     single<ObjectsRepository> { ObjectsRepositoryImpl(get(), get(), get(), Clock.System, get()) }
     single<PhotosRepository> { PhotosRepositoryImpl(get(), Clock.System, get()) }
     single<ContactsRepository> { ContactsRepositoryImpl(get(), get()) }
     single<PlacesRepository> { PlacesRepositoryImpl(get()) }
     single { PickedPlaceStore() }
-    single<FinanceRepository> { FinanceRepositoryImpl(get(), get(), get()) }
-    single<MaterialsRepository> { MaterialsRepositoryImpl(get(), get(), get()) }
-    single<TasksRepository> { TasksRepositoryImpl(get(), get(), get()) }
+    single<FinanceRepository> { FinanceRepositoryImpl(get(), get()) }
+    single<MaterialsRepository> { MaterialsRepositoryImpl(get(), get()) }
+    single<TasksRepository> { TasksRepositoryImpl(get(), get()) }
     single<ConnectionChecker> { KtorConnectionChecker(get()) }
 
     factory { ObserveObjectsUseCase(get()) }

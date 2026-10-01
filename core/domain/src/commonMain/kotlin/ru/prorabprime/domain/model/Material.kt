@@ -19,6 +19,8 @@ data class Material(
     val id: MaterialId,
     val title: String,
     val status: MaterialStatus,
+    /** Made or changed on the phone and not yet accepted by the server. */
+    val isPending: Boolean = false,
 )
 
 /** A material as the form submits it. */

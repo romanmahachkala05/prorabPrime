@@ -2,6 +2,11 @@ package ru.prorabprime.data.local
 
 import kotlin.time.Clock
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
 
 /**
  * The phone's copy of everything the app shows: one [Table] per kind of record, plus the [outbox] of
@@ -29,6 +34,12 @@ internal class LocalDb(
     private val tables = listOf(objects, contacts, photos, payments, extraWorks, materials, terms, history, tasks, meta)
 
     private val loaded = CompletableDeferred<Unit>()
+
+    /** Fires whenever anything on the phone changes (and once at the start), once the copy is loaded. */
+    val changes: Flow<Unit> = flow {
+        loaded.await()
+        emitAll((tables.map { table -> table.rows.map { } } + outbox.entries.map { }).merge())
+    }
 
     /** Reads everything an earlier run saved. Nothing is shown from the copy before this is done. */
     suspend fun load() {

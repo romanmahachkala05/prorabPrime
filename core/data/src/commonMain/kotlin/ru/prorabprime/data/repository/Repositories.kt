@@ -16,6 +16,7 @@ import ru.prorabprime.data.local.LocalSnapshot
 import ru.prorabprime.data.local.ObjectRow
 import ru.prorabprime.data.local.Operation
 import ru.prorabprime.data.local.PhotoRow
+import ru.prorabprime.data.local.forgetOrQueueDelete
 import ru.prorabprime.data.local.matching
 import ru.prorabprime.data.local.observeSnapshot
 import ru.prorabprime.data.local.toDetails
@@ -289,12 +290,7 @@ internal class ContactsRepositoryImpl(
 
     override suspend fun delete(id: ContactId): Result<Unit> {
         db.contacts.rows.value[id.value] ?: return Result.success(Unit)
-        val neverSent = db.outbox.snapshot().any {
-            it.operation is Operation.CreateContact &&
-                Keys.contact(id.value) in it.operation.touched
-        }
-        db.outbox.removeWhere { Keys.contact(id.value) in it.operation.touched }
-        if (!neverSent) db.outbox.enqueue(Operation.DeleteContact(id.value))
+        db.forgetOrQueueDelete(Keys.contact(id.value), Operation.DeleteContact(id.value))
         db.contacts.remove(id.value)
         return Result.success(Unit)
     }

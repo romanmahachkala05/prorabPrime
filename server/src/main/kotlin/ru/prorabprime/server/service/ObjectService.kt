@@ -71,6 +71,8 @@ class ObjectService(
     suspend fun geocode(id: UUID): Result<ObjectDetails> {
         val record = objects.find(id) ?: return notFound(id)
         locate(id, record.fields.address)
+        // The pin is a change to the object: phones that copy it down learn by its `updatedAt`.
+        objects.touch(id, clock.now())
         return get(id)
     }
 

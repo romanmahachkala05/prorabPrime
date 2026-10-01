@@ -4,6 +4,7 @@ import java.util.UUID
 import kotlin.time.Clock
 import ru.prorabprime.contract.FieldErrorDto
 import ru.prorabprime.contract.FieldProblemDto
+import ru.prorabprime.contract.MaterialDefaults
 import ru.prorabprime.contract.MaterialLimits
 import ru.prorabprime.contract.MaterialRequestDto
 import ru.prorabprime.contract.MaterialStatusDto
@@ -16,21 +17,7 @@ import ru.prorabprime.server.repository.MaterialRepository
 import ru.prorabprime.server.repository.ObjectRepository
 
 /** The usual things a renovation needs picked, offered to a fresh checklist. */
-val DEFAULT_MATERIALS: List<String> = listOf(
-    "Плитка",
-    "Ламинат или паркет",
-    "Обои или краска",
-    "Двери",
-    "Розетки и выключатели",
-    "Светильники",
-    "Ванна или душевая",
-    "Унитаз",
-    "Раковина и смеситель",
-    "Натяжной потолок",
-    "Плинтусы",
-    "Подоконники",
-    "Радиаторы",
-)
+val DEFAULT_MATERIALS: List<String> = MaterialDefaults.TITLES
 
 /** Trims the title and checks it against the column. */
 fun validateMaterial(request: MaterialRequestDto): Result<MaterialFields> {

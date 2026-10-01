@@ -240,3 +240,22 @@ internal data class QueuedOperation(
     /** Why the server refused it, in words for a person; null while pending. */
     val reason: String? = null,
 )
+
+/** A change that makes a record, as opposed to one that changes or removes it. */
+internal fun Operation.isCreate(): Boolean = this is Operation.CreateObject ||
+    this is Operation.UploadPhoto ||
+    this is Operation.CreateContact ||
+    this is Operation.CreatePayment ||
+    this is Operation.CreateExtraWork ||
+    this is Operation.CreateMaterial ||
+    this is Operation.CreateTask
+
+/**
+ * Deletes a record the server may have: queues the delete. A record only the phone ever knew has
+ * nothing to delete on the server, so its changes are forgotten instead and nothing is sent.
+ */
+internal suspend fun LocalDb.forgetOrQueueDelete(key: String, delete: Operation) {
+    val neverSent = outbox.snapshot().any { it.operation.isCreate() && key in it.operation.touched }
+    outbox.removeWhere { key in it.operation.touched }
+    if (!neverSent) outbox.enqueue(delete)
+}

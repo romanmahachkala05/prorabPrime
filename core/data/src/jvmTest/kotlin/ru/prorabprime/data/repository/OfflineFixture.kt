@@ -25,4 +25,7 @@ internal class OfflineFixture(
     val objects = ObjectsRepositoryImpl(db, engine, remote, server.clock, ids)
     val photos = PhotosRepositoryImpl(db, server.clock, ids)
     val contacts = ContactsRepositoryImpl(db, ids)
+    val finance = FinanceRepositoryImpl(db, ids)
+    val materials = MaterialsRepositoryImpl(db, ids)
+    val tasks = TasksRepositoryImpl(db, ids)
 }
