@@ -34,5 +34,6 @@ internal class OfflineFixture(
     val finance = FinanceRepositoryImpl(db, ids)
     val materials = MaterialsRepositoryImpl(db, ids)
     val tasks = TasksRepositoryImpl(db, ids)
+    val expenses = ExpensesRepositoryImpl(db)
     val sync = SyncRepositoryImpl(db, engine, coordinator)
 }
