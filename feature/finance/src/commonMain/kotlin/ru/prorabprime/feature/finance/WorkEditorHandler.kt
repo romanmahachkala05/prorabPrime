@@ -15,6 +15,7 @@ import ru.prorabprime.feature.finance.resources.Res
 import ru.prorabprime.feature.finance.resources.finance_delete
 import ru.prorabprime.feature.finance.resources.finance_delete_extra_message
 import ru.prorabprime.feature.finance.resources.finance_delete_extra_title
+import ru.prorabprime.feature.finance.resources.finance_saved
 import ru.prorabprime.ui.DialogModel
 import ru.prorabprime.ui.UiText
 import ru.prorabprime.ui.launchCatching
@@ -91,7 +92,10 @@ internal class WorkEditorHandler(
                 saveWork.update(ExtraWorkId(editor.workId), draft)
             }
             result
-                .onSuccess { stateHolder.closeEditor() }
+                .onSuccess {
+                    stateHolder.closeEditor()
+                    errorHandler.onSaved(UiText.Resource(Res.string.finance_saved))
+                }
                 .onFailure { onSaveFailure(it.asAppError()) }
         }
     }

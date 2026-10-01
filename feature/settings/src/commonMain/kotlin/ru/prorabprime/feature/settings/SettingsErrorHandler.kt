@@ -31,6 +31,6 @@ internal class SettingsErrorHandler(
 
     override suspend fun onSaveFailure(error: AppError) {
         stateHolder.setSaving(false)
-        notifier.showMessage(error.toUiText())
+        notifier.showError(error.toUiText())
     }
 }

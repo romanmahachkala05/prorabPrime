@@ -88,6 +88,7 @@ internal class ObjectEditStateHolder(
     }
 
     override fun markSaved(result: SaveResult) = _state.update {
-        it.copy(saved = result, isSaving = false, fieldErrors = persistentMapOf())
+        // Still "saving" until the screen is left, so the button never comes back to life in between.
+        it.copy(saved = result, fieldErrors = persistentMapOf())
     }
 }

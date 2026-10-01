@@ -38,6 +38,7 @@ import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
+import ru.prorabprime.designsystem.components.BusyScreen
 import ru.prorabprime.designsystem.components.Button
 import ru.prorabprime.designsystem.components.ErrorMessage
 import ru.prorabprime.designsystem.components.FilterChip
@@ -115,35 +116,37 @@ internal fun ObjectEditContent(
     modifier: Modifier = Modifier,
     onPickOnMap: () -> Unit = {},
 ) {
-    Scaffold(
-        modifier = modifier,
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        stringResource(
-                            if (state.isNew) Res.string.objectedit_title_new else Res.string.objectedit_title_edit,
-                        ),
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(Res.string.objectedit_back))
-                    }
-                },
-            )
-        },
-    ) { padding ->
-        when (val status = state.status) {
-            ObjectEditStatus.Content -> Form(state, onEvent, onPickOnMap, Modifier.padding(padding))
+    BusyScreen(state.isSaving, modifier) {
+        Scaffold(
+            modifier = Modifier,
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Text(
+                            stringResource(
+                                if (state.isNew) Res.string.objectedit_title_new else Res.string.objectedit_title_edit,
+                            ),
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(Res.string.objectedit_back))
+                        }
+                    },
+                )
+            },
+        ) { padding ->
+            when (val status = state.status) {
+                ObjectEditStatus.Content -> Form(state, onEvent, onPickOnMap, Modifier.padding(padding))
 
-            ObjectEditStatus.Loading -> LoadingBox(Modifier.padding(padding))
+                ObjectEditStatus.Loading -> LoadingBox(Modifier.padding(padding))
 
-            is ObjectEditStatus.Error -> ErrorMessage(
-                status.message,
-                onRetry = { onEvent(ObjectEditEvent.Retry) },
-                modifier = Modifier.padding(padding),
-            )
+                is ObjectEditStatus.Error -> ErrorMessage(
+                    status.message,
+                    onRetry = { onEvent(ObjectEditEvent.Retry) },
+                    modifier = Modifier.padding(padding),
+                )
+            }
         }
     }
 }
@@ -181,7 +184,7 @@ private fun Form(
         FormField(state, onEvent, ObjectField.NOTES, Res.string.objectedit_notes, singleLine = false)
         Button(
             onClick = { onEvent(ObjectEditEvent.SaveClicked) },
-            enabled = !state.isSaving,
+            loading = state.isSaving,
             modifier = Modifier.fillMaxWidth().padding(top = Spacing.s),
         ) { Text(stringResource(Res.string.objectedit_save)) }
     }

@@ -115,7 +115,7 @@ internal class ObjectDetailsViewModel(
     private fun makeCover(photoId: String) {
         launchCatching(onFailure = { errorHandler.onActionFailure(it.asAppError()) }) {
             actions.setCoverPhoto(objectId, PhotoId(photoId))
-                .onSuccess { notifier.showMessage(COVER_SET) }
+                .onSuccess { notifier.showSuccess(COVER_SET) }
                 .onFailure { errorHandler.onActionFailure(it.asAppError()) }
         }
     }
@@ -132,7 +132,7 @@ internal class ObjectDetailsViewModel(
             actions.deleteObject(objectId)
                 .onSuccess {
                     stateHolder.close()
-                    notifier.showMessage(DELETED)
+                    notifier.showSuccess(DELETED)
                 }.onFailure { errorHandler.onActionFailure(it.asAppError()) }
         }
     }

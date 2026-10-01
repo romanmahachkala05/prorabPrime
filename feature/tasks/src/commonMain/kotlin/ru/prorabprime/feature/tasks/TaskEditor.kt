@@ -50,22 +50,22 @@ import ru.prorabprime.feature.tasks.resources.tasks_title_field
 internal fun TaskEditorDialog(editor: TaskEditorUi, onEvent: (TasksEvent) -> Unit) {
     val title = if (editor.taskId == null) Res.string.tasks_add else Res.string.tasks_edit
     AlertDialog(
-        onDismissRequest = { onEvent(TaskEditorEvent.Dismiss) },
+        onDismissRequest = { if (!editor.isSaving) onEvent(TaskEditorEvent.Dismiss) },
         title = { Text(stringResource(title)) },
         text = { TaskForm(editor, onEvent) },
         confirmButton = {
-            TextButton(onClick = { onEvent(TaskEditorEvent.Save) }, enabled = !editor.isSaving) {
+            TextButton(onClick = { onEvent(TaskEditorEvent.Save) }, loading = editor.isSaving) {
                 Text(stringResource(Res.string.tasks_save))
             }
         },
         dismissButton = {
             Row {
                 editor.taskId?.let { id ->
-                    TextButton(onClick = { onEvent(TaskEditorEvent.Delete(id)) }) {
+                    TextButton(onClick = { onEvent(TaskEditorEvent.Delete(id)) }, enabled = !editor.isSaving) {
                         Text(stringResource(Res.string.tasks_delete), color = MaterialTheme.colorScheme.error)
                     }
                 }
-                TextButton(onClick = { onEvent(TaskEditorEvent.Dismiss) }) {
+                TextButton(onClick = { onEvent(TaskEditorEvent.Dismiss) }, enabled = !editor.isSaving) {
                     Text(stringResource(Res.string.tasks_cancel))
                 }
             }

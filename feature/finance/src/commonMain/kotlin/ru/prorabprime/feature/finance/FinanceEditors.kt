@@ -166,7 +166,7 @@ private fun FormDialog(
     content: @Composable () -> Unit,
 ) {
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { if (!isSaving) onDismiss() },
         title = { Text(stringResource(title)) },
         text = {
             Column(
@@ -175,16 +175,16 @@ private fun FormDialog(
             ) { content() }
         },
         confirmButton = {
-            TextButton(onClick = onSave, enabled = !isSaving) { Text(stringResource(Res.string.finance_save)) }
+            TextButton(onClick = onSave, loading = isSaving) { Text(stringResource(Res.string.finance_save)) }
         },
         dismissButton = {
             Row {
                 onDelete?.let {
-                    TextButton(onClick = it) {
+                    TextButton(onClick = it, enabled = !isSaving) {
                         Text(stringResource(Res.string.finance_delete), color = MaterialTheme.colorScheme.error)
                     }
                 }
-                TextButton(onClick = onDismiss) { Text(stringResource(Res.string.finance_cancel)) }
+                TextButton(onClick = onDismiss, enabled = !isSaving) { Text(stringResource(Res.string.finance_cancel)) }
             }
         },
     )

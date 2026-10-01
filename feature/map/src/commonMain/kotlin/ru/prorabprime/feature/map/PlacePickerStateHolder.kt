@@ -18,5 +18,5 @@ internal class PlacePickerStateHolder : IPlacePickerStateHolder {
 
     override fun setLooking(looking: Boolean) = _state.update { it.copy(isLooking = looking) }
 
-    override fun markDone() = _state.update { it.copy(isLooking = false, isDone = true) }
+    override fun markDone() = _state.update { it.copy(isDone = true) }
 }

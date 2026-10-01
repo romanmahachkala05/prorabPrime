@@ -180,7 +180,7 @@ internal fun ObjectsListContent(
     ) { padding ->
         Column(Modifier.padding(padding).fillMaxSize()) {
             Row(
-                modifier = Modifier.padding(horizontal = Spacing.m),
+                modifier = Modifier.padding(horizontal = Spacing.m, vertical = Spacing.s),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 SearchField(state.search, onEvent, Modifier.weight(1f))

@@ -10,6 +10,9 @@ import ru.prorabprime.domain.model.ObjectField
 import ru.prorabprime.domain.model.ObjectId
 import ru.prorabprime.domain.model.asAppError
 import ru.prorabprime.domain.usecase.SaveFinanceTermsUseCase
+import ru.prorabprime.feature.finance.resources.Res
+import ru.prorabprime.feature.finance.resources.finance_saved
+import ru.prorabprime.ui.UiText
 import ru.prorabprime.ui.launchCatching
 
 /** The form for what was agreed with the client and with the crew. */
@@ -56,7 +59,10 @@ internal class TermsEditorHandler(
         edit { it.copy(isSaving = true) }
         scope.launchCatching(TAG, onFailure = { onSaveFailure(it.asAppError()) }) {
             saveTerms(objectId, FinanceTermsDraft(client.kopecksOrNull(), crew.kopecksOrNull()))
-                .onSuccess { stateHolder.closeEditor() }
+                .onSuccess {
+                    stateHolder.closeEditor()
+                    errorHandler.onSaved(UiText.Resource(Res.string.finance_saved))
+                }
                 .onFailure { onSaveFailure(it.asAppError()) }
         }
     }

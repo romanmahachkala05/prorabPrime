@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -27,6 +26,8 @@ import androidx.navigation3.ui.NavDisplay
 import androidx.savedstate.serialization.SavedStateConfiguration
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
+import ru.prorabprime.designsystem.components.AppSnackbarHost
+import ru.prorabprime.designsystem.components.show
 import ru.prorabprime.designsystem.components.topBarColor
 import ru.prorabprime.feature.finance.FinanceNavKey
 import ru.prorabprime.feature.finance.FinanceScreen
@@ -60,11 +61,11 @@ import ru.prorabprime.ui.load
 fun AppNavDisplay(notifier: SnackbarNotifier, modifier: Modifier = Modifier) {
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(notifier) {
-        notifier.messages.collect { snackbarHostState.showSnackbar(it.load()) }
+        notifier.messages.collect { snackbarHostState.show(it, it.text.load()) }
     }
 
     val backStack = rememberNavBackStack(NAV_KEYS, ObjectsListNavKey)
-    Scaffold(modifier = modifier, snackbarHost = { SnackbarHost(snackbarHostState) }) {
+    Scaffold(modifier = modifier, snackbarHost = { AppSnackbarHost(snackbarHostState) }) {
         // No padding from this Scaffold: each screen has its own, with its own top bar. On a wide
         // screen (the web client) the app stays a phone-shaped column in the middle.
         BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {

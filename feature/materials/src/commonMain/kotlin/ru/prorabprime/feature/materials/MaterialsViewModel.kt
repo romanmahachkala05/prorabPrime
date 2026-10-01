@@ -20,6 +20,7 @@ import ru.prorabprime.feature.materials.resources.Res
 import ru.prorabprime.feature.materials.resources.materials_delete
 import ru.prorabprime.feature.materials.resources.materials_delete_message
 import ru.prorabprime.feature.materials.resources.materials_delete_title
+import ru.prorabprime.feature.materials.resources.materials_saved
 import ru.prorabprime.ui.DialogModel
 import ru.prorabprime.ui.StateOwner
 import ru.prorabprime.ui.UiText
@@ -117,7 +118,10 @@ internal class MaterialsViewModel(
                 actions.saveMaterial.update(MaterialId(editor.materialId), draft)
             }
             result
-                .onSuccess { stateHolder.closeEditor() }
+                .onSuccess {
+                    stateHolder.closeEditor()
+                    errorHandler.onSaved(UiText.Resource(Res.string.materials_saved))
+                }
                 .onFailure { onSaveFailure(it.asAppError()) }
         }
     }

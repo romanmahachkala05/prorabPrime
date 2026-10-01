@@ -10,6 +10,9 @@ import ru.prorabprime.ui.UiText
 import ru.prorabprime.ui.toUiText
 
 internal interface IObjectDetailsErrorHandler {
+    /** Something was saved: said in green, wherever the screen goes next. */
+    suspend fun onSaved(message: UiText)
+
     suspend fun onLoadFailure(error: AppError)
 
     suspend fun onActionFailure(error: AppError)
@@ -31,13 +34,15 @@ internal class ObjectDetailsErrorHandler(
         if (stateHolder.state.value.details == null || error == AppError.NotFound) {
             stateHolder.showError(message)
         } else {
-            notifier.showMessage(message)
+            notifier.showError(message)
         }
     }
 
+    override suspend fun onSaved(message: UiText) = notifier.showSuccess(message)
+
     override suspend fun onActionFailure(error: AppError) {
         stateHolder.setDeleting(false)
-        notifier.showMessage(error.toUiText())
+        notifier.showError(error.toUiText())
     }
 
     /**

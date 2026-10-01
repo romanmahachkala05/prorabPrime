@@ -13,6 +13,7 @@ import ru.prorabprime.feature.tasks.resources.Res
 import ru.prorabprime.feature.tasks.resources.tasks_delete
 import ru.prorabprime.feature.tasks.resources.tasks_delete_message
 import ru.prorabprime.feature.tasks.resources.tasks_delete_title
+import ru.prorabprime.feature.tasks.resources.tasks_saved
 import ru.prorabprime.ui.DialogModel
 import ru.prorabprime.ui.UiText
 import ru.prorabprime.ui.launchCatching
@@ -89,7 +90,10 @@ internal class TaskEditorHandler(
                 saveTask.update(TaskId(editor.taskId), draft)
             }
             result
-                .onSuccess { stateHolder.closeEditor() }
+                .onSuccess {
+                    stateHolder.closeEditor()
+                    errorHandler.onSaved(UiText.Resource(Res.string.tasks_saved))
+                }
                 .onFailure { onSaveFailure(it.asAppError()) }
         }
     }

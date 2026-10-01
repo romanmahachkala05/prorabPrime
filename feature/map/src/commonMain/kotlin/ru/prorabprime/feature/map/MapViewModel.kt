@@ -76,17 +76,17 @@ internal class MapViewModel(
     /** A failed reload keeps the pins on screen; only a first load takes the screen over. */
     private suspend fun onLoadFailure(error: AppError) {
         if (state.value.status == MapStatus.Content) {
-            notifier.showMessage(error.toUiText())
+            notifier.showError(error.toUiText())
         } else {
             stateHolder.showError(error.toUiText())
         }
     }
 
     private fun find(objectId: String) {
-        launchCatching(onFailure = { notifier.showMessage(it.asAppError().toUiText()) }) {
+        launchCatching(onFailure = { notifier.showError(it.asAppError().toUiText()) }) {
             geocodeObject(ObjectId(objectId))
-                .onSuccess { notifier.showMessage(UiText.Resource(Res.string.map_find_requested)) }
-                .onFailure { notifier.showMessage(it.asAppError().toUiText()) }
+                .onSuccess { notifier.showSuccess(UiText.Resource(Res.string.map_find_requested)) }
+                .onFailure { notifier.showError(it.asAppError().toUiText()) }
         }
     }
 }

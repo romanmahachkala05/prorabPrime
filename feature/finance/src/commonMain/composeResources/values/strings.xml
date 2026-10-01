@@ -60,4 +60,5 @@
     <string name="finance_error_required">Обязательное поле</string>
     <string name="finance_error_too_long">Слишком длинное значение</string>
     <string name="finance_error_invalid">Неверное значение</string>
+    <string name="finance_saved">Сохранено</string>
 </resources>

@@ -192,22 +192,22 @@ private fun MaterialRow(material: MaterialUi, onEvent: (MaterialsEvent) -> Unit)
 private fun MaterialEditor(editor: MaterialEditorUi, onEvent: (MaterialsEvent) -> Unit) {
     val title = if (editor.materialId == null) Res.string.materials_add else Res.string.materials_edit
     AlertDialog(
-        onDismissRequest = { onEvent(MaterialsEvent.EditorDismissed) },
+        onDismissRequest = { if (!editor.isSaving) onEvent(MaterialsEvent.EditorDismissed) },
         title = { Text(stringResource(title)) },
         text = { MaterialForm(editor, onEvent) },
         confirmButton = {
-            TextButton(onClick = { onEvent(MaterialsEvent.SaveClicked) }, enabled = !editor.isSaving) {
+            TextButton(onClick = { onEvent(MaterialsEvent.SaveClicked) }, loading = editor.isSaving) {
                 Text(stringResource(Res.string.materials_save))
             }
         },
         dismissButton = {
             Row {
                 editor.materialId?.let { id ->
-                    TextButton(onClick = { onEvent(MaterialsEvent.DeleteClicked(id)) }) {
+                    TextButton(onClick = { onEvent(MaterialsEvent.DeleteClicked(id)) }, enabled = !editor.isSaving) {
                         Text(stringResource(Res.string.materials_delete), color = MaterialTheme.colorScheme.error)
                     }
                 }
-                TextButton(onClick = { onEvent(MaterialsEvent.EditorDismissed) }) {
+                TextButton(onClick = { onEvent(MaterialsEvent.EditorDismissed) }, enabled = !editor.isSaving) {
                     Text(stringResource(Res.string.materials_cancel))
                 }
             }

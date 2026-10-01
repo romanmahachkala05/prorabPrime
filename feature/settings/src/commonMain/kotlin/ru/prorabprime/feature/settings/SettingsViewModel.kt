@@ -57,7 +57,7 @@ internal class SettingsViewModel(
         launchCatching(onFailure = { errorHandler.onSaveFailure(it.asAppError()) }) {
             saveServerSettings(candidate)
             stateHolder.setSaving(false)
-            notifier.showMessage(SAVED)
+            notifier.showSuccess(SAVED)
         }
     }
 

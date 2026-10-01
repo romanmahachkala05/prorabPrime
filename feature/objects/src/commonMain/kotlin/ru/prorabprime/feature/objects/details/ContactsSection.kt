@@ -124,23 +124,27 @@ internal fun ContactEditorDialog(editor: ContactEditorUi, onEvent: (ObjectDetail
         Res.string.objectdetails_edit_contact
     }
     AlertDialog(
-        onDismissRequest = { onEvent(ObjectDetailsEvent.ContactEditorDismissed) },
+        onDismissRequest = { if (!editor.isSaving) onEvent(ObjectDetailsEvent.ContactEditorDismissed) },
         title = { Text(stringResource(title)) },
         text = { ContactForm(editor, onEvent) },
         confirmButton = {
             TextButton(
                 onClick = { onEvent(ObjectDetailsEvent.ContactSaveClicked) },
-                enabled = !editor.isSaving,
+                loading = editor.isSaving,
             ) { Text(stringResource(Res.string.contact_save)) }
         },
         dismissButton = {
             Row {
                 editor.contactId?.let { id ->
-                    TextButton(onClick = { onEvent(ObjectDetailsEvent.DeleteContactClicked(id)) }) {
+                    TextButton(onClick = {
+                        onEvent(ObjectDetailsEvent.DeleteContactClicked(id))
+                    }, enabled = !editor.isSaving) {
                         Text(stringResource(Res.string.contact_delete), color = MaterialTheme.colorScheme.error)
                     }
                 }
-                TextButton(onClick = { onEvent(ObjectDetailsEvent.ContactEditorDismissed) }) {
+                TextButton(onClick = {
+                    onEvent(ObjectDetailsEvent.ContactEditorDismissed)
+                }, enabled = !editor.isSaving) {
                     Text(stringResource(Res.string.contact_cancel))
                 }
             }

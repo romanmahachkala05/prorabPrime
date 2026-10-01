@@ -101,7 +101,7 @@ internal class ObjectsListViewModel(
         launchCatching(onFailure = { errorHandler.onUploadFailure(it.asAppError()) }) {
             capture.images.forEach { image ->
                 uploadPhoto(ObjectId(objectId), image, capture.kind)
-                    .onSuccess { notifier.showMessage(uploadedMessage(capture.kind, target.title)) }
+                    .onSuccess { notifier.showSuccess(uploadedMessage(capture.kind, target.title)) }
                     .onFailure { errorHandler.onUploadFailure(it.asAppError()) }
             }
         }

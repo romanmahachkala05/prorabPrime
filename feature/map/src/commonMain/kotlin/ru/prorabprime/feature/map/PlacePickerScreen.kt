@@ -32,6 +32,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.collections.immutable.persistentListOf
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
+import ru.prorabprime.designsystem.components.BusyScreen
 import ru.prorabprime.designsystem.components.Button
 import ru.prorabprime.designsystem.components.FilledIconButton
 import ru.prorabprime.designsystem.components.TopAppBar
@@ -75,52 +76,54 @@ internal fun PlacePickerContent(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Scaffold(
-        modifier = modifier,
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(Res.string.picker_title)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(Res.string.picker_back))
+    BusyScreen(state.isLooking, modifier) {
+        Scaffold(
+            modifier = Modifier,
+            topBar = {
+                TopAppBar(
+                    title = { Text(stringResource(Res.string.picker_title)) },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(Res.string.picker_back))
+                        }
+                    },
+                )
+            },
+        ) { padding ->
+            val viewport = rememberSaveable(saver = MapViewport.Saver) { startingViewport(start) }
+            Box(Modifier.padding(padding).fillMaxSize()) {
+                TileMap(
+                    markers = persistentListOf(),
+                    selectedId = null,
+                    viewport = viewport,
+                    onMarkerClick = {},
+                    modifier = Modifier.fillMaxSize(),
+                )
+                CenterPin(Modifier.align(Alignment.Center))
+                ZoomButtons(viewport, Modifier.align(Alignment.CenterEnd))
+                Column(Modifier.align(Alignment.BottomStart), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = HINT_ALPHA),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(
+                            stringResource(Res.string.picker_hint),
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(Spacing.m),
+                        )
                     }
-                },
-            )
-        },
-    ) { padding ->
-        val viewport = rememberSaveable(saver = MapViewport.Saver) { startingViewport(start) }
-        Box(Modifier.padding(padding).fillMaxSize()) {
-            TileMap(
-                markers = persistentListOf(),
-                selectedId = null,
-                viewport = viewport,
-                onMarkerClick = {},
-                modifier = Modifier.fillMaxSize(),
-            )
-            CenterPin(Modifier.align(Alignment.Center))
-            ZoomButtons(viewport, Modifier.align(Alignment.CenterEnd))
-            Column(Modifier.align(Alignment.BottomStart), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-                Surface(
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = HINT_ALPHA),
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(
-                        stringResource(Res.string.picker_hint),
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(Spacing.m),
-                    )
-                }
-                Button(
-                    onClick = { onConfirm(WebMercator.point(viewport.centerX, viewport.centerY)) },
-                    enabled = !state.isLooking,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.m),
-                ) { Text(stringResource(Res.string.picker_confirm)) }
-                Surface(color = MaterialTheme.colorScheme.surface.copy(alpha = HINT_ALPHA)) {
-                    Text(
-                        stringResource(Res.string.map_attribution),
-                        style = MaterialTheme.typography.labelSmall,
-                        modifier = Modifier.padding(horizontal = Spacing.s, vertical = Spacing.xs),
-                    )
+                    Button(
+                        onClick = { onConfirm(WebMercator.point(viewport.centerX, viewport.centerY)) },
+                        loading = state.isLooking,
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.m),
+                    ) { Text(stringResource(Res.string.picker_confirm)) }
+                    Surface(color = MaterialTheme.colorScheme.surface.copy(alpha = HINT_ALPHA)) {
+                        Text(
+                            stringResource(Res.string.map_attribution),
+                            style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier.padding(horizontal = Spacing.s, vertical = Spacing.xs),
+                        )
+                    }
                 }
             }
         }

@@ -23,4 +23,5 @@
     <string name="materials_error_required">Обязательное поле</string>
     <string name="materials_error_too_long">Слишком длинное значение</string>
     <string name="materials_error_invalid">Неверное значение</string>
+    <string name="materials_saved">Материал сохранён</string>
 </resources>

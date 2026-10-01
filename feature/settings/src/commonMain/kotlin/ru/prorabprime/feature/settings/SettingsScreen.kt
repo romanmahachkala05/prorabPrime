@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
+import ru.prorabprime.designsystem.components.BusyScreen
 import ru.prorabprime.designsystem.components.Button
 import ru.prorabprime.designsystem.components.LoadingBox
 import ru.prorabprime.designsystem.components.OutlinedButton
@@ -75,25 +76,27 @@ internal fun SettingsContent(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Scaffold(
-        modifier = modifier,
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(Res.string.settings_title)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(Res.string.settings_back),
-                        )
-                    }
-                },
-            )
-        },
-    ) { padding ->
-        when (state.status) {
-            SettingsStatus.Content -> SettingsForm(state, onEvent, Modifier.padding(padding))
-            SettingsStatus.Loading -> LoadingBox(Modifier.padding(padding))
+    BusyScreen(state.isSaving || state.check == ConnectionCheck.Running, modifier) {
+        Scaffold(
+            modifier = Modifier,
+            topBar = {
+                TopAppBar(
+                    title = { Text(stringResource(Res.string.settings_title)) },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(Res.string.settings_back),
+                            )
+                        }
+                    },
+                )
+            },
+        ) { padding ->
+            when (state.status) {
+                SettingsStatus.Content -> SettingsForm(state, onEvent, Modifier.padding(padding))
+                SettingsStatus.Loading -> LoadingBox(Modifier.padding(padding))
+            }
         }
     }
 }
@@ -131,7 +134,7 @@ private fun SettingsForm(
         CheckRow(state.check, onCheck = { onEvent(SettingsEvent.CheckClicked) })
         Button(
             onClick = { onEvent(SettingsEvent.SaveClicked) },
-            enabled = !state.isSaving,
+            loading = state.isSaving,
             modifier = Modifier.fillMaxWidth(),
         ) { Text(stringResource(Res.string.settings_save)) }
     }
@@ -142,7 +145,7 @@ private fun CheckRow(check: ConnectionCheck, onCheck: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
         OutlinedButton(
             onClick = onCheck,
-            enabled = check != ConnectionCheck.Running,
+            loading = check == ConnectionCheck.Running,
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(stringResource(Res.string.settings_check))
@@ -154,7 +157,6 @@ private fun CheckRow(check: ConnectionCheck, onCheck: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(Spacing.s),
             ) {
-                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
                 Text(stringResource(Res.string.settings_check_running))
             }
 

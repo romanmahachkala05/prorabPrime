@@ -18,7 +18,11 @@ import ru.prorabprime.domain.model.asAppError
 import ru.prorabprime.domain.usecase.CreateObjectUseCase
 import ru.prorabprime.domain.usecase.ObserveObjectUseCase
 import ru.prorabprime.domain.usecase.UpdateObjectUseCase
+import ru.prorabprime.feature.objects.resources.Res
+import ru.prorabprime.feature.objects.resources.objectedit_created
+import ru.prorabprime.feature.objects.resources.objectedit_saved
 import ru.prorabprime.ui.StateOwner
+import ru.prorabprime.ui.UiText
 import ru.prorabprime.ui.launchCatching
 
 /** What the form edits: nothing yet ([objectId] null) or an existing object. */
@@ -96,10 +100,18 @@ internal class ObjectEditViewModel(
                 .onSuccess {
                     savedState.clearDraft()
                     stateHolder.markSaved(it)
+                    errorHandler.onSaved(it.message())
                 }.onFailure { errorHandler.onSaveFailure(it.asAppError()) }
         }
     }
 }
+
+private fun SaveResult.message() = UiText.Resource(
+    when (this) {
+        is SaveResult.Created -> Res.string.objectedit_created
+        SaveResult.Updated -> Res.string.objectedit_saved
+    },
+)
 
 internal fun ObjectDetails.toForm() = ObjectForm(
     title = title.orEmpty(),
