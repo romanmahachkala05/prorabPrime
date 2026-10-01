@@ -13,6 +13,8 @@ import ru.prorabprime.feature.objects.edit.ObjectEditArgs
 import ru.prorabprime.feature.objects.edit.ObjectEditErrorHandler
 import ru.prorabprime.feature.objects.edit.ObjectEditStateHolder
 import ru.prorabprime.feature.objects.edit.ObjectEditViewModel
+import ru.prorabprime.feature.objects.gallery.GalleryArgs
+import ru.prorabprime.feature.objects.gallery.GalleryViewModel
 import ru.prorabprime.feature.objects.list.IObjectsListStateHolder
 import ru.prorabprime.feature.objects.list.ObjectsListErrorHandler
 import ru.prorabprime.feature.objects.list.ObjectsListStateHolder
@@ -50,6 +52,7 @@ val objectsModule = module {
             notifier = get(),
         )
     }
+    viewModel { (args: GalleryArgs) -> GalleryViewModel(args, get(), get(), get()) }
     viewModel { (args: PhotoViewerArgs) -> PhotoViewerViewModel(args, get(), get(), get(), get(), get()) }
     viewModel { (args: ObjectEditArgs) ->
         val stateHolder: IObjectEditStateHolder = ObjectEditStateHolder(isNew = args.objectId == null)

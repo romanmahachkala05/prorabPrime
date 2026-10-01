@@ -11,6 +11,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
@@ -30,6 +31,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.style.TextOverflow
@@ -78,19 +80,30 @@ fun ObjectDetailsScreen(
     objectId: String,
     onEdit: () -> Unit,
     onOpenPhoto: (photoId: String) -> Unit,
+    onOpenGallery: (receipts: Boolean) -> Unit,
     onOpenFinance: () -> Unit,
     onOpenMaterials: () -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val viewModel: ObjectDetailsViewModel = koinViewModel(key = objectId) { parametersOf(ObjectId(objectId)) }
-    ObjectDetailsScreen(onEdit, onOpenPhoto, onOpenFinance, onOpenMaterials, onClose, modifier, viewModel)
+    ObjectDetailsScreen(
+        onEdit,
+        onOpenPhoto,
+        onOpenGallery,
+        onOpenFinance,
+        onOpenMaterials,
+        onClose,
+        modifier,
+        viewModel,
+    )
 }
 
 @Composable
 private fun ObjectDetailsScreen(
     onEdit: () -> Unit,
     onOpenPhoto: (photoId: String) -> Unit,
+    onOpenGallery: (receipts: Boolean) -> Unit,
     onOpenFinance: () -> Unit,
     onOpenMaterials: () -> Unit,
     onClose: () -> Unit,
@@ -112,6 +125,7 @@ private fun ObjectDetailsScreen(
         onEdit = onEdit,
         onBack = onClose,
         onOpenPhoto = onOpenPhoto,
+        onOpenGallery = onOpenGallery,
         onOpenFinance = onOpenFinance,
         onOpenMaterials = onOpenMaterials,
         onTakePhoto = { sourcesFor(it).takePhoto() },
@@ -129,6 +143,7 @@ internal fun ObjectDetailsContent(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     onOpenPhoto: (photoId: String) -> Unit = {},
+    onOpenGallery: (receipts: Boolean) -> Unit = {},
     onOpenFinance: () -> Unit = {},
     onOpenMaterials: () -> Unit = {},
     onTakePhoto: (AttachmentKind) -> Unit = {},
@@ -146,7 +161,10 @@ internal fun ObjectDetailsContent(
                 if (state.isDeleting) LinearProgressIndicator(Modifier.fillMaxWidth())
                 when (val status = state.status) {
                     ObjectDetailsStatus.Content -> state.details?.let { details ->
-                        DetailsBody(details, state, onEvent, onOpenPhoto, sections, onAdd = { choosingSourceFor = it })
+                        DetailsBody(details, state, onEvent, onOpenPhoto, onOpenGallery, sections, onAdd = {
+                            choosingSourceFor =
+                                it
+                        })
                     }
 
                     ObjectDetailsStatus.Loading -> LoadingBox()
@@ -238,6 +256,7 @@ private fun DetailsBody(
     state: ObjectDetailsState,
     onEvent: (ObjectDetailsEvent) -> Unit,
     onOpenPhoto: (photoId: String) -> Unit,
+    onOpenGallery: (receipts: Boolean) -> Unit,
     sections: ObjectSections,
     onAdd: (AttachmentKind) -> Unit,
 ) {
@@ -245,7 +264,7 @@ private fun DetailsBody(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(vertical = Spacing.m),
         verticalArrangement = Arrangement.spacedBy(Spacing.m),
     ) {
-        FolderTitle(Res.string.objectdetails_photos)
+        FolderTitle(Res.string.objectdetails_photos) { onOpenGallery(false) }
         PhotoCarousel(
             photos = details.photos,
             uploads = state.uploads.filter { it.kind == AttachmentKind.PHOTO }.toImmutableList(),
@@ -256,7 +275,7 @@ private fun DetailsBody(
             onRetryUpload = { onEvent(ObjectDetailsEvent.RetryUpload(it.image, it.kind)) },
             onDismissUpload = { onEvent(ObjectDetailsEvent.DismissUpload(it.image)) },
         )
-        FolderTitle(Res.string.objectdetails_receipts)
+        FolderTitle(Res.string.objectdetails_receipts) { onOpenGallery(true) }
         PhotoCarousel(
             photos = details.receipts,
             uploads = state.uploads.filter { it.kind == AttachmentKind.RECEIPT }.toImmutableList(),
@@ -297,12 +316,14 @@ private fun SectionButtons(sections: ObjectSections) {
 }
 
 @Composable
-private fun FolderTitle(title: StringResource) {
-    Text(
-        stringResource(title),
-        style = MaterialTheme.typography.titleMedium,
-        modifier = Modifier.padding(horizontal = Spacing.m),
-    )
+private fun FolderTitle(title: StringResource, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = Spacing.m),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(stringResource(title), style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+    }
 }
 
 @Composable

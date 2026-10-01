@@ -32,6 +32,8 @@ import ru.prorabprime.domain.usecase.UploadPhotoUseCase
 import ru.prorabprime.feature.objects.details.ObjectDetailsViewModel
 import ru.prorabprime.feature.objects.edit.ObjectEditArgs
 import ru.prorabprime.feature.objects.edit.ObjectEditViewModel
+import ru.prorabprime.feature.objects.gallery.GalleryArgs
+import ru.prorabprime.feature.objects.gallery.GalleryViewModel
 import ru.prorabprime.feature.objects.list.ObjectsListViewModel
 import ru.prorabprime.feature.objects.viewer.PhotoViewerArgs
 import ru.prorabprime.feature.objects.viewer.PhotoViewerViewModel
@@ -85,6 +87,7 @@ class ObjectsModuleTest {
         assertThat(koin.get<ObjectDetailsViewModel> { parametersOf(ObjectId("o1")) }).isNotNull()
         assertThat(koin.get<ObjectEditViewModel> { parametersOf(ObjectEditArgs(null)) }).isNotNull()
         assertThat(koin.get<ObjectEditViewModel> { parametersOf(ObjectEditArgs(ObjectId("o1"))) }).isNotNull()
+        assertThat(koin.get<GalleryViewModel> { parametersOf(GalleryArgs("o1", false)) }).isNotNull()
         assertThat(koin.get<PhotoViewerViewModel> { parametersOf(PhotoViewerArgs("o1", "p1")) }).isNotNull()
     }
 }
