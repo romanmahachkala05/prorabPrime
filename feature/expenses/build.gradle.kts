@@ -23,6 +23,11 @@ kotlin {
             implementation(libs.kotlinx.collections.immutable)
         }
 
+        // The file chooser for a receipt: an activity-result launcher.
+        androidMain.dependencies {
+            implementation(libs.androidx.activity.compose)
+        }
+
         jvmTest.dependencies {
             implementation(project(":core:testing"))
             implementation(libs.junit)
