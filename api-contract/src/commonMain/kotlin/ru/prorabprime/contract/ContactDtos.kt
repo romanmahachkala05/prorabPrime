@@ -24,6 +24,8 @@ data class ContactRequestDto(
     val name: String,
     val phone: String? = null,
     val role: ContactRoleDto = ContactRoleDto.OTHER,
+    /** Chosen by the client on create (a UUID), so a retry of the same create finds the record it made. */
+    val id: String? = null,
 )
 
 @Serializable

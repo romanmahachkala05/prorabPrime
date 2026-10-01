@@ -1,47 +1,72 @@
 package ru.prorabprime.data.repository
 
 import kotlinx.collections.immutable.ImmutableList
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.mapLatest
-import ru.prorabprime.data.remote.TasksApi
+import kotlinx.coroutines.flow.map
+import ru.prorabprime.contract.TaskDto
+import ru.prorabprime.data.local.IdFactory
+import ru.prorabprime.data.local.Keys
+import ru.prorabprime.data.local.LocalDb
+import ru.prorabprime.data.local.Operation
+import ru.prorabprime.data.local.TaskRow
+import ru.prorabprime.data.local.forgetOrQueueDelete
+import ru.prorabprime.data.mapper.toDomain
+import ru.prorabprime.data.mapper.toRequestDto
+import ru.prorabprime.domain.model.AppError
 import ru.prorabprime.domain.model.LocalDay
 import ru.prorabprime.domain.model.Task
 import ru.prorabprime.domain.model.TaskDraft
 import ru.prorabprime.domain.model.TaskId
-import ru.prorabprime.domain.repository.SettingsRepository
+import ru.prorabprime.domain.model.asFailure
 import ru.prorabprime.domain.repository.TasksRepository
 
-/** Reloads on any write, and when the server address or token changes, like the objects do. */
+/** The day plan, kept on the phone: it opens, and its reminders are set, with or without a signal. */
 internal class TasksRepositoryImpl(
-    private val api: TasksApi,
-    private val invalidator: Invalidator,
-    settings: SettingsRepository,
+    private val db: LocalDb,
+    private val ids: IdFactory,
 ) : TasksRepository {
 
-    private val reloads: Flow<Any> =
-        combine(invalidator.changes, settings.serverSettings.distinctUntilChanged()) { version, server ->
-            version to server
-        }
+    override fun observeDay(day: LocalDay): Flow<Result<ImmutableList<Task>>> = tasks { it.day == day }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
-    override fun observeDay(day: LocalDay): Flow<Result<ImmutableList<Task>>> =
-        reloads.mapLatest { api.list(from = day, to = day, openOnly = false) }
+    override fun observeOverdue(day: LocalDay): Flow<Result<ImmutableList<Task>>> = tasks { !it.done && it.day < day }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
-    override fun observeOverdue(day: LocalDay): Flow<Result<ImmutableList<Task>>> =
-        reloads.mapLatest { api.list(from = null, to = day.plusDays(-1), openOnly = true) }
-
-    @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeOpenFrom(from: LocalDay): Flow<Result<ImmutableList<Task>>> =
-        reloads.mapLatest { api.list(from = from, to = null, openOnly = true) }
+        tasks { !it.done && it.day >= from }
 
-    override suspend fun add(draft: TaskDraft): Result<Unit> = api.add(draft).onSuccess { invalidator.invalidate() }
+    /** By day, then by reminder time (tasks without one last), then in the order they were added. */
+    private fun tasks(keep: (Task) -> Boolean): Flow<Result<ImmutableList<Task>>> = db.changes.map {
+        val dirty = db.outbox.dirtyKeys()
+        val shown = db.tasks.rows.value.values
+            .sortedWith(compareBy<TaskRow>({ it.dto.day }, { it.dto.remindAtMinutes ?: Int.MAX_VALUE }, { it.order }))
+            .map { it.dto.toDomain().copy(isPending = Keys.task(it.dto.id) in dirty) }
+            .filter(keep)
+        Result.success(shown.toImmutableList())
+    }
 
-    override suspend fun update(id: TaskId, draft: TaskDraft): Result<Unit> =
-        api.update(id, draft).onSuccess { invalidator.invalidate() }
+    override suspend fun add(draft: TaskDraft): Result<Unit> {
+        val id = ids.next()
+        val request = draft.toRequestDto().copy(id = id)
+        db.outbox.enqueue(Operation.CreateTask(request))
+        val order = nextOrder(db.tasks.rows.value.values.map { it.order })
+        db.tasks.upsert(TaskRow(TaskDto(id, request.title, request.day, request.remindAtMinutes, request.done), order))
+        return Result.success(Unit)
+    }
 
-    override suspend fun delete(id: TaskId): Result<Unit> = api.delete(id).onSuccess { invalidator.invalidate() }
+    override suspend fun update(id: TaskId, draft: TaskDraft): Result<Unit> {
+        val row = db.tasks.rows.value[id.value] ?: return AppError.NotFound.asFailure()
+        val request = draft.toRequestDto()
+        db.outbox.enqueue(Operation.UpdateTask(id.value, request))
+        db.tasks.upsert(
+            row.copy(dto = TaskDto(id.value, request.title, request.day, request.remindAtMinutes, request.done)),
+        )
+        return Result.success(Unit)
+    }
+
+    override suspend fun delete(id: TaskId): Result<Unit> {
+        if (!db.tasks.rows.value.containsKey(id.value)) return Result.success(Unit)
+        db.forgetOrQueueDelete(Keys.task(id.value), Operation.DeleteTask(id.value))
+        db.tasks.remove(id.value)
+        return Result.success(Unit)
+    }
 }

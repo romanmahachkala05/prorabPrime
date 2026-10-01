@@ -22,7 +22,28 @@ data class MaterialDto(
 data class MaterialRequestDto(
     val title: String,
     val status: MaterialStatusDto = MaterialStatusDto.NOT_CHOSEN,
+    /** Chosen by the client on create (a UUID), so a retry of the same create finds the record it made. */
+    val id: String? = null,
 )
+
+/** The usual things a renovation needs picked, offered to a fresh checklist; the phone offers them offline too. */
+object MaterialDefaults {
+    val TITLES: List<String> = listOf(
+        "Плитка",
+        "Ламинат или паркет",
+        "Обои или краска",
+        "Двери",
+        "Розетки и выключатели",
+        "Светильники",
+        "Ванна или душевая",
+        "Унитаз",
+        "Раковина и смеситель",
+        "Натяжной потолок",
+        "Плинтусы",
+        "Подоконники",
+        "Радиаторы",
+    )
+}
 
 object MaterialLimits {
     const val TITLE = 200

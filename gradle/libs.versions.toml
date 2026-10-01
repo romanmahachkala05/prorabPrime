@@ -6,6 +6,7 @@ androidxCoreKtx = "1.19.1"
 activityCompose = "1.13.0"
 lifecycle = "2.11.0"
 datastore = "1.2.1"
+work = "2.11.2"
 ktor = "3.6.0"
 logback = "1.6.4"
 exposed = "1.5.0"
@@ -54,6 +55,7 @@ androidx-lifecycle-viewmodel = { module = "androidx.lifecycle:lifecycle-viewmode
 androidx-lifecycle-viewmodel-savedstate = { module = "androidx.lifecycle:lifecycle-viewmodel-savedstate", version.ref = "lifecycle" }
 androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycle" }
 # The multiplatform core (Android and JVM), so the settings store is tested on the JVM too.
+androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "work" }
 androidx-datastore-preferences-core = { module = "androidx.datastore:datastore-preferences-core", version.ref = "datastore" }
 # Version-ref'd rather than BOM-managed: a KMP source set's dependency block has no
 # non-deprecated `platform()`, and the catalog already pins one version in one place.

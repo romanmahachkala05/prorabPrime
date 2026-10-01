@@ -42,6 +42,7 @@ import ru.prorabprime.designsystem.components.ErrorMessage
 import ru.prorabprime.designsystem.components.FilterChip
 import ru.prorabprime.designsystem.components.LoadingBox
 import ru.prorabprime.designsystem.components.OutlinedButton
+import ru.prorabprime.designsystem.components.PendingTitle
 import ru.prorabprime.designsystem.components.TextButton
 import ru.prorabprime.designsystem.components.TopAppBar
 import ru.prorabprime.designsystem.theme.ProrabTheme
@@ -172,7 +173,7 @@ private fun EmptyChecklist(onAddDefaults: () -> Unit) {
 @Composable
 private fun MaterialRow(material: MaterialUi, onEvent: (MaterialsEvent) -> Unit) {
     ListItem(
-        headlineContent = { Text(material.title) },
+        headlineContent = { PendingTitle(material.title, material.isPending) },
         trailingContent = {
             AssistChip(
                 onClick = { onEvent(MaterialsEvent.StatusTapped(material.id)) },

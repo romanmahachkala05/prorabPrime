@@ -1,6 +1,7 @@
 plugins {
     id("prorab.kmp.android.library")
     id("prorab.koin")
+    alias(libs.plugins.kotlin.serialization)
 }
 
 kotlin {
@@ -35,6 +36,8 @@ kotlin {
         // The reminders: alarm clock, notifications and a place to remember them across a reboot.
         androidMain.dependencies {
             implementation(libs.androidx.core.ktx)
+            // Sending the queue when the signal is back, even with the app closed.
+            implementation(libs.androidx.work.runtime.ktx)
         }
 
         jvmTest.dependencies {

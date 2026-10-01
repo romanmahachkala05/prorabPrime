@@ -39,6 +39,9 @@ object ApiQuery {
     const val ORDER = "order"
     const val KIND = "kind"
     const val LAT = "lat"
+
+    /** A photo upload: the id the client chose for it, so a retried upload finds the photo it made. */
+    const val ID = "id"
     const val LON = "lon"
 
     /** Tasks: the first and last day wanted (inclusive, `yyyy-MM-dd`), and `true` to leave out the done ones. */

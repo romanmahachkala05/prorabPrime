@@ -21,6 +21,7 @@ import kotlinx.collections.immutable.ImmutableList
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import ru.prorabprime.designsystem.components.OutlinedButton
+import ru.prorabprime.designsystem.components.PendingTitle
 import ru.prorabprime.designsystem.theme.Spacing
 import ru.prorabprime.feature.finance.resources.Res
 import ru.prorabprime.feature.finance.resources.finance_add_extra
@@ -73,7 +74,7 @@ internal fun SideSection(
         }
         payments.forEach { payment ->
             ListItem(
-                headlineContent = { Text(payment.amount) },
+                headlineContent = { PendingTitle(payment.amount, payment.payment.isPending) },
                 supportingContent = {
                     Text(
                         listOfNotNull(
@@ -140,7 +141,7 @@ internal fun ExtraWorksSection(
         }
         finance.extraWorks.forEach { work ->
             ListItem(
-                headlineContent = { Text(work.work.title) },
+                headlineContent = { PendingTitle(work.work.title, work.work.isPending) },
                 supportingContent = { Text(stringResource(work.work.status.label)) },
                 trailingContent = { Text(work.amount) },
                 modifier = Modifier.clickable { onOpen(work) },

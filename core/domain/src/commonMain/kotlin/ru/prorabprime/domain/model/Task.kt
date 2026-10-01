@@ -11,6 +11,8 @@ data class Task(
     val day: LocalDay,
     val remindAtMinutes: Int?,
     val done: Boolean,
+    /** Made or changed on the phone and not yet accepted by the server. */
+    val isPending: Boolean = false,
 )
 
 /** A task as the form submits it; the day is null until one is picked. */

@@ -4,6 +4,7 @@ import java.util.UUID
 import kotlin.time.Clock
 import ru.prorabprime.contract.FieldErrorDto
 import ru.prorabprime.contract.FieldProblemDto
+import ru.prorabprime.contract.MaterialDefaults
 import ru.prorabprime.contract.MaterialLimits
 import ru.prorabprime.contract.MaterialRequestDto
 import ru.prorabprime.contract.MaterialStatusDto
@@ -16,21 +17,7 @@ import ru.prorabprime.server.repository.MaterialRepository
 import ru.prorabprime.server.repository.ObjectRepository
 
 /** The usual things a renovation needs picked, offered to a fresh checklist. */
-val DEFAULT_MATERIALS: List<String> = listOf(
-    "Плитка",
-    "Ламинат или паркет",
-    "Обои или краска",
-    "Двери",
-    "Розетки и выключатели",
-    "Светильники",
-    "Ванна или душевая",
-    "Унитаз",
-    "Раковина и смеситель",
-    "Натяжной потолок",
-    "Плинтусы",
-    "Подоконники",
-    "Радиаторы",
-)
+val DEFAULT_MATERIALS: List<String> = MaterialDefaults.TITLES
 
 /** Trims the title and checks it against the column. */
 fun validateMaterial(request: MaterialRequestDto): Result<MaterialFields> {
@@ -63,8 +50,10 @@ class MaterialService(
     suspend fun create(objectId: UUID, request: MaterialRequestDto): Result<MaterialRecord> {
         val fields = validateMaterial(request).getOrElse { return Result.failure(it) }
         if (objects.find(objectId) == null) return objectNotFound(objectId)
+        val clientId = parseClientId(request.id).getOrElse { return Result.failure(it) }
+        alreadyCreated(clientId?.let { materials.find(it) }) { it.objectId == objectId }?.let { return it }
         val now = clock.now()
-        val record = MaterialRecord(newId(), objectId, fields, materials.nextSortOrder(objectId), now)
+        val record = MaterialRecord(clientId ?: newId(), objectId, fields, materials.nextSortOrder(objectId), now)
         materials.insert(record)
         objects.touch(objectId, now)
         return Result.success(record)

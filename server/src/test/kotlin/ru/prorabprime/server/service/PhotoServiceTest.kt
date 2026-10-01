@@ -266,4 +266,16 @@ class PhotoServiceTest {
 
         assertThat(cover()).isEqualTo(other)
     }
+
+    @Test
+    fun `a photo uploaded under the client's id is stored once however often it is sent`() = runTest {
+        val id = UUID.randomUUID()
+
+        val first = service.upload(objectId, bytes, clientId = id).getOrThrow()
+        val again = service.upload(objectId, bytes, clientId = id).getOrThrow()
+
+        assertThat(first.id).isEqualTo(id)
+        assertThat(again.id).isEqualTo(id)
+        assertThat(photos.listByObject(objectId)).hasSize(1)
+    }
 }

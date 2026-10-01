@@ -3,4 +3,5 @@
     <!-- designsystem: shared components -->
     <string name="designsystem_retry">Повторить</string>
     <string name="designsystem_cancel">Отмена</string>
+    <string name="designsystem_pending">Ждёт отправки</string>
 </resources>

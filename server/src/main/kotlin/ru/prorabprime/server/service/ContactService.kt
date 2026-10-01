@@ -19,9 +19,11 @@ class ContactService(
     suspend fun create(objectId: UUID, request: ContactRequestDto): Result<ContactRecord> {
         val fields = validateContact(request).getOrElse { return Result.failure(it) }
         if (objects.find(objectId) == null) return ServiceError.NotFound("No object $objectId").asFailure()
+        val clientId = parseClientId(request.id).getOrElse { return Result.failure(it) }
+        alreadyCreated(clientId?.let { contacts.find(it) }) { it.objectId == objectId }?.let { return it }
         val now = clock.now()
         val record = ContactRecord(
-            id = newId(),
+            id = clientId ?: newId(),
             objectId = objectId,
             fields = fields,
             sortOrder = contacts.nextSortOrder(objectId),

@@ -35,8 +35,17 @@ class ObjectService(
 
     suspend fun create(request: ObjectRequestDto): Result<ObjectRecord> {
         val fields = validateObject(request).getOrElse { return Result.failure(it) }
+        val clientId = parseClientId(request.id).getOrElse { return Result.failure(it) }
+        alreadyCreated(clientId?.let { objects.find(it) }) { true }?.let { return it }
         val now = clock.now()
-        val record = ObjectRecord(id = newId(), fields = fields, coverPhotoId = null, createdAt = now, updatedAt = now)
+        val record =
+            ObjectRecord(
+                id = clientId ?: newId(),
+                fields = fields,
+                coverPhotoId = null,
+                createdAt = now,
+                updatedAt = now,
+            )
         objects.insert(record)
         placePin(record.id, request.pinned(), fields.address)
         return Result.success(record)
@@ -62,6 +71,8 @@ class ObjectService(
     suspend fun geocode(id: UUID): Result<ObjectDetails> {
         val record = objects.find(id) ?: return notFound(id)
         locate(id, record.fields.address)
+        // The pin is a change to the object: phones that copy it down learn by its `updatedAt`.
+        objects.touch(id, clock.now())
         return get(id)
     }
 

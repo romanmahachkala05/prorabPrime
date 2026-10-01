@@ -12,6 +12,8 @@ import ru.prorabprime.domain.repository.SettingsRepository
 
 /** The browser's half of [dataModule]; [defaults] is where the page came from. */
 fun webDataModule(defaults: ServerSettings): Module = module {
+    // The browser has no place to keep a copy that survives a closed tab, so here it lives while the tab does.
+    includes(memoryStorageModule)
     single<HttpClientEngine> { Js.create() }
     single<SettingsRepository> { LocalStorageSettingsRepository(defaults) }
     single<ImageCompressor> { WebImageCompressor() }

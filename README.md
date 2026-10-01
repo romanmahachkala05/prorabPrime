@@ -144,6 +144,17 @@ Formatting, static analysis, every unit test and the debug APK; the server's Pos
 in Docker, or over embedded PostgreSQL when Docker is missing (ADR-0006, ADR-0007). See
 [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
+## Working without a signal
+
+The app keeps its own copy of everything it shows, so the list of objects, the cards, the finance, the checklist
+and the day plan open with no network, and photos, receipts and notes can be made there too. What was made
+without a signal waits in a queue (a clock marks it) and goes to the server when a network is back — at once if
+the app is open, and by the system's job scheduler if it has been closed. A small line at the bottom says when
+there is no signal or something is waiting. If the server refuses a change for good, the line says so and opens a
+list where it can be retried or given up on. Pictures seen once are kept for the next time there is none.
+
+The browser version is online-first: its copy lives only while the tab is open.
+
 ## The web app
 
 The web client is the same Compose UI compiled to WebAssembly. It needs a recent browser (Chrome,

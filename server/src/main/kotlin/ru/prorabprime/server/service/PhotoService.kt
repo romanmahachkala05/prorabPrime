@@ -15,6 +15,7 @@ import ru.prorabprime.server.repository.ObjectRepository
 import ru.prorabprime.server.repository.PhotoRepository
 import ru.prorabprime.server.storage.FileStorage
 import ru.prorabprime.server.storage.ImageProcessor
+import ru.prorabprime.server.storage.ProcessedImage
 
 /**
  * Photos and the cover rules. Every operation touches both the database and the disk, and is
@@ -30,18 +31,41 @@ class PhotoService(
     private val clock: Clock,
     private val newId: () -> UUID = UUID::randomUUID,
 ) {
+    /**
+     * What ends an upload before any work: a file too big, an unknown object, or — a retried upload,
+     * the phone never heard the answer — the photo this id already made.
+     */
+    private suspend fun refusalOrExisting(
+        objectId: UUID,
+        bytes: ByteArray,
+        clientId: UUID?,
+    ): Result<PhotoRecord>? = when {
+        bytes.size > PhotoLimits.MAX_UPLOAD_BYTES ->
+            ServiceError.TooLarge("A photo may be at most ${PhotoLimits.MAX_UPLOAD_BYTES} bytes").asFailure()
+
+        objects.find(objectId) == null -> objectNotFound(objectId)
+
+        else -> alreadyCreated(clientId?.let { photos.find(it) }) { it.objectId == objectId }
+    }
+
     suspend fun upload(
         objectId: UUID,
         bytes: ByteArray,
         kind: AttachmentKindDto = AttachmentKindDto.PHOTO,
-    ): Result<PhotoRecord> {
-        if (bytes.size > PhotoLimits.MAX_UPLOAD_BYTES) {
-            return ServiceError.TooLarge("A photo may be at most ${PhotoLimits.MAX_UPLOAD_BYTES} bytes").asFailure()
-        }
-        if (objects.find(objectId) == null) return objectNotFound(objectId)
-        val image = images.process(bytes).getOrElse { return Result.failure(it) }
+        clientId: UUID? = null,
+    ): Result<PhotoRecord> = refusalOrExisting(objectId, bytes, clientId)
+        ?: images.process(bytes).fold(
+            onSuccess = { image -> store(objectId, bytes, image, kind, clientId ?: newId()) },
+            onFailure = { Result.failure(it) },
+        )
 
-        val id = newId()
+    private suspend fun store(
+        objectId: UUID,
+        bytes: ByteArray,
+        image: ProcessedImage,
+        kind: AttachmentKindDto,
+        id: UUID,
+    ): Result<PhotoRecord> {
         val fileName = "$id.${image.format.extension}"
         val thumbFileName = "${id}_thumb.jpg"
         return withFilesCompensated(objectId, listOf(fileName, thumbFileName)) {

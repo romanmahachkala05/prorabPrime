@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
@@ -29,6 +31,7 @@ import kotlinx.serialization.modules.polymorphic
 import ru.prorabprime.designsystem.components.AppSnackbarHost
 import ru.prorabprime.designsystem.components.show
 import ru.prorabprime.designsystem.components.topBarColor
+import ru.prorabprime.designsystem.theme.Spacing
 import ru.prorabprime.feature.finance.FinanceNavKey
 import ru.prorabprime.feature.finance.FinanceScreen
 import ru.prorabprime.feature.map.MapNavKey
@@ -47,6 +50,7 @@ import ru.prorabprime.feature.objects.viewer.PhotoViewerNavKey
 import ru.prorabprime.feature.objects.viewer.PhotoViewerScreen
 import ru.prorabprime.feature.settings.SettingsNavKey
 import ru.prorabprime.feature.settings.SettingsScreen
+import ru.prorabprime.feature.sync.SyncStatusHost
 import ru.prorabprime.feature.tasks.TasksNavKey
 import ru.prorabprime.feature.tasks.TasksScreen
 import ru.prorabprime.ui.SnackbarNotifier
@@ -73,22 +77,32 @@ fun AppNavDisplay(notifier: SnackbarNotifier, modifier: Modifier = Modifier) {
                 // The bar goes on across the whole window, so the column does not look cut out of it.
                 Box(Modifier.fillMaxWidth().height(BAR_HEIGHT).background(topBarColor()))
             }
-            NavDisplay(
-                backStack = backStack,
-                onBack = { backStack.pop() },
-                entryDecorators = listOf(
-                    rememberSaveableStateHolderNavEntryDecorator(),
-                    rememberViewModelStoreNavEntryDecorator(),
-                ),
-                entryProvider = appEntries(backStack),
-                modifier = Modifier.widthIn(max = MAX_CONTENT_WIDTH).fillMaxHeight(),
-            )
+            Box(Modifier.widthIn(max = MAX_CONTENT_WIDTH).fillMaxHeight()) {
+                NavDisplay(
+                    backStack = backStack,
+                    onBack = { backStack.pop() },
+                    entryDecorators = listOf(
+                        rememberSaveableStateHolderNavEntryDecorator(),
+                        rememberViewModelStoreNavEntryDecorator(),
+                    ),
+                    entryProvider = appEntries(backStack),
+                    modifier = Modifier.fillMaxSize(),
+                )
+                SyncStatusHost(
+                    onOpenSettings = { backStack.add(SettingsNavKey) },
+                    // Above the place a Snackbar takes, so the two never lie over one another.
+                    modifier = Modifier.align(Alignment.BottomStart)
+                        .padding(start = Spacing.m, bottom = SNACKBAR_CLEARANCE)
+                        .navigationBarsPadding(),
+                )
+            }
         }
     }
 }
 
 private val MAX_CONTENT_WIDTH = 840.dp
 private val BAR_HEIGHT = 64.dp
+private val SNACKBAR_CLEARANCE = 72.dp
 
 /** Every screen of the app, with the callbacks that move between them. */
 private fun appEntries(backStack: NavBackStack<NavKey>) = entryProvider<NavKey> {

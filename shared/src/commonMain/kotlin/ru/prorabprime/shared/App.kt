@@ -10,6 +10,7 @@ import ru.prorabprime.feature.map.mapModule
 import ru.prorabprime.feature.materials.materialsModule
 import ru.prorabprime.feature.objects.objectsModule
 import ru.prorabprime.feature.settings.settingsModule
+import ru.prorabprime.feature.sync.syncModule
 import ru.prorabprime.feature.tasks.tasksModule
 import ru.prorabprime.shared.navigation.AppNavDisplay
 import ru.prorabprime.ui.di.uiModule
@@ -27,4 +28,14 @@ fun App() {
  * fails at startup rather than at compile time — which is why the list lives in one place.
  */
 val appModules: List<Module> =
-    listOf(dataModule, uiModule, objectsModule, settingsModule, financeModule, materialsModule, mapModule, tasksModule)
+    listOf(
+        dataModule,
+        uiModule,
+        objectsModule,
+        settingsModule,
+        financeModule,
+        materialsModule,
+        mapModule,
+        tasksModule,
+        syncModule,
+    )

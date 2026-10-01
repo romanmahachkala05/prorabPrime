@@ -19,6 +19,11 @@ sealed interface ServiceError {
         override val message: String,
     ) : ServiceError
 
+    /** The id is already used by a record of another owner. */
+    data class Conflict(
+        override val message: String,
+    ) : ServiceError
+
     data class TooLarge(
         override val message: String,
     ) : ServiceError

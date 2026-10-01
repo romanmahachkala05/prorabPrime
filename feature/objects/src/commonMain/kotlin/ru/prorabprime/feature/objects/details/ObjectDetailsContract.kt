@@ -48,6 +48,7 @@ internal data class ContactUi(
     val name: String,
     val phone: String?,
     val role: ContactRole,
+    val isPending: Boolean = false,
 )
 
 /** The contact form, open over the card: a new contact when [contactId] is null. */
@@ -66,6 +67,7 @@ internal data class PhotoUi(
     val id: String,
     val thumb: ServerFilePath,
     val isCover: Boolean,
+    val isPending: Boolean = false,
 )
 
 /** A picture on its way to the server, shown in the carousel until it arrives as a [PhotoUi]. */

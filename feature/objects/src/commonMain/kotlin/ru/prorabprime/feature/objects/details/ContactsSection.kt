@@ -29,6 +29,7 @@ import kotlinx.collections.immutable.ImmutableList
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import ru.prorabprime.designsystem.components.FilterChip
+import ru.prorabprime.designsystem.components.PendingTitle
 import ru.prorabprime.designsystem.components.TextButton
 import ru.prorabprime.designsystem.theme.Spacing
 import ru.prorabprime.domain.model.ContactRole
@@ -90,7 +91,7 @@ internal fun ContactsSection(
         }
         contacts.forEach { contact ->
             ListItem(
-                headlineContent = { Text(contact.name) },
+                headlineContent = { PendingTitle(contact.name, contact.isPending) },
                 supportingContent = {
                     Text(
                         listOfNotNull(stringResource(contact.role.label), contact.phone).joinToString(" · "),

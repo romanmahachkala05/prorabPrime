@@ -40,6 +40,8 @@ data class Payment(
     val method: PaymentMethod,
     val paidOn: LocalDay,
     val note: String?,
+    /** Made or changed on the phone and not yet accepted by the server. */
+    val isPending: Boolean = false,
 )
 
 data class ExtraWork(
@@ -47,6 +49,8 @@ data class ExtraWork(
     val title: String,
     val amountKopecks: Long,
     val status: ExtraWorkStatus,
+    /** Made or changed on the phone and not yet accepted by the server. */
+    val isPending: Boolean = false,
 )
 
 /** One side of the books; the amounts are null while nothing is agreed on that side. */

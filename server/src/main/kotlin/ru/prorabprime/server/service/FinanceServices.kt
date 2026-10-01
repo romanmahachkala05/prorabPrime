@@ -55,8 +55,10 @@ class PaymentService(
     suspend fun create(objectId: UUID, request: PaymentRequestDto): Result<PaymentRecord> {
         val fields = validatePayment(request).getOrElse { return Result.failure(it) }
         if (objects.find(objectId) == null) return objectNotFound(objectId)
+        val clientId = parseClientId(request.id).getOrElse { return Result.failure(it) }
+        alreadyCreated(clientId?.let { payments.find(it) }) { it.objectId == objectId }?.let { return it }
         val now = clock.now()
-        val record = PaymentRecord(newId(), objectId, fields, now)
+        val record = PaymentRecord(clientId ?: newId(), objectId, fields, now)
         transactor.inTransaction {
             payments.insert(record)
             payments.addRevision(
@@ -110,8 +112,10 @@ class ExtraWorkService(
     suspend fun create(objectId: UUID, request: ExtraWorkRequestDto): Result<ExtraWorkRecord> {
         val fields = validateExtraWork(request).getOrElse { return Result.failure(it) }
         if (objects.find(objectId) == null) return objectNotFound(objectId)
+        val clientId = parseClientId(request.id).getOrElse { return Result.failure(it) }
+        alreadyCreated(clientId?.let { extras.find(it) }) { it.objectId == objectId }?.let { return it }
         val now = clock.now()
-        val record = ExtraWorkRecord(newId(), objectId, fields, now)
+        val record = ExtraWorkRecord(clientId ?: newId(), objectId, fields, now)
         extras.insert(record)
         objects.touch(objectId, now)
         return Result.success(record)

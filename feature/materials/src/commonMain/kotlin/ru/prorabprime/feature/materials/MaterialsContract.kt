@@ -28,6 +28,7 @@ internal data class MaterialUi(
     val id: String,
     val title: String,
     val status: MaterialStatus,
+    val isPending: Boolean = false,
 )
 
 @Immutable

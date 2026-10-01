@@ -8,6 +8,7 @@ import io.ktor.client.engine.mock.respondOk
 import org.junit.Test
 import org.koin.dsl.koinApplication
 import org.koin.dsl.module
+import ru.prorabprime.data.di.memoryStorageModule
 import ru.prorabprime.domain.ImageCompressor
 import ru.prorabprime.domain.repository.ObjectsRepository
 import ru.prorabprime.domain.repository.SettingsRepository
@@ -30,7 +31,7 @@ class AppModulesTest {
 
     @Test
     fun `the shared graph resolves on top of a platform module`() {
-        val koin = koinApplication { modules(appModules + platformFakes) }.koin
+        val koin = koinApplication { modules(appModules + platformFakes + memoryStorageModule) }.koin
 
         assertThat(koin.get<HttpClient>()).isNotNull()
         assertThat(koin.get<ObjectsRepository>()).isNotNull()
