@@ -61,6 +61,14 @@ internal data class DayMarkUi(
     val done: Int,
 )
 
+/** The nearest plan after the day on screen, offered when that day is empty. */
+@Immutable
+internal data class NextPlanUi(
+    val day: LocalDay,
+    val title: String,
+    val daysAway: Int,
+)
+
 @Immutable
 internal data class TasksState(
     val status: TasksStatus = TasksStatus.Loading,
@@ -77,6 +85,7 @@ internal data class TasksState(
     /** The first day of the month the grid shows; it always holds [day] while the grid is open. */
     val month: LocalDay = day.firstOfMonth(),
     val marks: ImmutableMap<LocalDay, DayMarkUi> = persistentMapOf(),
+    val nextPlan: NextPlanUi? = null,
 ) {
     val isToday: Boolean get() = day == today
 }

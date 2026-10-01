@@ -27,6 +27,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
@@ -68,7 +69,7 @@ internal fun MonthGrid(state: TasksState, onEvent: (TasksEvent) -> Unit) {
         monthWeeks(state.month).forEach { week ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(CELL_GAP)) {
                 week.forEach { day ->
-                    Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                    Box(Modifier.weight(1f).height(CELL_SIZE + 4.dp), contentAlignment = Alignment.Center) {
                         if (day != null) DayCell(day, state, onEvent)
                     }
                 }
@@ -87,31 +88,33 @@ private fun DayCell(
     val mark = state.marks[day]
     val colors = MaterialTheme.colorScheme
     val description = day.format()
-    val ring = if (day == state.today) Modifier.border(BorderStroke(1.dp, colors.primary), CircleShape) else Modifier
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
+    // A day with open work is a solid disc, one with everything done a pale disc, an empty one is bare.
+    val (fill, ink) = when {
+        mark == null -> Color.Transparent to colors.onSurface
+        mark.open > 0 -> colors.primary to colors.onPrimary
+        else -> colors.secondaryContainer to colors.onSecondaryContainer
+    }
+    val ring = when {
+        selected -> Modifier.border(BorderStroke(SELECTED_RING, colors.onSurface), CircleShape)
+        day == state.today -> Modifier.border(BorderStroke(1.dp, colors.outline), CircleShape)
+        else -> Modifier
+    }
+    Box(
+        contentAlignment = Alignment.Center,
         modifier = Modifier
-            .height(CELL_HEIGHT)
+            .size(CELL_SIZE)
             .clip(CircleShape)
-            .background(if (selected) colors.primaryContainer else Color.Transparent)
+            .background(fill)
             .then(ring)
             .clickable { onEvent(TasksEvent.DayPicked(day)) }
-            .semantics { contentDescription = description }
-            .padding(horizontal = Spacing.s),
+            .semantics { contentDescription = description },
     ) {
         Text(
             day.dayOfMonth.toString(),
             style = MaterialTheme.typography.bodyMedium,
-            color = if (selected) colors.onPrimaryContainer else colors.onSurface,
+            fontWeight = if (mark != null) FontWeight.Bold else FontWeight.Normal,
+            color = ink,
         )
-        // Open work is the primary color; a day with everything done is a quiet dot; no tasks, no dot.
-        val dot = when {
-            mark == null -> Color.Transparent
-            mark.open > 0 -> colors.primary
-            else -> colors.outline
-        }
-        Box(Modifier.size(DOT_SIZE).clip(CircleShape).background(dot))
     }
 }
 
@@ -125,6 +128,6 @@ internal fun monthWeeks(first: LocalDay): List<List<LocalDay?>> {
 }
 
 private const val DAYS_IN_WEEK = 7
-private val CELL_HEIGHT = 44.dp
+private val CELL_SIZE = 40.dp
+private val SELECTED_RING = 2.dp
 private val CELL_GAP = 2.dp
-private val DOT_SIZE = 6.dp

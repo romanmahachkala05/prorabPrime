@@ -28,7 +28,7 @@ internal class TaskEditorHandler(
 ) {
     fun onEvent(event: TaskEditorEvent) {
         when (event) {
-            TaskEditorEvent.Add -> stateHolder.openEditor(TaskEditorUi(day = stateHolder.state.value.day))
+            TaskEditorEvent.Add -> stateHolder.setEditor(TaskEditorUi(day = stateHolder.state.value.day))
 
             is TaskEditorEvent.Edit -> open(event.taskId)
 
@@ -47,11 +47,11 @@ internal class TaskEditorHandler(
             TaskEditorEvent.Save -> save()
 
             is TaskEditorEvent.Delete -> {
-                stateHolder.closeEditor()
+                stateHolder.setEditor(null)
                 stateHolder.askToDelete(DELETE_DIALOG, event.taskId)
             }
 
-            TaskEditorEvent.Dismiss -> stateHolder.closeEditor()
+            TaskEditorEvent.Dismiss -> stateHolder.setEditor(null)
         }
     }
 
@@ -67,7 +67,7 @@ internal class TaskEditorHandler(
     private fun open(taskId: String) {
         val state = stateHolder.state.value
         val task = (state.tasks + state.overdue).find { it.id == taskId }?.task ?: return
-        stateHolder.openEditor(
+        stateHolder.setEditor(
             TaskEditorUi(
                 taskId = taskId,
                 title = task.title,
@@ -91,7 +91,7 @@ internal class TaskEditorHandler(
             }
             result
                 .onSuccess {
-                    stateHolder.closeEditor()
+                    stateHolder.setEditor(null)
                     errorHandler.onSaved(UiText.Resource(Res.string.tasks_saved))
                 }
                 .onFailure { onSaveFailure(it.asAppError()) }

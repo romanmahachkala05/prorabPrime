@@ -61,6 +61,7 @@ import ru.prorabprime.domain.usecase.ObserveExpensesUseCase
 import ru.prorabprime.domain.usecase.ObserveFailedChangesUseCase
 import ru.prorabprime.domain.usecase.ObserveFinanceUseCase
 import ru.prorabprime.domain.usecase.ObserveMaterialsUseCase
+import ru.prorabprime.domain.usecase.ObserveNextTaskUseCase
 import ru.prorabprime.domain.usecase.ObserveObjectSortUseCase
 import ru.prorabprime.domain.usecase.ObserveObjectUseCase
 import ru.prorabprime.domain.usecase.ObserveObjectsUseCase
@@ -158,6 +159,7 @@ val dataModule: Module = module {
     factory { ObserveDayTasksUseCase(get()) }
     factory { ObserveOverdueTasksUseCase(get()) }
     factory { ObserveTasksRangeUseCase(get()) }
+    factory { ObserveNextTaskUseCase(get()) }
     factory { SaveTaskUseCase(get()) }
     factory { DeleteTaskUseCase(get()) }
     factory { ObserveServerSettingsUseCase(get()) }

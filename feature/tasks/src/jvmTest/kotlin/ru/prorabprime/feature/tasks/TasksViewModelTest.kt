@@ -11,6 +11,7 @@ import ru.prorabprime.domain.model.TaskDraft
 import ru.prorabprime.domain.model.TaskId
 import ru.prorabprime.domain.usecase.DeleteTaskUseCase
 import ru.prorabprime.domain.usecase.ObserveDayTasksUseCase
+import ru.prorabprime.domain.usecase.ObserveNextTaskUseCase
 import ru.prorabprime.domain.usecase.ObserveOverdueTasksUseCase
 import ru.prorabprime.domain.usecase.ObserveTasksRangeUseCase
 import ru.prorabprime.domain.usecase.SaveTaskUseCase
@@ -38,6 +39,7 @@ class TasksViewModelTest {
                 observeDay = ObserveDayTasksUseCase(repository),
                 observeOverdue = ObserveOverdueTasksUseCase(repository),
                 observeRange = ObserveTasksRangeUseCase(repository),
+                observeNext = ObserveNextTaskUseCase(repository),
                 saveTask = SaveTaskUseCase(repository),
                 deleteTask = DeleteTaskUseCase(repository),
             ),
@@ -153,6 +155,22 @@ class TasksViewModelTest {
         assertThat(LocalDay.of(2026, 12, 1).nextMonth()).isEqualTo(LocalDay.of(2027, 1, 1))
         assertThat(LocalDay.of(2026, 1, 15).previousMonth()).isEqualTo(LocalDay.of(2025, 12, 1))
         assertThat(LocalDay.of(2024, 2, 10).lastOfMonth()).isEqualTo(LocalDay.of(2024, 2, 29))
+    }
+
+    @Test
+    fun `an empty day points at the nearest open plan after it, and follows the day`() {
+        repository.tasks.value = listOf(
+            aTask("far", "Далеко", today.plusDays(9)),
+            aTask("near", "Ближе", today.plusDays(3)),
+            aTask("done", "Сделано", today.plusDays(1), done = true),
+        )
+
+        assertThat(state.nextPlan).isEqualTo(NextPlanUi(today.plusDays(3), "Ближе", 3))
+
+        viewModel.onEvent(TasksEvent.DayPicked(today.plusDays(3)))
+        assertThat(state.nextPlan).isEqualTo(NextPlanUi(today.plusDays(9), "Далеко", 6))
+        viewModel.onEvent(TasksEvent.DayPicked(today.plusDays(9)))
+        assertThat(state.nextPlan).isNull()
     }
 
     @Test
