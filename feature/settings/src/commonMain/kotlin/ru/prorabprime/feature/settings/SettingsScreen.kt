@@ -48,24 +48,36 @@ import ru.prorabprime.feature.settings.resources.settings_check_succeeded
 import ru.prorabprime.feature.settings.resources.settings_save
 import ru.prorabprime.feature.settings.resources.settings_title
 import ru.prorabprime.feature.settings.resources.settings_token_label
+import ru.prorabprime.feature.settings.resources.settings_trash
 import ru.prorabprime.ui.UiText
 import ru.prorabprime.ui.resolve
 
 @Composable
-fun SettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
+fun SettingsScreen(
+    onBack: () -> Unit,
+    onOpenTrash: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     // A public function cannot take an internal type, so koinViewModel()'s default lives on
     // the private overload and SettingsViewModel stays internal.
-    SettingsScreen(onBack = onBack, modifier = modifier, viewModel = koinViewModel())
+    SettingsScreen(onBack = onBack, onOpenTrash = onOpenTrash, modifier = modifier, viewModel = koinViewModel())
 }
 
 @Composable
 private fun SettingsScreen(
     onBack: () -> Unit,
+    onOpenTrash: () -> Unit,
     modifier: Modifier,
     viewModel: SettingsViewModel,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    SettingsContent(state = state, onEvent = viewModel::onEvent, onBack = onBack, modifier = modifier)
+    SettingsContent(
+        state = state,
+        onEvent = viewModel::onEvent,
+        onBack = onBack,
+        modifier = modifier,
+        onOpenTrash = onOpenTrash,
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -75,6 +87,7 @@ internal fun SettingsContent(
     onEvent: (SettingsEvent) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenTrash: () -> Unit = {},
 ) {
     BusyScreen(state.isSaving || state.check == ConnectionCheck.Running, modifier) {
         Scaffold(
@@ -94,7 +107,7 @@ internal fun SettingsContent(
             },
         ) { padding ->
             when (state.status) {
-                SettingsStatus.Content -> SettingsForm(state, onEvent, Modifier.padding(padding))
+                SettingsStatus.Content -> SettingsForm(state, onEvent, onOpenTrash, Modifier.padding(padding))
                 SettingsStatus.Loading -> LoadingBox(Modifier.padding(padding))
             }
         }
@@ -105,6 +118,7 @@ internal fun SettingsContent(
 private fun SettingsForm(
     state: SettingsState,
     onEvent: (SettingsEvent) -> Unit,
+    onOpenTrash: () -> Unit,
     modifier: Modifier,
 ) {
     Column(
@@ -137,6 +151,9 @@ private fun SettingsForm(
             loading = state.isSaving,
             modifier = Modifier.fillMaxWidth(),
         ) { Text(stringResource(Res.string.settings_save)) }
+        OutlinedButton(onClick = onOpenTrash, modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(Res.string.settings_trash))
+        }
     }
 }
 

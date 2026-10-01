@@ -13,6 +13,7 @@ import ru.prorabprime.feature.objects.objectsModule
 import ru.prorabprime.feature.settings.settingsModule
 import ru.prorabprime.feature.sync.syncModule
 import ru.prorabprime.feature.tasks.tasksModule
+import ru.prorabprime.feature.trash.trashModule
 import ru.prorabprime.shared.navigation.AppNavDisplay
 import ru.prorabprime.ui.di.uiModule
 
@@ -40,4 +41,5 @@ val appModules: List<Module> =
         tasksModule,
         syncModule,
         expensesModule,
+        trashModule,
     )

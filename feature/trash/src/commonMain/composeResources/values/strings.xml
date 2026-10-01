@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="trash_title">Корзина</string>
+    <string name="trash_back">Назад</string>
+    <string name="trash_empty_hint">В корзине пусто. Удалённое хранится здесь 30 дней.</string>
+    <string name="trash_section_objects">Объекты</string>
+    <string name="trash_section_photos">Фото и чеки</string>
+    <string name="trash_kind_photo">Фото</string>
+    <string name="trash_kind_receipt">Чек</string>
+    <string name="trash_photo_count">Фото: %1$d</string>
+    <plurals name="trash_days_left">
+        <item quantity="one">остался %1$d день</item>
+        <item quantity="few">осталось %1$d дня</item>
+        <item quantity="many">осталось %1$d дней</item>
+        <item quantity="other">осталось %1$d дня</item>
+    </plurals>
+    <string name="trash_restore">Восстановить</string>
+    <string name="trash_purge">Удалить навсегда</string>
+    <string name="trash_empty_all">Очистить</string>
+    <string name="trash_restored">Восстановлено</string>
+    <string name="trash_purged">Удалено навсегда</string>
+    <string name="trash_purge_title">Удалить навсегда?</string>
+    <string name="trash_purge_object_message">Объект со всеми фотографиями и чеками будет удалён без возможности восстановить.</string>
+    <string name="trash_purge_photo_message">Снимок будет удалён без возможности восстановить.</string>
+    <string name="trash_purge_confirm">Удалить</string>
+    <string name="trash_empty_title">Очистить корзину?</string>
+    <string name="trash_empty_message">Всё, что в корзине, будет удалено без возможности восстановить.</string>
+    <string name="trash_empty_confirm">Очистить</string>
+</resources>

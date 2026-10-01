@@ -12,6 +12,7 @@
     <string name="settings_check_unreachable">Сервер не отвечает по этому адресу. Проверьте адрес и что телефон в той же сети Wi‑Fi.</string>
     <string name="settings_check_bad_token">Сервер отвечает, но не принял токен.</string>
     <string name="settings_error_address">Адрес должен начинаться с http:// или https://</string>
+    <string name="settings_trash">Корзина</string>
     <string name="settings_save">Сохранить</string>
     <string name="settings_saved">Настройки сохранены</string>
 </resources>
