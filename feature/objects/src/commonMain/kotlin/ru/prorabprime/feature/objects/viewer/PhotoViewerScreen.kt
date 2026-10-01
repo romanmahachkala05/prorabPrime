@@ -183,7 +183,7 @@ private fun NoteBar(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .background(BAR_SCRIM)
+            .background(NOTE_SCRIM)
             .navigationBarsPadding(),
     ) {
         if (photo.isReceipt) {
@@ -374,3 +374,6 @@ private const val DIALOG_NOTE_LINES = 6
 private const val AMOUNT_LIMIT = 14
 private const val DATE_LIMIT = 10
 private val BAR_SCRIM = Color(0x66000000)
+
+/** Darker than the top bar: it carries text over a picture that may be white, like a receipt. */
+private val NOTE_SCRIM = Color(0xCC000000)
