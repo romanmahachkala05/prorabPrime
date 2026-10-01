@@ -30,6 +30,7 @@ import ru.prorabprime.server.routes.materialRoutes
 import ru.prorabprime.server.routes.objectRoutes
 import ru.prorabprime.server.routes.photoRoutes
 import ru.prorabprime.server.routes.taskRoutes
+import ru.prorabprime.server.routes.webAppRoutes
 
 /** Wire format shared by every route. Unknown fields are ignored so older clients keep working. */
 val ApiJson = Json {
@@ -74,5 +75,7 @@ fun Application.configure(config: AppConfig, koinModules: List<Module>) {
             taskRoutes()
             fileRoutes()
         }
+        // After the API, so a path the API knows is never taken for a file of the web app.
+        webAppRoutes(config.webDir)
     }
 }

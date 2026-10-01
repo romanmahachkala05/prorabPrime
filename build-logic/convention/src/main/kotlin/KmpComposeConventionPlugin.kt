@@ -32,6 +32,11 @@ class KmpComposeConventionPlugin : Plugin<Project> {
                 }
             }
 
+            // Wasm tests are off (see the library plugins), so the check that wants a bundled
+            // executable for them has nothing to guard.
+            tasks.matching { it.name == "checkComposeUiTestConfigurationForWasmJs" }
+                .configureEach { enabled = false }
+
             extensions.configure<KotlinMultiplatformExtension> {
                 sourceSets.named("commonMain").configure {
                     dependencies {

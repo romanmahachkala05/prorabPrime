@@ -91,6 +91,16 @@ class MapViewportTest {
         assertThat(viewport.isFitted).isFalse()
     }
 
+    @Test
+    fun `before any pin the map looks at Moscow`() {
+        val viewport = MapViewport()
+
+        assertThat(viewport.centerX).isWithin(1e-9).of(WebMercator.x(37.62))
+        assertThat(viewport.centerY).isWithin(1e-9).of(WebMercator.y(55.75))
+        assertThat(viewport.zoom).isEqualTo(5f)
+        assertThat(viewport.isFitted).isFalse()
+    }
+
     private fun worldUnder(viewport: MapViewport, finger: Pair<Float, Float>): Pair<Double, Double> {
         val world = WebMercator.worldPx(viewport.zoom, view.tilePx)
         return (viewport.centerX + (finger.first - view.width / 2) / world) to

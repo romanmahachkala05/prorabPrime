@@ -6,8 +6,8 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 /**
  * For pure `commonMain` modules with no platform code (`:core:domain`, `:api-contract`).
  *
- * `jvm()` is the only target for now: the server consumes it directly, and an Android consumer
- * resolves the same variant. `wasmJs()` joins in stage 3 (ADR-0004).
+ * `jvm()` is what the server consumes directly and an Android consumer resolves; `wasmJs()` is
+ * for the web client (ADR-0004, ADR-0016).
  */
 class KmpLibraryConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) {
@@ -19,6 +19,8 @@ class KmpLibraryConventionPlugin : Plugin<Project> {
 
             extensions.configure<KotlinMultiplatformExtension> {
                 jvm()
+                // Compiled only: tests run on the JVM target, so the browser's test task is off.
+                wasmJs { browser { testTask { enabled = false } } }
                 // An Android consumer resolves the `jvm` variant of these modules, so the
                 // bytecode level has to match what AGP compiles the rest of the app to.
                 jvmToolchain(17)

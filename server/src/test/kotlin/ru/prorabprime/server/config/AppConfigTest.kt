@@ -35,6 +35,13 @@ class AppConfigTest {
     }
 
     @Test
+    fun `the web directory is read when set and absent otherwise`() {
+        assertThat(AppConfig.from(config()).webDir).isNull()
+        assertThat(AppConfig.from(config().apply { put("prorab.web.dir", " ./web ") }).webDir).isEqualTo("./web")
+        assertThat(AppConfig.from(config().apply { put("prorab.web.dir", "  ") }).webDir).isNull()
+    }
+
+    @Test
     fun `a missing token names the variable to set`() {
         val error = assertThrows(IllegalStateException::class.java) { AppConfig.from(config(token = null)) }
 

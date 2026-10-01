@@ -34,6 +34,7 @@ entries below are the points where this project departs from it or goes beyond i
 | [0013](#adr-0013) | The server geocodes addresses through Nominatim, and may be told not to | Accepted |
 | [0014](#adr-0014) | The map is drawn in Compose over OpenStreetMap tiles | Accepted, **amends** 0008 |
 | [0015](#adr-0015) | Reminders are alarm-clock alarms, remembered for a reboot | Accepted |
+| [0016](#adr-0016) | The web client is the same UI as Kotlin/Wasm, served by the server | Accepted, **amends** 0004 |
 
 ---
 
@@ -480,4 +481,42 @@ for as long as the process lives, and a failed load leaves the alarms as they we
 server. The alarm icon shows while one is pending.
 
 **Review when:** the server is on the internet and pushes can wake the phone instead.
+
+---
+
+## ADR-0016
+
+### The web client is the same UI as Kotlin/Wasm, served by the server
+
+**Accepted** · 2026-10-01 · **amends** [ADR-0004](#adr-0004)
+
+**Context.** ADR-0004 kept `commonMain` free of platform APIs so a web client could reuse the
+screens, and checked that the UI stack publishes `wasm-js` variants. The customer wants a web
+version once the Android features are in.
+
+**Decision.** Every client KMP module gets a `wasmJs` target from its convention plugin, and `:web`
+is the browser entry point: Koin, Coil over the shared `HttpClient`, and `ComposeViewport`. The
+platform parts are a handful of `wasmJsMain` files: the Ktor `Js` engine, settings in `localStorage`,
+image compression through a canvas, the file chooser as the camera and gallery, and a console log.
+The server serves the built site at `/` (`WEB_DIR`), so the page and the API share an origin: no
+CORS, and the server address defaults to the page's own. The API token is typed into the settings
+once and kept in `localStorage`; the site itself holds no secret.
+
+The build needed three accommodations, each recorded where it is made: `base` replaces the root's
+hand-made `clean` task (the Wasm toolchain wants the real one); settings repositories declare the
+Node.js, Binaryen and Yarn distributions and `PREFER_SETTINGS` ignores the project repositories the
+toolchain adds; and Karma, which the toolchain installs from a GitHub fork for browser tests,
+is pinned to the registry's 6.4.4 because no test runs in a browser.
+
+**Alternatives rejected.**
+- *A separate JavaScript front end.* Re-implements every screen and drifts from the app.
+- *The web served by a separate static host.* Needs CORS on the server and a second place to configure.
+- *Baking the token into the site.* Anyone who can load the page would have it.
+
+**Consequences.** The web client has no reminders (no `ReminderScheduler`; the day plan itself works).
+`verify` builds the site, which takes a few minutes the first time. The map's tile loading and
+the settings screen are shared with Android as they are. A browser needs WebAssembly GC.
+
+**Review when:** the web client must work offline, or must be installable (a service worker and a
+manifest), or the token should not live in `localStorage`.
 

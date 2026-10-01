@@ -1,5 +1,7 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 plugins {
+    // Provides `clean`; the Kotlin/Wasm Node setup applies it to the root project, so a hand-made one would clash.
+    base
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.android.kotlin.multiplatform.library) apply false
     alias(libs.plugins.kotlin.multiplatform) apply false
@@ -12,10 +14,12 @@ plugins {
     alias(libs.plugins.detekt) apply false
 }
 
-tasks.register<Delete>("clean") {
-    group = "build"
-    description = "Deletes the root build directory."
-    delete(rootProject.layout.buildDirectory)
+// The Kotlin/Wasm tooling installs Karma, the browser test runner, from a fork hosted on GitHub; no
+// test here runs in a browser, so a release from the npm registry does as well and needs no GitHub.
+plugins.withType<org.jetbrains.kotlin.gradle.targets.wasm.nodejs.WasmNodeJsRootPlugin> {
+    extensions.configure<org.jetbrains.kotlin.gradle.targets.wasm.nodejs.WasmNodeJsRootExtension> {
+        versions.karma.version = "6.4.4"
+    }
 }
 
 /** A module with instrumented tests, and the task suffixes that build and run them. */
@@ -43,9 +47,13 @@ val androidTestModules = buildableSubprojects.flatMap { project ->
  */
 tasks.register("verify") {
     group = "verification"
-    description = "Checks formatting and static analysis, assembles the debug APK and every instrumented test APK, runs every unit test in every module. No device needed."
+    description = "Checks formatting and static analysis, assembles the debug APK and every instrumented test APK, builds the web site, runs every unit test in every module. No device needed."
     findProject(":app")?.let { dependsOn("${it.path}:assembleDebug") }
     dependsOn(buildableSubprojects.map { "${it.path}:check" })
+    // The web client: every module's `wasmJs` target compiles (a `check` does not build it, as no
+    // test runs there), and the site itself builds.
+    dependsOn(provider { buildableSubprojects.mapNotNull { it.tasks.findByName("compileKotlinWasmJs")?.path } })
+    findProject(":web")?.let { dependsOn("${it.path}:wasmJsBrowserDistribution") }
     // Instrumented tests cannot run without a device, but they compile without one.
     dependsOn(androidTestModules.map { "${it.project.path}:${it.assembleTask}" })
 }

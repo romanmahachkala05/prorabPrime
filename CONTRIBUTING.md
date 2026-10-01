@@ -15,7 +15,8 @@ Two gates, both real tasks in the root `build.gradle.kts`:
     ./gradlew verify           # every change, every time. No device needed.
     ./gradlew verifyOnDevice   # before merging into dev. Needs a device/emulator.
 
-- **`verify`** = `:app:assembleDebug` + every subproject's own `check` task —
+- **`verify`** = `:app:assembleDebug` + the web site (`:web:wasmJsBrowserDistribution`, plus every
+  module's `compileKotlinWasmJs`) + every subproject's own `check` task —
   ktlint, detekt, and the unit tests all attach themselves to `check`, so `verify`
   depends on `check` itself rather than naming module-specific task paths. A new
   module is wired into `verify` automatically. It also compiles every instrumented

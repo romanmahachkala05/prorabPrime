@@ -9,6 +9,8 @@ data class AppConfig(
     val apiToken: String,
     /** A Nominatim-compatible server that turns addresses into map points; null switches geocoding off. */
     val geocoderUrl: String? = DEFAULT_GEOCODER_URL,
+    /** The built web app to serve at `/`; null serves none. */
+    val webDir: String? = null,
 ) {
     // Configs get logged; secrets must not be.
     override fun toString() = "AppConfig(database=$database, storageDir=$storageDir, apiToken=***)"
@@ -30,6 +32,7 @@ data class AppConfig(
                 storageDir = config.required("prorab.storage.dir", "STORAGE_DIR"),
                 apiToken = token,
                 geocoderUrl = geocoderUrl(config),
+                webDir = config.propertyOrNull("prorab.web.dir")?.getString()?.trim()?.takeIf { it.isNotEmpty() },
             )
         }
 

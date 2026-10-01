@@ -17,6 +17,9 @@ on the owner's computer and an Android app talking to it over the local Wi-Fi.
 - **Android SDK** (Android Studio installs it), with `sdk.dir` in `local.properties`.
 - **Docker** — optional. Without it the server runs over an embedded PostgreSQL (below).
 
+The same screens run in a browser: the server serves the web app (Kotlin/Wasm, Compose), see
+[the web app](#the-web-app) below.
+
 ## 1. Configure the server
 
 Copy `.env.example` to `.env` and replace every `change-me`:
@@ -137,3 +140,23 @@ The phone and the computer must be on the same Wi-Fi network.
 Formatting, static analysis, every unit test and the debug APK; the server's PostgreSQL tests run
 in Docker, or over embedded PostgreSQL when Docker is missing (ADR-0006, ADR-0007). See
 [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+## The web app
+
+The web client is the same Compose UI compiled to WebAssembly. It needs a recent browser (Chrome,
+Edge or Firefox from the last two years, Safari 18.2+). The server serves it, so the page and the API
+share an address and nothing needs CORS.
+
+```bash
+./gradlew :web:wasmJsBrowserDistribution
+```
+
+builds the site into `web/build/dist/wasmJs/productionExecutable` (the first build downloads Node.js,
+Yarn and Binaryen into `~/.gradle`). `.env.example` points `WEB_DIR` at that folder; start the server
+and open `http://<this computer>:8080/` in a browser. The first time, open the settings (the gear),
+type the API token, and press save: it is kept in that browser's `localStorage`. The server address
+is the one the page came from.
+
+In the browser the camera button opens the file chooser (a phone's browser goes straight to the
+camera), and the day plan has no alarms: reminders are an Android feature.
+

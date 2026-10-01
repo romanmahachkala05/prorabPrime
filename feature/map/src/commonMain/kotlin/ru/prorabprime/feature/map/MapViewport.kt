@@ -16,8 +16,8 @@ import ru.prorabprime.domain.model.GeoPoint
  */
 @Stable
 internal class MapViewport(
-    centerX: Double = WORLD_CENTRE,
-    centerY: Double = WORLD_CENTRE,
+    centerX: Double = DEFAULT_CENTER_X,
+    centerY: Double = DEFAULT_CENTER_Y,
     zoom: Float = DEFAULT_ZOOM,
 ) {
     var centerX by mutableStateOf(centerX)
@@ -81,8 +81,12 @@ internal class MapViewport(
     )
 
     companion object {
-        private const val WORLD_CENTRE = 0.5
-        private const val DEFAULT_ZOOM = 4f
+        // Before any pin is known the map looks at Moscow: this is an app for a Russian business.
+        private val DEFAULT_CENTER_X = WebMercator.x(MOSCOW_LONGITUDE)
+        private val DEFAULT_CENTER_Y = WebMercator.y(MOSCOW_LATITUDE)
+        private const val MOSCOW_LATITUDE = 55.75
+        private const val MOSCOW_LONGITUDE = 37.62
+        private const val DEFAULT_ZOOM = 5f
         private const val MIN_SPAN = 1e-6
         private const val FIT_FILL = 0.7
         private const val MAX_FIT_ZOOM = 16f
