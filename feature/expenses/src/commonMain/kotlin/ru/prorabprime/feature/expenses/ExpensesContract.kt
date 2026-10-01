@@ -2,7 +2,15 @@ package ru.prorabprime.feature.expenses
 
 import androidx.compose.runtime.Immutable
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentMapOf
+import ru.prorabprime.domain.model.ExpenseKind
+import ru.prorabprime.domain.model.FieldProblem
+import ru.prorabprime.domain.model.LocalDay
+import ru.prorabprime.domain.model.LocalImageRef
+import ru.prorabprime.domain.model.ObjectField
+import ru.prorabprime.domain.model.PaymentMethod
 import ru.prorabprime.ui.UiText
 
 internal enum class ExpenseFilter {
@@ -59,6 +67,32 @@ internal data class ExpenseRowUi(
     val photoId: String?,
 )
 
+/** An object to put a new expense on. */
+@Immutable
+internal data class ObjectChoiceUi(
+    val id: String,
+    val title: String,
+)
+
+/** The form for an expense written by hand: a payment to the crew, or a receipt from a picture file. */
+@Immutable
+internal data class NewExpenseUi(
+    val day: LocalDay,
+    val kind: ExpenseKind = ExpenseKind.CREW,
+    val objectId: String? = null,
+    val amountText: String = "",
+    val method: PaymentMethod = PaymentMethod.CASH,
+    val note: String = "",
+    /** The picture of a receipt. */
+    val image: LocalImageRef? = null,
+    val errors: ImmutableMap<ObjectField, FieldProblem> = persistentMapOf(),
+    /** Set by a save that found no object chosen, cleared by choosing one. */
+    val needsObject: Boolean = false,
+    /** Set by a save of a receipt with no picture, cleared by picking one. */
+    val needsPicture: Boolean = false,
+    val isSaving: Boolean = false,
+)
+
 @Immutable
 internal data class ExpensesState(
     val status: ExpensesStatus = ExpensesStatus.Loading,
@@ -70,4 +104,51 @@ internal data class ExpensesState(
     val rows: ImmutableList<ExpenseRowUi> = persistentListOf(),
     /** Before the filter: zero means there is nothing spent at all. */
     val allRows: Int = 0,
+    /** What the form offers to put an expense on, in the order the list shows objects. */
+    val objects: ImmutableList<ObjectChoiceUi> = persistentListOf(),
+    val form: NewExpenseUi? = null,
 )
+
+internal sealed interface ExpensesEvent {
+    data class FilterSelected(
+        val filter: ExpenseFilter,
+    ) : ExpensesEvent
+
+    /** The plus button. */
+    data object AddClicked : ExpensesEvent
+}
+
+/** Every event of the form for an expense by hand. */
+internal sealed interface ExpenseFormEvent : ExpensesEvent {
+    data class KindChanged(
+        val kind: ExpenseKind,
+    ) : ExpenseFormEvent
+
+    data class ObjectChosen(
+        val objectId: String,
+    ) : ExpenseFormEvent
+
+    data class AmountChanged(
+        val text: String,
+    ) : ExpenseFormEvent
+
+    data class DayChanged(
+        val day: LocalDay,
+    ) : ExpenseFormEvent
+
+    data class MethodChanged(
+        val method: PaymentMethod,
+    ) : ExpenseFormEvent
+
+    data class NoteChanged(
+        val text: String,
+    ) : ExpenseFormEvent
+
+    data class ImagePicked(
+        val image: LocalImageRef,
+    ) : ExpenseFormEvent
+
+    data object Save : ExpenseFormEvent
+
+    data object Dismiss : ExpenseFormEvent
+}

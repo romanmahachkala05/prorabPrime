@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,8 +17,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -42,6 +45,7 @@ import ru.prorabprime.designsystem.components.TopAppBar
 import ru.prorabprime.designsystem.theme.Corners
 import ru.prorabprime.designsystem.theme.Spacing
 import ru.prorabprime.feature.expenses.resources.Res
+import ru.prorabprime.feature.expenses.resources.expenses_add
 import ru.prorabprime.feature.expenses.resources.expenses_all
 import ru.prorabprime.feature.expenses.resources.expenses_back
 import ru.prorabprime.feature.expenses.resources.expenses_by_month
@@ -72,14 +76,14 @@ fun ExpensesScreen(
 ) {
     val viewModel: ExpensesViewModel = koinViewModel()
     val state by viewModel.state.collectAsStateWithLifecycle()
-    ExpensesContent(state, viewModel::selectFilter, onOpenReceipt, onOpenObject, onBack, modifier)
+    ExpensesContent(state, viewModel::onEvent, onOpenReceipt, onOpenObject, onBack, modifier)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun ExpensesContent(
     state: ExpensesState,
-    onFilter: (ExpenseFilter) -> Unit,
+    onEvent: (ExpensesEvent) -> Unit,
     onOpenReceipt: (objectId: String, photoId: String) -> Unit,
     onOpenObject: (objectId: String) -> Unit,
     onBack: () -> Unit,
@@ -97,6 +101,15 @@ internal fun ExpensesContent(
                 },
             )
         },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { onEvent(ExpensesEvent.AddClicked) },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+            ) {
+                Icon(Icons.Default.Add, stringResource(Res.string.expenses_add))
+            }
+        },
     ) { padding ->
         Box(Modifier.padding(padding).fillMaxSize()) {
             when (val status = state.status) {
@@ -108,23 +121,24 @@ internal fun ExpensesContent(
                     if (state.allRows == 0) {
                         EmptyMessage(UiText.Resource(Res.string.expenses_empty))
                     } else {
-                        Report(state, onFilter, onOpenReceipt, onOpenObject)
+                        Report(state, onEvent, onOpenReceipt, onOpenObject)
                     }
             }
         }
     }
+    state.form?.let { AddExpenseDialog(it, state.objects, onEvent) }
 }
 
 @Composable
 private fun Report(
     state: ExpensesState,
-    onFilter: (ExpenseFilter) -> Unit,
+    onEvent: (ExpensesEvent) -> Unit,
     onOpenReceipt: (String, String) -> Unit,
     onOpenObject: (String) -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(Spacing.m),
+        contentPadding = PaddingValues(Spacing.m, Spacing.m, Spacing.m, FAB_CLEARANCE),
         verticalArrangement = Arrangement.spacedBy(Spacing.s),
     ) {
         item(key = "summary") { Summary(state.summary) }
@@ -139,7 +153,7 @@ private fun Report(
             items(state.byMonth, key = { "month:" + it.key }) { BarLine(it, onClick = null) }
         }
         item(key = "all-title") { SectionTitle(Res.string.expenses_all) }
-        item(key = "filter") { Filters(state.filter, onFilter) }
+        item(key = "filter") { Filters(state.filter) { onEvent(ExpensesEvent.FilterSelected(it)) } }
         items(state.rows, key = { "row:" + it.id }) { row ->
             ExpenseRow(row) {
                 if (row.photoId != null) onOpenReceipt(row.objectId, row.photoId) else onOpenObject(row.objectId)
@@ -290,3 +304,6 @@ private fun ExpenseRow(row: ExpenseRowUi, onClick: () -> Unit) {
 }
 
 private val BAR_HEIGHT = 6.dp
+
+/** Room under the last row, so the plus button never covers it. */
+private val FAB_CLEARANCE = 88.dp

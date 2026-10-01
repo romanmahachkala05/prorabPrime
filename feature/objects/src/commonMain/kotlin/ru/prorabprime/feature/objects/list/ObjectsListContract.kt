@@ -42,11 +42,11 @@ internal data class ObjectCardUi(
     val isPending: Boolean = false,
 )
 
-/** A picture just taken, waiting for the user to say which object and folder it goes to. */
+/** A picture just taken with the photo or the receipt button, waiting for the user to pick the object. */
 @Immutable
 internal data class CaptureUi(
     val images: ImmutableList<LocalImageRef>,
-    val kind: AttachmentKind = AttachmentKind.PHOTO,
+    val kind: AttachmentKind,
     /** Written for every picture of this batch; empty is no note. */
     val note: String = "",
 )
@@ -79,9 +79,6 @@ internal sealed interface ObjectsListEvent {
     /** Pictures came back from the camera. */
     data class PhotosCaptured(
         val images: List<LocalImageRef>,
-    ) : ObjectsListEvent
-
-    data class CaptureKindChanged(
         val kind: AttachmentKind,
     ) : ObjectsListEvent
 

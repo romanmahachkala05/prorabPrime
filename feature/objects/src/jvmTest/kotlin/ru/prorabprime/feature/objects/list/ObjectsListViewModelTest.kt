@@ -163,7 +163,9 @@ class ObjectsListViewModelTest {
         advanceTimeBy(301)
         runCurrent()
 
-        viewModel.onEvent(ObjectsListEvent.PhotosCaptured(listOf(LocalImageRef("file:///shot.jpg"))))
+        viewModel.onEvent(
+            ObjectsListEvent.PhotosCaptured(listOf(LocalImageRef("file:///shot.jpg")), AttachmentKind.PHOTO),
+        )
         assertThat(state.capture?.kind).isEqualTo(AttachmentKind.PHOTO)
         assertThat(photos.uploaded).isEmpty()
 
@@ -181,7 +183,9 @@ class ObjectsListViewModelTest {
         objects.objects.value = listOf(anObjectSummary(id = "a"))
         advanceTimeBy(301)
         runCurrent()
-        viewModel.onEvent(ObjectsListEvent.PhotosCaptured(listOf(LocalImageRef("file:///shot.jpg"))))
+        viewModel.onEvent(
+            ObjectsListEvent.PhotosCaptured(listOf(LocalImageRef("file:///shot.jpg")), AttachmentKind.PHOTO),
+        )
 
         viewModel.onEvent(ObjectsListEvent.CaptureNoteChanged("Розетка не по плану"))
         assertThat(state.capture?.note).isEqualTo("Розетка не по плану")
@@ -192,13 +196,13 @@ class ObjectsListViewModelTest {
     }
 
     @Test
-    fun `the folder can be switched to receipts before choosing`() = runVmTest {
+    fun `a picture from the receipt button goes to the receipts`() = runVmTest {
         objects.objects.value = listOf(anObjectSummary(id = "a"))
         advanceTimeBy(301)
         runCurrent()
-        viewModel.onEvent(ObjectsListEvent.PhotosCaptured(listOf(LocalImageRef("file:///shot.jpg"))))
-
-        viewModel.onEvent(ObjectsListEvent.CaptureKindChanged(AttachmentKind.RECEIPT))
+        viewModel.onEvent(
+            ObjectsListEvent.PhotosCaptured(listOf(LocalImageRef("file:///shot.jpg")), AttachmentKind.RECEIPT),
+        )
         viewModel.onEvent(ObjectsListEvent.CaptureTargetChosen("a"))
         runCurrent()
 
@@ -210,12 +214,16 @@ class ObjectsListViewModelTest {
         objects.objects.value = listOf(anObjectSummary(id = "a"))
         advanceTimeBy(301)
         runCurrent()
-        viewModel.onEvent(ObjectsListEvent.PhotosCaptured(listOf(LocalImageRef("file:///shot.jpg"))))
+        viewModel.onEvent(
+            ObjectsListEvent.PhotosCaptured(listOf(LocalImageRef("file:///shot.jpg")), AttachmentKind.PHOTO),
+        )
         viewModel.onEvent(ObjectsListEvent.CaptureDismissed)
         assertThat(state.capture).isNull()
 
         photos.error = AppError.Network
-        viewModel.onEvent(ObjectsListEvent.PhotosCaptured(listOf(LocalImageRef("file:///shot.jpg"))))
+        viewModel.onEvent(
+            ObjectsListEvent.PhotosCaptured(listOf(LocalImageRef("file:///shot.jpg")), AttachmentKind.PHOTO),
+        )
         viewModel.onEvent(ObjectsListEvent.CaptureTargetChosen("a"))
         runCurrent()
 

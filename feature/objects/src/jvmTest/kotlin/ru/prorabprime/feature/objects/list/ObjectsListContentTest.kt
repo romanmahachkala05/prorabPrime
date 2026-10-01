@@ -27,7 +27,8 @@ class ObjectsListContentTest {
     private val events = mutableListOf<ObjectsListEvent>()
     private val opened = mutableListOf<String>()
     private var created = 0
-    private var cameraOpened = 0
+    private var photoCameraOpened = 0
+    private var receiptCameraOpened = 0
     private var expensesOpened = 0
     private var offerExpenses = false
 
@@ -45,7 +46,8 @@ class ObjectsListContentTest {
                 onOpenObject = { opened += it },
                 onCreateObject = { created++ },
                 onOpenSettings = {},
-                onOpenCamera = { cameraOpened++ },
+                onOpenPhotoCamera = { photoCameraOpened++ },
+                onOpenReceiptCamera = { receiptCameraOpened++ },
                 onOpenExpenses = if (offerExpenses) ({ expensesOpened++ }) else null,
             )
         }
@@ -135,27 +137,26 @@ class ObjectsListContentTest {
     }
 
     @Test
-    fun `the camera button opens the camera`() = runComposeUiTest {
+    fun `the two camera buttons open the camera for a photo and for a receipt`() = runComposeUiTest {
         setContent { show(ObjectsListState(status = ObjectsListStatus.Content, items = cards)) }
 
-        onNodeWithContentDescription("Сфотографировать").performClick()
+        onNodeWithContentDescription("Сфотографировать объект").performClick()
+        assertThat(photoCameraOpened).isEqualTo(1)
+        assertThat(receiptCameraOpened).isEqualTo(0)
 
-        assertThat(cameraOpened).isEqualTo(1)
+        onNodeWithContentDescription("Сфотографировать чек").performClick()
+        assertThat(receiptCameraOpened).isEqualTo(1)
     }
 
     @Test
-    fun `a captured picture asks where it goes and sends the chosen object`() = runComposeUiTest {
-        val capture = CaptureUi(persistentListOf(LocalImageRef("file:///shot.jpg")))
+    fun `a captured picture asks for the object only and sends the chosen one`() = runComposeUiTest {
+        val capture = CaptureUi(persistentListOf(LocalImageRef("file:///shot.jpg")), AttachmentKind.RECEIPT)
         setContent { show(ObjectsListState(status = ObjectsListStatus.Content, items = cards, capture = capture)) }
 
-        onNodeWithText("Куда отправить снимок?").assertIsDisplayed()
-        onNodeWithText("Чек").performClick()
+        onNodeWithText("Чек: на какой объект?").assertIsDisplayed()
         // The same title is on the list behind the sheet; the sheet is the last one.
         onAllNodesWithText("Кухня").onLast().performClick()
 
-        assertThat(events).containsExactly(
-            ObjectsListEvent.CaptureKindChanged(AttachmentKind.RECEIPT),
-            ObjectsListEvent.CaptureTargetChosen("1"),
-        ).inOrder()
+        assertThat(events).containsExactly(ObjectsListEvent.CaptureTargetChosen("1"))
     }
 }

@@ -4,9 +4,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -45,6 +45,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -56,7 +57,6 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import ru.prorabprime.designsystem.components.EmptyMessage
 import ru.prorabprime.designsystem.components.ErrorMessage
-import ru.prorabprime.designsystem.components.FilterChip
 import ru.prorabprime.designsystem.components.LoadingBox
 import ru.prorabprime.designsystem.components.PendingMark
 import ru.prorabprime.designsystem.components.SearchField
@@ -73,11 +73,11 @@ import ru.prorabprime.feature.objects.photos.PHOTO_NOTE_LIMIT
 import ru.prorabprime.feature.objects.photos.rememberPhotoSources
 import ru.prorabprime.feature.objects.resources.Res
 import ru.prorabprime.feature.objects.resources.objectslist_add
-import ru.prorabprime.feature.objects.resources.objectslist_camera
+import ru.prorabprime.feature.objects.resources.objectslist_camera_photo
+import ru.prorabprime.feature.objects.resources.objectslist_camera_receipt
 import ru.prorabprime.feature.objects.resources.objectslist_capture_note
-import ru.prorabprime.feature.objects.resources.objectslist_capture_photo
-import ru.prorabprime.feature.objects.resources.objectslist_capture_receipt
-import ru.prorabprime.feature.objects.resources.objectslist_capture_title
+import ru.prorabprime.feature.objects.resources.objectslist_capture_title_photo
+import ru.prorabprime.feature.objects.resources.objectslist_capture_title_receipt
 import ru.prorabprime.feature.objects.resources.objectslist_clear_search
 import ru.prorabprime.feature.objects.resources.objectslist_empty
 import ru.prorabprime.feature.objects.resources.objectslist_empty_action
@@ -129,7 +129,12 @@ private fun ObjectsListScreen(
     viewModel: ObjectsListViewModel,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val camera = rememberPhotoSources(onPicked = { viewModel.onEvent(ObjectsListEvent.PhotosCaptured(it)) })
+    val photoCamera = rememberPhotoSources(
+        onPicked = { viewModel.onEvent(ObjectsListEvent.PhotosCaptured(it, AttachmentKind.PHOTO)) },
+    )
+    val receiptCamera = rememberPhotoSources(
+        onPicked = { viewModel.onEvent(ObjectsListEvent.PhotosCaptured(it, AttachmentKind.RECEIPT)) },
+    )
     ObjectsListContent(
         state = state,
         onEvent = viewModel::onEvent,
@@ -139,7 +144,8 @@ private fun ObjectsListScreen(
         onOpenMap = onOpenMap,
         onOpenTasks = onOpenTasks,
         onOpenExpenses = onOpenExpenses,
-        onOpenCamera = camera::takePhoto,
+        onOpenPhotoCamera = photoCamera::takePhoto,
+        onOpenReceiptCamera = receiptCamera::takePhoto,
         modifier = modifier,
     )
 }
@@ -153,7 +159,8 @@ internal fun ObjectsListContent(
     onCreateObject: () -> Unit,
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
-    onOpenCamera: () -> Unit = {},
+    onOpenPhotoCamera: () -> Unit = {},
+    onOpenReceiptCamera: () -> Unit = {},
     onOpenMap: () -> Unit = {},
     onOpenTasks: () -> Unit = {},
     onOpenExpenses: (() -> Unit)? = null,
@@ -191,17 +198,11 @@ internal fun ObjectsListContent(
             )
         },
         floatingActionButton = {
-            // Big, bottom right, under the thumb: open, shoot, pick where it goes.
-            LargeFloatingActionButton(
-                onClick = onOpenCamera,
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-            ) {
-                Icon(
-                    ProrabIcons.Camera,
-                    contentDescription = stringResource(Res.string.objectslist_camera),
-                    modifier = Modifier.size(40.dp),
-                )
+            // Left: a photo of the object, right: a receipt. The kind is chosen by the button.
+            Row(Modifier.fillMaxWidth().padding(start = Spacing.l), verticalAlignment = Alignment.CenterVertically) {
+                CameraButton(onOpenPhotoCamera, ProrabIcons.Camera, Res.string.objectslist_camera_photo)
+                Spacer(Modifier.weight(1f))
+                CameraButton(onOpenReceiptCamera, ProrabIcons.Receipt, Res.string.objectslist_camera_receipt)
             }
         },
     ) { padding ->
@@ -354,6 +355,21 @@ private fun ObjectTile(item: ObjectCardUi, onClick: () -> Unit) {
     }
 }
 
+@Composable
+private fun CameraButton(
+    onClick: () -> Unit,
+    icon: ImageVector,
+    description: StringResource,
+) {
+    LargeFloatingActionButton(
+        onClick = onClick,
+        containerColor = MaterialTheme.colorScheme.primary,
+        contentColor = MaterialTheme.colorScheme.onPrimary,
+    ) {
+        Icon(icon, contentDescription = stringResource(description), modifier = Modifier.size(40.dp))
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CaptureSheet(
@@ -366,24 +382,18 @@ private fun CaptureSheet(
             modifier = Modifier.padding(horizontal = Spacing.m).padding(bottom = Spacing.l),
             verticalArrangement = Arrangement.spacedBy(Spacing.s),
         ) {
-            Text(stringResource(Res.string.objectslist_capture_title), style = MaterialTheme.typography.titleMedium)
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                FilterChip(
-                    selected = capture.kind == AttachmentKind.PHOTO,
-                    onClick = { onEvent(ObjectsListEvent.CaptureKindChanged(AttachmentKind.PHOTO)) },
-                    label = { Text(stringResource(Res.string.objectslist_capture_photo)) },
-                )
-                FilterChip(
-                    selected = capture.kind == AttachmentKind.RECEIPT,
-                    onClick = { onEvent(ObjectsListEvent.CaptureKindChanged(AttachmentKind.RECEIPT)) },
-                    label = { Text(stringResource(Res.string.objectslist_capture_receipt)) },
-                )
+            val title = if (capture.kind == AttachmentKind.RECEIPT) {
+                Res.string.objectslist_capture_title_receipt
+            } else {
+                Res.string.objectslist_capture_title_photo
             }
+            Text(stringResource(title), style = MaterialTheme.typography.titleMedium)
+            // One line: the sheet is for choosing an object, the note is a side thing.
             OutlinedTextField(
                 value = capture.note,
                 onValueChange = { onEvent(ObjectsListEvent.CaptureNoteChanged(it.take(PHOTO_NOTE_LIMIT))) },
-                label = { Text(stringResource(Res.string.objectslist_capture_note)) },
-                maxLines = NOTE_LINES,
+                placeholder = { Text(stringResource(Res.string.objectslist_capture_note)) },
+                singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
             // The same two-column tiles as the main screen, so choosing an object needs little scrolling.
@@ -402,7 +412,6 @@ private fun CaptureSheet(
 }
 
 private const val GRID_COLUMNS = 2
-private const val NOTE_LINES = 3
 private val TILE_THUMB_SIZE = 56.dp
 private const val TILE_THUMB_RADIUS = 8
 private val CAPTURE_LIST_MAX_HEIGHT = 360.dp
