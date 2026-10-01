@@ -76,6 +76,16 @@ data class PhotoRecord(
     val createdAt: Instant,
     val kind: AttachmentKindDto = AttachmentKindDto.PHOTO,
     val note: String? = null,
+    val receipt: ReceiptData? = null,
+)
+
+/** What a receipt's fiscal QR code says. */
+data class ReceiptData(
+    val amountKopecks: Long,
+    /** Local time at the shop, `2026-10-01T15:26`; null when the code has none. */
+    val purchasedAt: String?,
+    /** The code's text as read. */
+    val qr: String,
 )
 
 data class ObjectListQuery(

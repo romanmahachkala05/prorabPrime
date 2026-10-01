@@ -17,10 +17,12 @@ import ru.prorabprime.server.fakes.FakeFileStorage
 import ru.prorabprime.server.fakes.FakeImageProcessor
 import ru.prorabprime.server.fakes.FakeObjectRepository
 import ru.prorabprime.server.fakes.FakePhotoRepository
+import ru.prorabprime.server.fakes.FakeReceiptReader
 import ru.prorabprime.server.fakes.FixedClock
 import ru.prorabprime.server.fakes.ImmediateTransactor
 import ru.prorabprime.server.model.ObjectFields
 import ru.prorabprime.server.model.ObjectRecord
+import ru.prorabprime.server.model.ReceiptData
 
 class PhotoServiceTest {
 
@@ -28,6 +30,7 @@ class PhotoServiceTest {
     private val objects = FakeObjectRepository(photos)
     private val storage = FakeFileStorage()
     private val images = FakeImageProcessor()
+    private val receipts = FakeReceiptReader()
     private val clock = FixedClock()
     private var nextId = 0
     private val service = PhotoService(
@@ -35,6 +38,7 @@ class PhotoServiceTest {
         photos,
         storage,
         images,
+        receipts,
         ImmediateTransactor,
         clock,
         newId = { UUID.fromString("00000000-0000-0000-0000-%012d".format(++nextId)) },
@@ -205,6 +209,29 @@ class PhotoServiceTest {
     @Test
     fun `deleting an unknown photo is not found`() = runTest {
         assertThat(service.delete(UUID.randomUUID()).serviceError()).isInstanceOf(ServiceError.NotFound::class.java)
+    }
+
+    // --- receipt ---
+
+    @Test
+    fun `a receipt keeps what its code said, and a photo is not even read`() = runTest {
+        receipts.result = ReceiptData(79_000, "2026-10-01T15:26", "t=20261001T1526&s=790.00")
+
+        val receipt = service.upload(objectId, bytes, AttachmentKindDto.RECEIPT).getOrThrow()
+        val photo = service.upload(objectId, bytes, AttachmentKindDto.PHOTO).getOrThrow()
+
+        assertThat(photos.records.getValue(receipt.id).receipt?.amountKopecks).isEqualTo(79_000)
+        assertThat(photos.records.getValue(photo.id).receipt).isNull()
+        assertThat(receipts.reads).isEqualTo(1)
+    }
+
+    @Test
+    fun `a receipt whose code cannot be read is stored all the same`() = runTest {
+        receipts.result = null
+
+        val receipt = service.upload(objectId, bytes, AttachmentKindDto.RECEIPT).getOrThrow()
+
+        assertThat(photos.records.getValue(receipt.id).receipt).isNull()
     }
 
     // --- note ---

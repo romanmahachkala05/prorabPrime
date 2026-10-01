@@ -5,6 +5,7 @@ import ru.prorabprime.contract.ContactDto
 import ru.prorabprime.contract.ObjectDetailsDto
 import ru.prorabprime.contract.ObjectSummaryDto
 import ru.prorabprime.contract.PhotoDto
+import ru.prorabprime.contract.ReceiptDto
 import ru.prorabprime.server.model.ContactRecord
 import ru.prorabprime.server.model.ObjectDetails
 import ru.prorabprime.server.model.ObjectListItem
@@ -54,6 +55,7 @@ fun PhotoRecord.toDto() = PhotoDto(
     createdAt = createdAt,
     kind = kind,
     note = note,
+    receipt = receipt?.let { ReceiptDto(it.amountKopecks, it.purchasedAt) },
 )
 
 fun ContactRecord.toDto() = ContactDto(

@@ -5,10 +5,12 @@ import java.nio.file.Path
 import java.util.UUID
 import ru.prorabprime.server.error.ServiceError
 import ru.prorabprime.server.error.asFailure
+import ru.prorabprime.server.model.ReceiptData
 import ru.prorabprime.server.storage.FileStorage
 import ru.prorabprime.server.storage.ImageFormat
 import ru.prorabprime.server.storage.ImageProcessor
 import ru.prorabprime.server.storage.ProcessedImage
+import ru.prorabprime.server.storage.ReceiptReader
 
 class FakeFileStorage : FileStorage {
 
@@ -46,6 +48,18 @@ class FakeFileStorage : FileStorage {
 
     fun namesOf(objectId: UUID): List<String> =
         files.keys.filter { it.startsWith("$objectId/") }.map { it.substringAfter('/') }
+}
+
+/** Reads whatever it was given to read, and counts the reads. */
+class FakeReceiptReader : ReceiptReader {
+
+    var result: ReceiptData? = null
+    var reads = 0
+
+    override suspend fun read(bytes: ByteArray): ReceiptData? {
+        reads++
+        return result
+    }
 }
 
 /** Accepts anything as a 4000×3000 JPEG, unless told to reject. */

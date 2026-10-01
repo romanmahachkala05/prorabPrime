@@ -42,6 +42,8 @@ import ru.prorabprime.server.storage.FileStorage
 import ru.prorabprime.server.storage.ImageProcessor
 import ru.prorabprime.server.storage.JavaImageProcessor
 import ru.prorabprime.server.storage.LocalFileStorage
+import ru.prorabprime.server.storage.ReceiptReader
+import ru.prorabprime.server.storage.ZxingReceiptReader
 
 /** The dispatcher blocking work (JDBC, files, image decoding) runs on; tests substitute it. */
 val IO = named("io")
@@ -52,6 +54,7 @@ fun configModule(config: AppConfig): Module = module {
     single<Clock> { Clock.System }
     single<FileStorage> { LocalFileStorage(Path.of(config.storageDir), get(IO)) }
     single<ImageProcessor> { JavaImageProcessor(get(IO)) }
+    single<ReceiptReader> { ZxingReceiptReader(get(IO)) }
     single<Geocoder> { config.geocoderUrl?.let { NominatimGeocoder(it, get(IO), config.geocoderNear) } ?: NoGeocoder }
 }
 
@@ -78,5 +81,5 @@ val serviceModule: Module = module {
     single { ExtraWorkService(get(), get(), get()) }
     single { MaterialService(get(), get(), get()) }
     single { TaskService(get(), get()) }
-    single { PhotoService(get(), get(), get(), get(), get(), get()) }
+    single { PhotoService(get(), get(), get(), get(), get(), get(), get()) }
 }

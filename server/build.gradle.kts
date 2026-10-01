@@ -25,6 +25,8 @@ dependencies {
     implementation(libs.hikaricp)
 
     implementation(libs.metadata.extractor)
+    implementation(libs.zxing.core)
+    implementation(libs.zxing.javase)
     implementation(libs.imageio.webp)
 
     testImplementation(libs.ktor.client.content.negotiation)

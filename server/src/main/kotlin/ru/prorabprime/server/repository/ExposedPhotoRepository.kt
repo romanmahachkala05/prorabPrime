@@ -15,6 +15,7 @@ import org.jetbrains.exposed.v1.jdbc.update
 import ru.prorabprime.contract.AttachmentKindDto
 import ru.prorabprime.server.db.DbExecutor
 import ru.prorabprime.server.model.PhotoRecord
+import ru.prorabprime.server.model.ReceiptData
 
 class ExposedPhotoRepository(
     private val db: DbExecutor,
@@ -45,6 +46,9 @@ class ExposedPhotoRepository(
                 it[sortOrder] = photo.sortOrder
                 it[kind] = photo.kind.name
                 it[note] = photo.note
+                it[receiptAmountKopecks] = photo.receipt?.amountKopecks
+                it[receiptAt] = photo.receipt?.purchasedAt
+                it[receiptQr] = photo.receipt?.qr
                 it[createdAt] = photo.createdAt.toJavaInstant()
             }
         }
@@ -90,5 +94,8 @@ internal fun ResultRow.toPhotoRecord() = PhotoRecord(
     sortOrder = this[PhotosTable.sortOrder],
     kind = AttachmentKindDto.valueOf(this[PhotosTable.kind]),
     note = this[PhotosTable.note],
+    receipt = this[PhotosTable.receiptAmountKopecks]?.let {
+        ReceiptData(it, this[PhotosTable.receiptAt], this[PhotosTable.receiptQr].orEmpty())
+    },
     createdAt = this[PhotosTable.createdAt].toKotlinInstant(),
 )

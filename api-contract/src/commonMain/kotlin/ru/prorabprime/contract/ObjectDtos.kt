@@ -64,6 +64,15 @@ data class PhotoDto(
     val kind: AttachmentKindDto = AttachmentKindDto.PHOTO,
     /** What the foreman wrote about it; absent when nothing is written. */
     val note: String? = null,
+    /** Read from the QR code of a receipt; absent for a photo and for a receipt without a readable code. */
+    val receipt: ReceiptDto? = null,
+)
+
+@Serializable
+data class ReceiptDto(
+    val amountKopecks: Long,
+    /** Local time at the shop, `2026-10-01T15:26`; absent when the code has none. */
+    val purchasedAt: String? = null,
 )
 
 /** Body of `POST /api/objects` and `PUT /api/objects/{id}`; a PUT replaces every field. */
