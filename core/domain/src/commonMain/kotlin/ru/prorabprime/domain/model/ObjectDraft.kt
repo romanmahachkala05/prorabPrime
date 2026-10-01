@@ -70,6 +70,7 @@ enum class ObjectField {
     WORK_TITLE,
     WORK_AMOUNT,
     TOTAL_AMOUNT,
+    MATERIAL_TITLE,
 }
 
 enum class FieldProblem {

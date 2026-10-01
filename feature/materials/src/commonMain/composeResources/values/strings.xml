@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="materials_title">Материалы</string>
+    <string name="materials_back">Назад</string>
+    <string name="materials_add">Добавить материал</string>
+    <string name="materials_progress">В квартире: %1$d из %2$d</string>
+    <string name="materials_empty">Список материалов пуст</string>
+    <string name="materials_add_defaults">Добавить стандартный набор</string>
+    <string name="materials_defaults_hint">Плитка, ламинат, двери, сантехника и другое — можно править и удалять.</string>
+    <string name="materials_status_not_chosen">Не выбран</string>
+    <string name="materials_status_chosen">Выбран</string>
+    <string name="materials_status_in_apartment">В квартире</string>
+    <string name="materials_next_status">Следующий статус</string>
+    <string name="materials_edit">Материал</string>
+    <string name="materials_title_field">Название *</string>
+    <string name="materials_status_field">Статус</string>
+    <string name="materials_save">Сохранить</string>
+    <string name="materials_cancel">Отмена</string>
+    <string name="materials_delete">Удалить</string>
+    <string name="materials_delete_title">Удалить материал?</string>
+    <string name="materials_delete_message">Материал исчезнет из списка.</string>
+    <string name="materials_error_gone">Этот объект удалён.</string>
+    <string name="materials_error_required">Обязательное поле</string>
+    <string name="materials_error_too_long">Слишком длинное значение</string>
+    <string name="materials_error_invalid">Неверное значение</string>
+</resources>

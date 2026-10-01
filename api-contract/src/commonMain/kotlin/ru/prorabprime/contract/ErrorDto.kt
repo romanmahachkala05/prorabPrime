@@ -43,6 +43,7 @@ enum class ObjectFieldDto {
     WORK_TITLE,
     WORK_AMOUNT,
     TOTAL_AMOUNT,
+    MATERIAL_TITLE,
 }
 
 @Serializable

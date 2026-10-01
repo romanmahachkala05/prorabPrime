@@ -97,3 +97,14 @@ object ExtraWorksTable : Table("extra_works") {
 
     override val primaryKey = PrimaryKey(id)
 }
+
+object MaterialsTable : Table("materials") {
+    val id = javaUUID("id")
+    val objectId = javaUUID("object_id")
+    val title = varchar("title", 200)
+    val status = varchar("status", 12)
+    val sortOrder = integer("sort_order")
+    val createdAt = timestamp("created_at")
+
+    override val primaryKey = PrimaryKey(id)
+}

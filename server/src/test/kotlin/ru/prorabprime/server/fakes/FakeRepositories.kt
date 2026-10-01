@@ -12,6 +12,8 @@ import ru.prorabprime.server.model.ContactRecord
 import ru.prorabprime.server.model.ExtraWorkFields
 import ru.prorabprime.server.model.ExtraWorkRecord
 import ru.prorabprime.server.model.FinanceTerms
+import ru.prorabprime.server.model.MaterialFields
+import ru.prorabprime.server.model.MaterialRecord
 import ru.prorabprime.server.model.ObjectFields
 import ru.prorabprime.server.model.ObjectListItem
 import ru.prorabprime.server.model.ObjectListQuery
@@ -23,6 +25,7 @@ import ru.prorabprime.server.model.PhotoRecord
 import ru.prorabprime.server.repository.ContactRepository
 import ru.prorabprime.server.repository.ExtraWorkRepository
 import ru.prorabprime.server.repository.FinanceTermsRepository
+import ru.prorabprime.server.repository.MaterialRepository
 import ru.prorabprime.server.repository.ObjectRepository
 import ru.prorabprime.server.repository.PaymentRepository
 import ru.prorabprime.server.repository.PhotoRepository
@@ -202,6 +205,31 @@ class FakeExtraWorkRepository : ExtraWorkRepository {
     override suspend fun delete(id: UUID): Boolean = records.remove(id) != null
 }
 
+class FakeMaterialRepository : MaterialRepository {
+
+    val records = linkedMapOf<UUID, MaterialRecord>()
+
+    override suspend fun listByObject(objectId: UUID): List<MaterialRecord> =
+        records.values.filter { it.objectId == objectId }.sortedBy { it.sortOrder }
+
+    override suspend fun find(id: UUID): MaterialRecord? = records[id]
+
+    override suspend fun insert(material: MaterialRecord) {
+        records[material.id] = material
+    }
+
+    override suspend fun update(id: UUID, fields: MaterialFields): Boolean {
+        val record = records[id] ?: return false
+        records[id] = record.copy(fields = fields)
+        return true
+    }
+
+    override suspend fun delete(id: UUID): Boolean = records.remove(id) != null
+
+    override suspend fun nextSortOrder(objectId: UUID): Int =
+        (records.values.filter { it.objectId == objectId }.maxOfOrNull { it.sortOrder } ?: 0) + 1
+}
+
 /** Runs the block directly; the fakes have no transactions to join. */
 object ImmediateTransactor : Transactor {
     override suspend fun <T> inTransaction(block: suspend () -> T): T = block()
@@ -232,5 +260,6 @@ fun financeFakes(): org.koin.core.module.Module = org.koin.dsl.module {
     single<FinanceTermsRepository> { FakeFinanceTermsRepository() }
     single<PaymentRepository> { FakePaymentRepository() }
     single<ExtraWorkRepository> { FakeExtraWorkRepository() }
+    single<MaterialRepository> { FakeMaterialRepository() }
     single<ru.prorabprime.server.db.Transactor> { ImmediateTransactor }
 }

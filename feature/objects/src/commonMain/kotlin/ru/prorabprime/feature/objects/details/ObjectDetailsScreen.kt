@@ -3,6 +3,7 @@ package ru.prorabprime.feature.objects.details
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -60,6 +61,7 @@ import ru.prorabprime.feature.objects.resources.objectdetails_client
 import ru.prorabprime.feature.objects.resources.objectdetails_delete
 import ru.prorabprime.feature.objects.resources.objectdetails_edit
 import ru.prorabprime.feature.objects.resources.objectdetails_finance
+import ru.prorabprime.feature.objects.resources.objectdetails_materials
 import ru.prorabprime.feature.objects.resources.objectdetails_notes
 import ru.prorabprime.feature.objects.resources.objectdetails_open_chat
 import ru.prorabprime.feature.objects.resources.objectdetails_phone
@@ -76,11 +78,12 @@ fun ObjectDetailsScreen(
     onEdit: () -> Unit,
     onOpenPhoto: (photoId: String) -> Unit,
     onOpenFinance: () -> Unit,
+    onOpenMaterials: () -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val viewModel: ObjectDetailsViewModel = koinViewModel(key = objectId) { parametersOf(ObjectId(objectId)) }
-    ObjectDetailsScreen(onEdit, onOpenPhoto, onOpenFinance, onClose, modifier, viewModel)
+    ObjectDetailsScreen(onEdit, onOpenPhoto, onOpenFinance, onOpenMaterials, onClose, modifier, viewModel)
 }
 
 @Composable
@@ -88,6 +91,7 @@ private fun ObjectDetailsScreen(
     onEdit: () -> Unit,
     onOpenPhoto: (photoId: String) -> Unit,
     onOpenFinance: () -> Unit,
+    onOpenMaterials: () -> Unit,
     onClose: () -> Unit,
     modifier: Modifier,
     viewModel: ObjectDetailsViewModel,
@@ -108,6 +112,7 @@ private fun ObjectDetailsScreen(
         onBack = onClose,
         onOpenPhoto = onOpenPhoto,
         onOpenFinance = onOpenFinance,
+        onOpenMaterials = onOpenMaterials,
         onTakePhoto = { sourcesFor(it).takePhoto() },
         onPickPhotos = { sourcesFor(it).pickFromGallery() },
         modifier = modifier,
@@ -124,9 +129,11 @@ internal fun ObjectDetailsContent(
     modifier: Modifier = Modifier,
     onOpenPhoto: (photoId: String) -> Unit = {},
     onOpenFinance: () -> Unit = {},
+    onOpenMaterials: () -> Unit = {},
     onTakePhoto: (AttachmentKind) -> Unit = {},
     onPickPhotos: (AttachmentKind) -> Unit = {},
 ) {
+    val sections = ObjectSections(onOpenFinance, onOpenMaterials)
     // Whether the "camera or gallery" sheet is open is view state, like a menu.
     var choosingSourceFor by remember { mutableStateOf<AttachmentKind?>(null) }
     Scaffold(
@@ -137,7 +144,7 @@ internal fun ObjectDetailsContent(
             if (state.isDeleting) LinearProgressIndicator(Modifier.fillMaxWidth())
             when (val status = state.status) {
                 ObjectDetailsStatus.Content -> state.details?.let { details ->
-                    DetailsBody(details, state, onEvent, onOpenPhoto, onOpenFinance, onAdd = { choosingSourceFor = it })
+                    DetailsBody(details, state, onEvent, onOpenPhoto, sections, onAdd = { choosingSourceFor = it })
                 }
 
                 ObjectDetailsStatus.Loading -> LoadingBox()
@@ -228,7 +235,7 @@ private fun DetailsBody(
     state: ObjectDetailsState,
     onEvent: (ObjectDetailsEvent) -> Unit,
     onOpenPhoto: (photoId: String) -> Unit,
-    onOpenFinance: () -> Unit,
+    sections: ObjectSections,
     onAdd: (AttachmentKind) -> Unit,
 ) {
     Column(
@@ -260,15 +267,29 @@ private fun DetailsBody(
             addLabel = Res.string.objectdetails_add_receipt,
         )
         DetailsFields(details)
-        OutlinedButton(
-            onClick = onOpenFinance,
-            modifier = Modifier.padding(horizontal = Spacing.m),
-        ) { Text(stringResource(Res.string.objectdetails_finance)) }
+        SectionButtons(sections)
         ContactsSection(
             contacts = details.contacts,
             onAdd = { onEvent(ObjectDetailsEvent.AddContactClicked) },
             onEdit = { onEvent(ObjectDetailsEvent.EditContactClicked(it.id)) },
         )
+    }
+}
+
+/** Where the card leads besides itself: the object's finance and its materials checklist. */
+internal data class ObjectSections(
+    val onOpenFinance: () -> Unit,
+    val onOpenMaterials: () -> Unit,
+)
+
+@Composable
+private fun SectionButtons(sections: ObjectSections) {
+    Row(
+        modifier = Modifier.padding(horizontal = Spacing.m),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+    ) {
+        OutlinedButton(onClick = sections.onOpenFinance) { Text(stringResource(Res.string.objectdetails_finance)) }
+        OutlinedButton(onClick = sections.onOpenMaterials) { Text(stringResource(Res.string.objectdetails_materials)) }
     }
 }
 

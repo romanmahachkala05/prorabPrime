@@ -190,6 +190,23 @@ class MigrationTest {
     }
 
     @Test
+    fun `a material starts not chosen and only the three states exist`() {
+        val objectId = UUID.randomUUID()
+        insertObject(objectId)
+        sql(
+            "INSERT INTO materials (id, object_id, title, sort_order, created_at) " +
+                "VALUES ('${UUID.randomUUID()}', '$objectId', 'Плитка', 1, now())",
+        )
+        assertThat(scalar("SELECT status FROM materials")).isEqualTo("NOT_CHOSEN")
+
+        assertThrows(SQLException::class.java) { sql("UPDATE materials SET status = 'BOUGHT'") }
+        sql("UPDATE materials SET status = 'IN_APARTMENT'")
+        sql("DELETE FROM objects WHERE id = '$objectId'")
+
+        assertThat(scalar("SELECT count(*) FROM materials")).isEqualTo(0L)
+    }
+
+    @Test
     fun `the executor runs a query in a transaction`() = runTest {
         val executor = DbExecutor(Database.connect(dataSource), Dispatchers.IO)
 

@@ -6,6 +6,7 @@ import org.koin.core.module.Module
 import ru.prorabprime.data.di.dataModule
 import ru.prorabprime.designsystem.theme.ProrabTheme
 import ru.prorabprime.feature.finance.financeModule
+import ru.prorabprime.feature.materials.materialsModule
 import ru.prorabprime.feature.objects.objectsModule
 import ru.prorabprime.feature.settings.settingsModule
 import ru.prorabprime.shared.navigation.AppNavDisplay
@@ -23,4 +24,5 @@ fun App() {
  * Every platform-neutral Koin module. Koin has no aggregation step, so a module missing here
  * fails at startup rather than at compile time — which is why the list lives in one place.
  */
-val appModules: List<Module> = listOf(dataModule, uiModule, objectsModule, settingsModule, financeModule)
+val appModules: List<Module> =
+    listOf(dataModule, uiModule, objectsModule, settingsModule, financeModule, materialsModule)

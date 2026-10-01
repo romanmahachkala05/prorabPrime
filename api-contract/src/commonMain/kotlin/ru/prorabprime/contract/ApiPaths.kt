@@ -16,6 +16,9 @@ object ApiPaths {
     const val PAYMENT = "/api/payments/{id}"
     const val OBJECT_EXTRA_WORKS = "/api/objects/{id}/extra-works"
     const val EXTRA_WORK = "/api/extra-works/{id}"
+    const val OBJECT_MATERIALS = "/api/objects/{id}/materials"
+    const val OBJECT_MATERIAL_DEFAULTS = "/api/objects/{id}/materials/defaults"
+    const val MATERIAL = "/api/materials/{id}"
     const val PHOTO = "/api/photos/{id}"
     const val FILE = "/files/{objectId}/{fileName}"
 }

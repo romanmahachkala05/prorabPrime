@@ -26,3 +26,8 @@ value class PaymentId(
 value class ExtraWorkId(
     val value: String,
 )
+
+@JvmInline
+value class MaterialId(
+    val value: String,
+)

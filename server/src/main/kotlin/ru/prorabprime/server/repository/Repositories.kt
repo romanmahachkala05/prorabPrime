@@ -7,6 +7,8 @@ import ru.prorabprime.server.model.ContactRecord
 import ru.prorabprime.server.model.ExtraWorkFields
 import ru.prorabprime.server.model.ExtraWorkRecord
 import ru.prorabprime.server.model.FinanceTerms
+import ru.prorabprime.server.model.MaterialFields
+import ru.prorabprime.server.model.MaterialRecord
 import ru.prorabprime.server.model.ObjectFields
 import ru.prorabprime.server.model.ObjectListItem
 import ru.prorabprime.server.model.ObjectListQuery
@@ -112,4 +114,22 @@ interface ExtraWorkRepository {
 
     /** Returns false when there is no such work. */
     suspend fun delete(id: UUID): Boolean
+}
+
+interface MaterialRepository {
+    /** In checklist order. */
+    suspend fun listByObject(objectId: UUID): List<MaterialRecord>
+
+    suspend fun find(id: UUID): MaterialRecord?
+
+    suspend fun insert(material: MaterialRecord)
+
+    /** Returns false when there is no such material. */
+    suspend fun update(id: UUID, fields: MaterialFields): Boolean
+
+    /** Returns false when there is no such material. */
+    suspend fun delete(id: UUID): Boolean
+
+    /** One past the object's highest sort order, so a new material goes to the end. */
+    suspend fun nextSortOrder(objectId: UUID): Int
 }
