@@ -44,7 +44,7 @@ class AccountService(
     }
 
     suspend fun createUser(name: String): Result<IssuedToken> {
-        val clean = validName(name).getOrElse { return Result.failure(it) }
+        val clean = validAccountName(name).getOrElse { return Result.failure(it) }
         return transactor.inTransaction {
             if (users.findByName(clean) != null) return@inTransaction nameTaken(clean)
             val user = UserRecord(newId(), clean, clock.now())
@@ -73,21 +73,20 @@ class AccountService(
         return IssuedToken(user, token)
     }
 
-    private fun validName(raw: String): Result<String> {
-        val name = raw.trim()
-        return if (name.isEmpty() || name.length > MAX_NAME) {
-            ServiceError.Validation("A name is 1 to $MAX_NAME characters").asFailure()
-        } else {
-            Result.success(name)
-        }
-    }
-
     private fun <T> nameTaken(name: String): Result<T> = ServiceError.Conflict("There is an account $name").asFailure()
 
     private fun <T> unknown(name: String): Result<T> = ServiceError.NotFound("No account $name").asFailure()
+}
 
-    private companion object {
-        const val MAX_NAME = 100
+private const val MAX_NAME = 100
+
+/** The name an account may be given: trimmed, and not empty or too long for its column. */
+internal fun validAccountName(raw: String): Result<String> {
+    val name = raw.trim()
+    return if (name.isEmpty() || name.length > MAX_NAME) {
+        ServiceError.Validation("A name is 1 to $MAX_NAME characters").asFailure()
+    } else {
+        Result.success(name)
     }
 }
 

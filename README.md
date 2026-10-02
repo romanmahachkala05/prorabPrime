@@ -143,9 +143,15 @@ existed). For anybody else you make an account from the command line; there is n
 ```bash
 ./gradlew :server:admin --args="user add Иван" -q      # makes the account and prints its token, once
 ./gradlew :server:admin --args="user token Иван" -q    # another token for the same account (a second phone)
+./gradlew :server:admin --args="user copy owner Заказчик" -q   # a new account with a copy of what owner has
 ./gradlew :server:admin --args="user revoke Иван" -q   # takes every token away; the data stays
 ./gradlew :server:admin --args="users" -q              # lists the accounts
 ```
+
+`user copy <from> <to>` makes the account `<to>` and gives it a copy of everything live in `<from>` (objects, photos
+and receipts with their files, contacts, finance, materials, tasks; not the trash), under new ids, so the two never
+share anything and a change in one never reaches the other. It is all or nothing, it needs `STORAGE_DIR` (the
+same `.env`, so run it on the computer that holds the files), and the names must be single words.
 
 Give the token to the person: they type it, with the server address, into the settings of the app. A lost
 token is replaced with `user token` (and the old one taken with `user revoke` first, if it may be in other

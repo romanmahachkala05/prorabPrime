@@ -1,6 +1,7 @@
 package ru.prorabprime.server.admin
 
 import ru.prorabprime.server.error.ServiceException
+import ru.prorabprime.server.service.AccountCopyService
 import ru.prorabprime.server.service.AccountService
 import ru.prorabprime.server.service.IssuedToken
 
@@ -10,11 +11,14 @@ import ru.prorabprime.server.service.IssuedToken
  */
 class AdminCommands(
     private val accounts: AccountService,
+    private val copies: AccountCopyService,
     private val out: (String) -> Unit,
 ) {
     /** Runs one command; returns the exit code (0 when it worked). */
     suspend fun run(args: List<String>): Int = when {
         args == listOf("users") -> list()
+
+        args.size == COPY_WORDS && args[0] == "user" && args[1] == "copy" -> copy(args.drop(2))
 
         args.size > USER_COMMAND_WORDS && args[0] == "user" ->
             user(args[1], args.drop(USER_COMMAND_WORDS).joinToString(" "))
@@ -32,6 +36,17 @@ class AdminCommands(
         }
 
         else -> usage()
+    }
+
+    /** A new account with a copy of another's data, and a token for it. */
+    private suspend fun copy(names: List<String>): Int {
+        val (from, to) = names
+        val copied = copies.copy(from, to)
+        val code = report(copied) {
+            out("Copied $from to $to: ${it.objects} object(s), ${it.photos} photo(s), ${it.tasks} task(s)")
+        }
+        if (code != 0) return code
+        return report(accounts.issueToken(to)) { printToken("Account made", it) }
     }
 
     private suspend fun list(): Int {
@@ -60,6 +75,9 @@ class AdminCommands(
     private companion object {
         /** `user add` and the like: the words before the name. */
         const val USER_COMMAND_WORDS = 2
+
+        /** `user copy <from> <to>`. */
+        const val COPY_WORDS = 4
     }
 
     private fun usage(): Int {
@@ -69,6 +87,7 @@ class AdminCommands(
               users                  list the accounts
               user add <name>        make an account and print its token
               user token <name>      print another token for an account
+              user copy <from> <to>  make the account <to> with a copy of what <from> has, and print its token
               user revoke <name>     take every token away from an account (its data stays)
             """.trimIndent(),
         )
