@@ -7,6 +7,7 @@ import ru.prorabprime.core.ui.resources.common_error_not_found
 import ru.prorabprime.core.ui.resources.common_error_photo_too_large
 import ru.prorabprime.core.ui.resources.common_error_photo_unsupported
 import ru.prorabprime.core.ui.resources.common_error_server
+import ru.prorabprime.core.ui.resources.common_error_storage_full
 import ru.prorabprime.core.ui.resources.common_error_unauthorized
 import ru.prorabprime.core.ui.resources.common_error_unknown
 import ru.prorabprime.core.ui.resources.common_error_validation
@@ -29,6 +30,7 @@ fun AppError.toUiText(): UiText = when (this) {
     is AppError.PhotoRejected -> when (reason) {
         PhotoRejection.UNSUPPORTED_TYPE -> UiText.Resource(Res.string.common_error_photo_unsupported)
         PhotoRejection.TOO_LARGE -> UiText.Resource(Res.string.common_error_photo_too_large)
+        PhotoRejection.QUOTA_EXCEEDED -> UiText.Resource(Res.string.common_error_storage_full)
     }
 
     // The code is shown: it is what makes a report of the problem actionable.

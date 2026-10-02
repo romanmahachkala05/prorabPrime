@@ -3,6 +3,13 @@
     <!-- settings -->
     <string name="settings_title">Настройки</string>
     <string name="settings_back">Назад</string>
+    <string name="settings_account">Аккаунт: %1$s</string>
+    <string name="settings_storage">Занято: %1$s из %2$s</string>
+    <string name="settings_storage_unlimited">Занято: %1$s</string>
+    <string name="settings_unit_bytes">Б</string>
+    <string name="settings_unit_kilobytes">КБ</string>
+    <string name="settings_unit_megabytes">МБ</string>
+    <string name="settings_unit_gigabytes">ГБ</string>
     <string name="settings_address_label">Адрес сервера</string>
     <string name="settings_address_hint">http://192.168.1.10:8080</string>
     <string name="settings_token_label">Токен</string>

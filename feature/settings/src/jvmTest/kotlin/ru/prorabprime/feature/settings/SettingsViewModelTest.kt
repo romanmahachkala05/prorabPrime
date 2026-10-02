@@ -3,9 +3,11 @@ package ru.prorabprime.feature.settings
 import com.google.common.truth.Truth.assertThat
 import org.junit.Rule
 import org.junit.Test
+import ru.prorabprime.domain.model.Account
 import ru.prorabprime.domain.model.AppError
 import ru.prorabprime.domain.model.ServerSettings
 import ru.prorabprime.domain.usecase.CheckConnectionUseCase
+import ru.prorabprime.domain.usecase.GetAccountUseCase
 import ru.prorabprime.domain.usecase.ObserveServerSettingsUseCase
 import ru.prorabprime.domain.usecase.SaveServerSettingsUseCase
 import ru.prorabprime.feature.settings.resources.Res
@@ -13,6 +15,7 @@ import ru.prorabprime.feature.settings.resources.settings_check_bad_token
 import ru.prorabprime.feature.settings.resources.settings_check_unreachable
 import ru.prorabprime.feature.settings.resources.settings_error_address
 import ru.prorabprime.feature.settings.resources.settings_saved
+import ru.prorabprime.testing.FakeAccountRepository
 import ru.prorabprime.testing.FakeConnectionChecker
 import ru.prorabprime.testing.FakeSettingsRepository
 import ru.prorabprime.testing.FakeSnackbarNotifier
@@ -27,6 +30,7 @@ class SettingsViewModelTest {
     private val settings = FakeSettingsRepository(ServerSettings("http://192.168.1.10:8080", "saved-token"))
     private val checker = FakeConnectionChecker()
     private val notifier = FakeSnackbarNotifier()
+    private val accounts = FakeAccountRepository()
 
     // Lazy: built inside the test, after the rule has replaced Dispatchers.Main.
     private val viewModel by lazy {
@@ -37,6 +41,7 @@ class SettingsViewModelTest {
             observeServerSettings = ObserveServerSettingsUseCase(settings),
             saveServerSettings = SaveServerSettingsUseCase(settings),
             checkConnection = CheckConnectionUseCase(checker),
+            getAccount = GetAccountUseCase(accounts),
             notifier = notifier,
         )
     }
@@ -48,6 +53,43 @@ class SettingsViewModelTest {
         assertThat(state.status).isEqualTo(SettingsStatus.Content)
         assertThat(state.baseUrl).isEqualTo("http://192.168.1.10:8080")
         assertThat(state.apiToken).isEqualTo("saved-token")
+    }
+
+    @Test
+    fun `the account of the saved token is shown when the screen opens`() {
+        accounts.account = Account("Иван", usedBytes = 120, limitBytes = 1000)
+
+        assertThat(state.account).isEqualTo(Account("Иван", 120, 1000))
+    }
+
+    @Test
+    fun `without a signal there is no account to show, and nothing else is wrong`() {
+        accounts.error = AppError.Network
+
+        assertThat(state.account).isNull()
+        assertThat(state.status).isEqualTo(SettingsStatus.Content)
+    }
+
+    @Test
+    fun `a check shows whose the token just tried is`() {
+        accounts.error = AppError.Network
+        checker.account = Account("Пётр", usedBytes = 5, limitBytes = null)
+        assertThat(state.account).isNull()
+
+        viewModel.onEvent(SettingsEvent.CheckClicked)
+
+        assertThat(state.account).isEqualTo(Account("Пётр", 5, null))
+    }
+
+    @Test
+    fun `a check against a server that does not say keeps what was shown`() {
+        accounts.account = Account("Иван", usedBytes = 1, limitBytes = 10)
+        checker.account = null
+
+        viewModel.onEvent(SettingsEvent.CheckClicked)
+
+        assertThat(state.account).isEqualTo(Account("Иван", 1, 10))
+        assertThat(state.check).isEqualTo(ConnectionCheck.Succeeded)
     }
 
     @Test

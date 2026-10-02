@@ -44,6 +44,7 @@ private suspend fun HttpResponse.toAppError(): AppError = when (status) {
     HttpStatusCode.BadRequest -> AppError.Validation(fieldErrors())
     HttpStatusCode.PayloadTooLarge -> AppError.PhotoRejected(PhotoRejection.TOO_LARGE)
     HttpStatusCode.UnsupportedMediaType -> AppError.PhotoRejected(PhotoRejection.UNSUPPORTED_TYPE)
+    HttpStatusCode.InsufficientStorage -> AppError.PhotoRejected(PhotoRejection.QUOTA_EXCEEDED)
     else -> AppError.Server(status.value)
 }
 

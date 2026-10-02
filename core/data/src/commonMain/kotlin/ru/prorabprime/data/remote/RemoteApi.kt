@@ -15,6 +15,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
+import ru.prorabprime.contract.AccountDto
 import ru.prorabprime.contract.ApiMultipart
 import ru.prorabprime.contract.ApiParams
 import ru.prorabprime.contract.ApiPaths
@@ -50,6 +51,8 @@ internal class RemoteApi(
     private val client: HttpClient,
 ) {
     // --- What the phone copies down.
+
+    suspend fun account(): Result<AccountDto> = apiCall { client.get(SERVER_BASE + ApiPaths.ACCOUNT).body() }
 
     suspend fun objects(): Result<List<ObjectSummaryDto>> = apiCall { client.get(url(ApiPaths.OBJECTS)).body() }
 

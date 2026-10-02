@@ -9,6 +9,7 @@ import kotlinx.io.IOException
 import org.junit.Test
 import ru.prorabprime.data.TestHttp
 import ru.prorabprime.data.json
+import ru.prorabprime.domain.model.Account
 import ru.prorabprime.domain.model.AppError
 import ru.prorabprime.domain.model.ServerSettings
 import ru.prorabprime.domain.model.asAppError
@@ -32,9 +33,42 @@ class KtorConnectionCheckerTest {
         val result = KtorConnectionChecker(http.client).check(candidate)
 
         assertThat(result.isSuccess).isTrue()
-        assertThat(http.requests.map { it.url.toString() })
+        assertThat(http.requests.map { it.url.toString() }.take(2))
             .containsExactly("http://10.0.0.7:8080/health", "http://10.0.0.7:8080/api/objects").inOrder()
+        assertThat(http.requests[1].headers[HttpHeaders.Authorization]).isEqualTo("Bearer candidate-token")
+    }
+
+    @Test
+    fun `a server that says whose the token is, and how much room it has used, is believed`() = runTest {
+        val http = TestHttp { request ->
+            when (request.url.encodedPath) {
+                "/health" -> json("""{"status":"ok"}""")
+                "/api/account" -> json("""{"name":"Иван","usedBytes":120,"limitBytes":1000}""")
+                else -> json("[]")
+            }
+        }
+
+        val account = KtorConnectionChecker(http.client).check(candidate).getOrThrow()
+
+        assertThat(account).isEqualTo(Account("Иван", 120, 1000))
+        assertThat(http.requests.last().url.toString()).isEqualTo("http://10.0.0.7:8080/api/account")
         assertThat(http.requests.last().headers[HttpHeaders.Authorization]).isEqualTo("Bearer candidate-token")
+    }
+
+    @Test
+    fun `an older server that has no account answer still passes the check`() = runTest {
+        val http = TestHttp { request ->
+            when (request.url.encodedPath) {
+                "/health" -> json("""{"status":"ok"}""")
+                "/api/account" -> respondError(HttpStatusCode.NotFound)
+                else -> json("[]")
+            }
+        }
+
+        val result = KtorConnectionChecker(http.client).check(candidate)
+
+        assertThat(result.isSuccess).isTrue()
+        assertThat(result.getOrNull()).isNull()
     }
 
     @Test

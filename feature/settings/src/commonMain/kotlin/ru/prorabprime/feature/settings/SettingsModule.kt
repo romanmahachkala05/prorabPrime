@@ -13,6 +13,7 @@ val settingsModule = module {
             observeServerSettings = get(),
             saveServerSettings = get(),
             checkConnection = get(),
+            getAccount = get(),
             notifier = get(),
         )
     }

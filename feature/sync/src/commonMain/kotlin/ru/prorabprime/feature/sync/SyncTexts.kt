@@ -23,6 +23,7 @@ import ru.prorabprime.feature.sync.resources.sync_reason_not_found
 import ru.prorabprime.feature.sync.resources.sync_reason_photo_too_large
 import ru.prorabprime.feature.sync.resources.sync_reason_photo_unsupported
 import ru.prorabprime.feature.sync.resources.sync_reason_server
+import ru.prorabprime.feature.sync.resources.sync_reason_storage_full
 import ru.prorabprime.feature.sync.resources.sync_reason_unknown
 import ru.prorabprime.feature.sync.resources.sync_reason_validation
 
@@ -60,6 +61,7 @@ internal fun reasonText(reason: String): String = when {
     reason == "not_found" -> stringResource(Res.string.sync_reason_not_found)
     reason == "photo_too_large" -> stringResource(Res.string.sync_reason_photo_too_large)
     reason == "photo_unsupported" -> stringResource(Res.string.sync_reason_photo_unsupported)
+    reason == "storage_full" -> stringResource(Res.string.sync_reason_storage_full)
     reason.startsWith("server_") -> stringResource(Res.string.sync_reason_server, reason.removePrefix("server_"))
     else -> stringResource(Res.string.sync_reason_unknown)
 }

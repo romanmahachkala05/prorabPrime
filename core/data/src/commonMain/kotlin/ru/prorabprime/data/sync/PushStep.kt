@@ -86,12 +86,10 @@ internal fun reasonOf(error: AppError): String = when (error) {
 
     AppError.NotFound -> "not_found"
 
-    is AppError.PhotoRejected -> if (error.reason ==
-        PhotoRejection.TOO_LARGE
-    ) {
-        "photo_too_large"
-    } else {
-        "photo_unsupported"
+    is AppError.PhotoRejected -> when (error.reason) {
+        PhotoRejection.TOO_LARGE -> "photo_too_large"
+        PhotoRejection.QUOTA_EXCEEDED -> "storage_full"
+        PhotoRejection.UNSUPPORTED_TYPE -> "photo_unsupported"
     }
 
     is AppError.Server -> "server_${error.code}"

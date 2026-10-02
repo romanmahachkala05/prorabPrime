@@ -19,6 +19,7 @@ import ru.prorabprime.data.network.createHttpClient
 import ru.prorabprime.data.remote.GeocodeApi
 import ru.prorabprime.data.remote.KtorConnectionChecker
 import ru.prorabprime.data.remote.RemoteApi
+import ru.prorabprime.data.repository.AccountRepositoryImpl
 import ru.prorabprime.data.repository.ContactsRepositoryImpl
 import ru.prorabprime.data.repository.ExpensesRepositoryImpl
 import ru.prorabprime.data.repository.FinanceRepositoryImpl
@@ -34,6 +35,7 @@ import ru.prorabprime.data.sync.SyncCoordinator
 import ru.prorabprime.data.sync.SyncEngine
 import ru.prorabprime.domain.ConnectionChecker
 import ru.prorabprime.domain.model.PickedPlaceStore
+import ru.prorabprime.domain.repository.AccountRepository
 import ru.prorabprime.domain.repository.ContactsRepository
 import ru.prorabprime.domain.repository.ExpensesRepository
 import ru.prorabprime.domain.repository.FinanceRepository
@@ -58,6 +60,7 @@ import ru.prorabprime.domain.usecase.DeleteTaskUseCase
 import ru.prorabprime.domain.usecase.DiscardFailedChangeUseCase
 import ru.prorabprime.domain.usecase.FindAddressUseCase
 import ru.prorabprime.domain.usecase.GeocodeObjectUseCase
+import ru.prorabprime.domain.usecase.GetAccountUseCase
 import ru.prorabprime.domain.usecase.LoadTrashUseCase
 import ru.prorabprime.domain.usecase.ObserveDayTasksUseCase
 import ru.prorabprime.domain.usecase.ObserveExpensesUseCase
@@ -128,6 +131,7 @@ val dataModule: Module = module {
     single<ExpensesRepository> { ExpensesRepositoryImpl(get()) }
     single<TrashRepository> { TrashRepositoryImpl(get(), get()) }
     single<ConnectionChecker> { KtorConnectionChecker(get()) }
+    single<AccountRepository> { AccountRepositoryImpl(get()) }
 
     factory { ObserveObjectsUseCase(get()) }
     factory { ObserveObjectUseCase(get()) }
@@ -174,6 +178,7 @@ val dataModule: Module = module {
     factory { ObserveServerSettingsUseCase(get()) }
     factory { SaveServerSettingsUseCase(get()) }
     factory { CheckConnectionUseCase(get()) }
+    factory { GetAccountUseCase(get()) }
     factory { ObserveObjectSortUseCase(get()) }
     factory { SaveObjectSortUseCase(get()) }
 }

@@ -7,6 +7,7 @@
     <string name="common_error_validation">Сервер не принял данные. Проверьте поля.</string>
     <string name="common_error_photo_unsupported">Этот формат фото не поддерживается. Подойдут JPEG, PNG и WebP.</string>
     <string name="common_error_photo_too_large">Фото слишком большое: не больше 15 МБ.</string>
+    <string name="common_error_storage_full">На сервере закончилось место для фото. Очистите корзину (Настройки → Корзина) или удалите ненужное и повторите.</string>
     <string name="common_error_server">Ошибка на сервере (%1$d). Попробуйте ещё раз позже.</string>
     <string name="common_error_unknown">Что-то пошло не так. Попробуйте ещё раз.</string>
 </resources>
