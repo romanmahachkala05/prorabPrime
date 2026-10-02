@@ -38,6 +38,7 @@ entries below are the points where this project departs from it or goes beyond i
 | [0017](#adr-0017) | The phone keeps its own copy of the data and a queue of changes; screens never wait for the network | Accepted, **amends** 0003 |
 | [0018](#adr-0018) | A photo is turned by the server, which makes new files named by the client | Accepted |
 | [0019](#adr-0019) | A deleted object or photo waits thirty days in a trash kept by the server | Accepted |
+| [0020](#adr-0020) | The server speaks HTTP; HTTPS is a proxy in front of it | Accepted |
 
 ---
 
@@ -679,4 +680,38 @@ no longer touches the files. The trash is reached from the settings screen.
 
 **Review when:** the trash is wanted offline, or a second person works in the same data and one's delete
 should not be undoable by the other.
+
+---
+
+## ADR-0020
+
+### The server speaks HTTP; HTTPS is a proxy in front of it
+
+**Accepted** · 2026-10-02
+
+**Context.** The release build forbids cleartext traffic and the debug build allows it (the network
+security configs of `:app`). The server runs on the owner's computer and spoke only HTTP, so a signed release
+build could not reach it, and the server could not be used outside the home Wi‑Fi without exposing a token in
+clear. The owner has a public IP address and wants to pay for nothing.
+
+**Decision.** The server stays plain HTTP and is never given TLS itself. A reverse proxy, Caddy, terminates
+HTTPS in front of it: a free DuckDNS name, a certificate Caddy gets and renews alone, ports 80 and 443
+forwarded to the computer, `HOST=127.0.0.1` so the server is reachable only through the proxy. The
+repository carries `Caddyfile.example` and the steps in the README. Nothing in the app changes: it already
+takes any `https://` address in its settings, and the server's own rules (token, path checks) are unchanged.
+
+**Alternatives rejected.**
+- *TLS inside the Ktor server.* Certificate issuing and renewal would become this project's code, for what a
+  proxy does in two lines, and the debug flow over the local network would need certificates too.
+- *Tailscale.* No public exposure and a real certificate, but it must be switched on on every phone and every
+  browser that opens the site. Reasonable if the server must not be public; not chosen here.
+- *Cloudflare Tunnel.* Needs a paid domain to start with. Fits when there is no public IP.
+- *A self-signed certificate.* Every phone must be told to trust it, and the site warns in browsers.
+
+**Consequences.** With the server reachable from the internet the API token is the only lock, so it must be
+long and random. The computer must stay on and online for the app to sync. A provider without a public
+address cannot use this and must take a tunnel instead.
+
+**Review when:** the server moves to a VPS (then Caddy simply moves with it), or a second person gets access
+and one token is no longer enough.
 
