@@ -18,23 +18,28 @@ import ru.prorabprime.server.service.AccountService
  * Reads the same `DB_URL`, `DB_USER` and `DB_PASSWORD` as the server.
  */
 fun main(args: Array<String>) {
-    val config = DatabaseConfig(
-        url = requiredEnv("DB_URL"),
-        user = requiredEnv("DB_USER"),
-        password = requiredEnv("DB_PASSWORD"),
+    exitProcess(runAdmin(args.toList(), System.getenv(), ::println))
+}
+
+/** The whole command over a real database, with the environment and the output given, so it can be tested. */
+fun runAdmin(
+    args: List<String>,
+    env: Map<String, String>,
+    out: (String) -> Unit,
+): Int {
+    fun required(name: String): String =
+        env[name]?.takeIf { it.isNotBlank() } ?: error("$name is not set; it is the same as the server's")
+
+    val dataSource = createDataSource(
+        DatabaseConfig(url = required("DB_URL"), user = required("DB_USER"), password = required("DB_PASSWORD")),
     )
-    val dataSource = createDataSource(config)
-    val code = try {
+    return try {
         // The accounts are made by a migration: be sure the schema is there, as the server itself would.
         migrate(dataSource)
         val db = DbExecutor(Database.connect(dataSource), Dispatchers.IO)
         val accounts = AccountService(ExposedUserRepository(db), db, Clock.System)
-        runBlocking { AdminCommands(accounts, ::println).run(args.toList()) }
+        runBlocking { AdminCommands(accounts, out).run(args) }
     } finally {
         dataSource.close()
     }
-    exitProcess(code)
 }
-
-private fun requiredEnv(name: String): String =
-    System.getenv(name)?.takeIf { it.isNotBlank() } ?: error("$name is not set; it is the same as the server's")

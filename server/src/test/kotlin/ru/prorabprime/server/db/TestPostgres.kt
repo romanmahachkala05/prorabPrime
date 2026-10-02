@@ -33,6 +33,9 @@ object TestPostgres {
         DatabaseConfig(postgres.getJdbcUrl("postgres", "postgres"), "postgres", "")
     }.getOrNull()
 
+    /** Where the test database is, for a test that starts something that connects to it by itself. */
+    fun config(): DatabaseConfig = checkNotNull(database)
+
     /** Call first in every test that needs the database. */
     fun assumeAvailable() {
         if (System.getenv("CI") != null) {
