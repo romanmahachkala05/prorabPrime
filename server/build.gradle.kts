@@ -56,6 +56,15 @@ fun JavaExec.runsLocally() {
 
 tasks.named<JavaExec>("run") { runsLocally() }
 
+// The owner's commands for accounts (ADR-0021): ./gradlew :server:admin --args="user add Иван" -q
+tasks.register<JavaExec>("admin") {
+    group = "application"
+    description = "Makes accounts and tokens: users, user add|token|revoke <name>. Needs the database settings (.env)."
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("ru.prorabprime.server.admin.AdminKt")
+    runsLocally()
+}
+
 // The server over an embedded PostgreSQL, for machines without Docker (see DevServer.kt).
 tasks.register<JavaExec>("runDev") {
     group = "application"
