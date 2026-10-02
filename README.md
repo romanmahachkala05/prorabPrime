@@ -175,6 +175,35 @@ Formatting, static analysis, every unit test and the debug APK; the server's Pos
 in Docker, or over embedded PostgreSQL when Docker is missing (ADR-0006, ADR-0007). See
 [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
+## HTTPS, to reach the server from anywhere
+
+Plain HTTP works on the home Wi‑Fi and only in the debug build. To use the server from outside, and with
+the release build, put HTTPS in front of it. With a public IP address this costs nothing:
+
+1. **A name.** On [duckdns.org](https://www.duckdns.org) make a free name such as `prorab.duckdns.org` and
+   point it at your IP. If the address changes now and then, run DuckDNS's small updater so the name follows it.
+   (A public IP means the router's outside address equals the one a "what is my IP" site shows; behind a
+   provider's shared address this will not work.)
+2. **The server stays private.** In `.env` set `HOST=127.0.0.1` and a long random `API_TOKEN`: with the
+   server reachable from the internet the token is the only lock. Restart the server.
+3. **Caddy.** Download [Caddy](https://caddyserver.com/download), copy `Caddyfile.example` to `Caddyfile`, put
+   your name in it, and start it next to the file:
+
+   ```bash
+   caddy run
+   ```
+
+   It gets the certificate itself and renews it. To start it with Windows, `caddy start` as a service or a
+   scheduled task at logon does it; the DuckDNS updater and the server want the same.
+4. **The router.** Forward ports **80** and **443** to this computer (80 is used only to get the
+   certificate), and allow Caddy through the Windows firewall. **Do not** forward 8080.
+5. **The app and the site.** In the settings of the app give `https://prorab.duckdns.org` and the token; the
+   site is at that address. The release build (see above) works with it.
+
+Check it from outside the home network (a phone on mobile data): the address must show the site, and
+`http://<your IP>:8080` must not answer. The computer has to be on, and the server, Caddy and the updater
+running, for the app to reach it; without a signal the app still works from its own copy.
+
 ## Working without a signal
 
 The app keeps its own copy of everything it shows, so the list of objects, the cards, the finance, the checklist
