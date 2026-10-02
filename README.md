@@ -134,6 +134,30 @@ only the debug build allows.
 
 The phone and the computer must be on the same Wi-Fi network.
 
+## Accounts for other people
+
+One server can hold several people, each with their own objects and tasks that nobody else sees. The
+`API_TOKEN` in `.env` is your own token (the first account, `owner`, which has everything made before accounts
+existed). For anybody else you make an account from the command line; there is no sign-up page and no password:
+
+```bash
+./gradlew :server:admin --args="user add Иван" -q      # makes the account and prints its token, once
+./gradlew :server:admin --args="user token Иван" -q    # another token for the same account (a second phone)
+./gradlew :server:admin --args="user revoke Иван" -q   # takes every token away; the data stays
+./gradlew :server:admin --args="users" -q              # lists the accounts
+```
+
+Give the token to the person: they type it, with the server address, into the settings of the app. A lost
+token is replaced with `user token` (and the old one taken with `user revoke` first, if it may be in other
+hands). In Docker the same commands are
+`docker compose exec server java -cp app.jar ru.prorabprime.server.admin.AdminKt user add Иван`.
+
+**What this does and does not do.** It separates people *inside the app*: one account never sees, changes or
+guesses at another's objects, photos, receipts, finance, tasks or trash. It is not privacy from whoever runs
+the server: the database and the files are on that computer, and its owner can read them there. A person who
+wants nobody else to see their data runs their own server. There are no limits on how many photos an account
+may keep (ADR-0021).
+
 ## A signed release APK
 
 The release build is signed with a key that stays on your computer. Make it once (the JDK that comes
