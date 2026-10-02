@@ -14,6 +14,8 @@ data class AppConfig(
     val geocoderNear: Coordinates? = DEFAULT_GEOCODER_NEAR,
     /** The built web app to serve at `/`; null serves none. */
     val webDir: String? = null,
+    /** How many bytes of original pictures one account may keep; null for no limit (ADR-0022). */
+    val accountQuotaBytes: Long? = DEFAULT_ACCOUNT_QUOTA_BYTES,
 ) {
     // Configs get logged; secrets must not be.
     override fun toString() = "AppConfig(database=$database, storageDir=$storageDir, apiToken=***)"
@@ -37,7 +39,21 @@ data class AppConfig(
                 geocoderUrl = geocoderUrl(config),
                 geocoderNear = geocoderNear(config),
                 webDir = config.propertyOrNull("prorab.web.dir")?.getString()?.trim()?.takeIf { it.isNotEmpty() },
+                accountQuotaBytes = accountQuota(config),
             )
+        }
+
+        private const val BYTES_IN_MB = 1024L * 1024L
+        const val DEFAULT_ACCOUNT_QUOTA_BYTES = 1024L * BYTES_IN_MB
+
+        /** Megabytes; unset means 1 GB, and `off` means no limit. */
+        private fun accountQuota(config: ApplicationConfig): Long? {
+            val value = config.propertyOrNull("prorab.quota.mb")?.getString()?.trim()
+            if (value.isNullOrEmpty()) return DEFAULT_ACCOUNT_QUOTA_BYTES
+            if (value.equals(GEOCODER_OFF, ignoreCase = true)) return null
+            val megabytes = value.toLongOrNull()?.takeIf { it > 0 }
+                ?: error("ACCOUNT_QUOTA_MB must be a number of megabytes above zero, or off")
+            return megabytes * BYTES_IN_MB
         }
 
         const val DEFAULT_GEOCODER_URL = "https://nominatim.openstreetmap.org"

@@ -27,6 +27,11 @@ sealed interface ServiceError {
     data class TooLarge(
         override val message: String,
     ) : ServiceError
+
+    /** The account has used its room for pictures (ADR-0022). */
+    data class QuotaExceeded(
+        override val message: String,
+    ) : ServiceError
 }
 
 /**

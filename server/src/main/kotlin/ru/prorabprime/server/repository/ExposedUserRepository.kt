@@ -28,6 +28,10 @@ class ExposedUserRepository(
             .singleOrNull()?.toUserRecord()
     }
 
+    override suspend fun find(id: UUID): UserRecord? = db.query {
+        UsersTable.selectAll().where { UsersTable.id eq id }.singleOrNull()?.toUserRecord()
+    }
+
     override suspend fun findByName(name: String): UserRecord? = db.query {
         UsersTable.selectAll().where { UsersTable.name eq name }.singleOrNull()?.toUserRecord()
     }

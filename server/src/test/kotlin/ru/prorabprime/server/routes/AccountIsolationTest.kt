@@ -36,9 +36,12 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.koin.dsl.module
 import org.koin.ktor.ext.inject
+import ru.prorabprime.contract.AccountDto
 import ru.prorabprime.contract.ContactCreatedDto
 import ru.prorabprime.contract.ContactRequestDto
 import ru.prorabprime.contract.ContactRoleDto
+import ru.prorabprime.contract.ErrorCode
+import ru.prorabprime.contract.ErrorDto
 import ru.prorabprime.contract.ExtraWorkRequestDto
 import ru.prorabprime.contract.FinanceDto
 import ru.prorabprime.contract.FinanceTermsDto
@@ -62,6 +65,7 @@ import ru.prorabprime.contract.TaskRequestDto
 import ru.prorabprime.contract.TrashDto
 import ru.prorabprime.server.ApiJson
 import ru.prorabprime.server.TEST_TOKEN
+import ru.prorabprime.server.config.AppConfig
 import ru.prorabprime.server.configure
 import ru.prorabprime.server.db.TestPostgres
 import ru.prorabprime.server.di.configModule
@@ -112,12 +116,15 @@ class AccountIsolationTest {
         val receipt: PhotoDto,
     )
 
-    private fun twoAccounts(block: suspend ApplicationTestBuilder.(HttpClient) -> Unit) = testApplication {
+    private fun twoAccounts(
+        appConfig: AppConfig = testConfig,
+        block: suspend ApplicationTestBuilder.(HttpClient) -> Unit,
+    ) = testApplication {
         environment { config = MapApplicationConfig() }
         val database = Database.connect(dataSource)
         val storage = module { single<FileStorage> { LocalFileStorage(folder.root.toPath(), Dispatchers.IO) } }
         application {
-            configure(testConfig, listOf(configModule(testConfig), storage, databaseModule(database), serviceModule))
+            configure(appConfig, listOf(configModule(appConfig), storage, databaseModule(database), serviceModule))
             accounts = inject<AccountService>().value
             runBlocking {
                 accounts.registerEnvToken(TEST_TOKEN)
@@ -427,6 +434,59 @@ class AccountIsolationTest {
             .containsExactly("Позвонить Ивану")
         assertThat(client.get(bobToken, "/api/tasks").body<List<TaskDto>>().map { it.title })
             .containsExactly("Его задача")
+    }
+
+    @Test
+    fun `each account is told its own name and how much of its room it has used`() = twoAccounts { client ->
+        val world = client.makeWorld()
+
+        val alice = client.get(TEST_TOKEN, "/api/account").body<AccountDto>()
+        val bob = client.get(bobToken, "/api/account").body<AccountDto>()
+
+        assertThat(alice.name).isEqualTo("owner")
+        assertThat(alice.usedBytes).isGreaterThan(0L)
+        assertThat(alice.limitBytes).isEqualTo(1024L * 1024 * 1024)
+        assertThat(bob).isEqualTo(AccountDto("bob", 0L, 1024L * 1024 * 1024))
+        // The trash keeps its files, so it keeps its room.
+        client.delete("/api/photos/${world.photo.id}") { bearerAuth(TEST_TOKEN) }
+        assertThat(client.get(TEST_TOKEN, "/api/account").body<AccountDto>().usedBytes).isEqualTo(alice.usedBytes)
+    }
+
+    @Test
+    fun `a photo past the room of the account is refused with its own code`() = twoAccounts(
+        testConfig.copy(accountQuotaBytes = 1),
+    ) { client ->
+        val objectId = client.create(
+            TEST_TOKEN,
+            "/api/objects",
+            ObjectRequestDto(address = "Тверская, 5", status = ObjectStatusDto.IN_PROGRESS),
+        ).body<ObjectCreatedDto>().id
+
+        val refused = client.upload(TEST_TOKEN, objectId)
+
+        assertThat(refused.status).isEqualTo(HttpStatusCode.InsufficientStorage)
+        assertThat(refused.body<ErrorDto>().code).isEqualTo(ErrorCode.QUOTA_EXCEEDED)
+        assertThat(client.get(TEST_TOKEN, "/api/account").body<AccountDto>().usedBytes).isEqualTo(0L)
+    }
+
+    @Test
+    fun `the room is counted per account`() = twoAccounts(testConfig.copy(accountQuotaBytes = 20_000)) { client ->
+        val aliceObject = client.create(
+            TEST_TOKEN,
+            "/api/objects",
+            ObjectRequestDto(address = "Тверская, 5", status = ObjectStatusDto.IN_PROGRESS),
+        ).body<ObjectCreatedDto>().id
+        val bobObject = client.create(
+            bobToken,
+            "/api/objects",
+            ObjectRequestDto(address = "Мира, 3", status = ObjectStatusDto.IN_PROGRESS),
+        ).body<ObjectCreatedDto>().id
+
+        // Fill Alice's room, whatever a photo weighs, then Bob must still be able to upload.
+        while (client.upload(TEST_TOKEN, aliceObject).status == HttpStatusCode.Created) Unit
+
+        assertThat(client.upload(TEST_TOKEN, aliceObject).status).isEqualTo(HttpStatusCode.InsufficientStorage)
+        assertThat(client.upload(bobToken, bobObject).status).isEqualTo(HttpStatusCode.Created)
     }
 
     @Test

@@ -280,6 +280,9 @@ class FakePhotoRepository : PhotoRepository {
 
     override suspend fun nextSortOrder(objectId: UUID): Int =
         (records.values.filter { it.objectId == objectId }.maxOfOrNull { it.sortOrder } ?: 0) + 1
+
+    override suspend fun usedBytes(owner: OwnerId): Long =
+        records.values.filter { mine(owner, it.id) != null }.sumOf { it.sizeBytes }
 }
 
 class FakeContactRepository : ContactRepository {

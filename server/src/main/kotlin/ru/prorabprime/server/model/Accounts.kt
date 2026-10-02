@@ -19,4 +19,11 @@ data class UserRecord(
     val owner: OwnerId get() = OwnerId(id)
 }
 
+/** An account as it is shown to itself. [limitBytes] is null when there is no limit. */
+data class AccountInfo(
+    val name: String,
+    val usedBytes: Long,
+    val limitBytes: Long?,
+)
+
 enum class TokenSource { ENV, ISSUED }

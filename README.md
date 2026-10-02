@@ -155,8 +155,11 @@ hands). In Docker the same commands are
 **What this does and does not do.** It separates people *inside the app*: one account never sees, changes or
 guesses at another's objects, photos, receipts, finance, tasks or trash. It is not privacy from whoever runs
 the server: the database and the files are on that computer, and its owner can read them there. A person who
-wants nobody else to see their data runs their own server. There are no limits on how many photos an account
-may keep (ADR-0021).
+wants nobody else to see their data runs their own server.
+
+Each account has a room for pictures, one gigabyte unless `ACCOUNT_QUOTA_MB` in `.env` says otherwise (`off`
+for none). The app shows the name of the account and how much is used in its settings. The trash counts, since
+its files are kept for thirty days; **Настройки → Корзина → Очистить** gives the room back (ADR-0022).
 
 ## A signed release APK
 

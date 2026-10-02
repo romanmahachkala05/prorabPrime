@@ -34,6 +34,8 @@ class PhotoService(
     private val receipts: ReceiptReader,
     private val transactor: Transactor,
     private val clock: Clock,
+    /** How many bytes of original pictures an account may keep; null for no limit (ADR-0022). */
+    private val quotaBytes: Long? = null,
     private val newId: () -> UUID = UUID::randomUUID,
 ) {
     /**
@@ -52,6 +54,17 @@ class PhotoService(
         objects.find(owner, objectId) == null -> objectNotFound(objectId)
 
         else -> alreadyCreated(clientId?.let { photos.findAny(owner, it) }) { it.objectId == objectId }
+            ?: quotaRefusal(owner, bytes.size)
+    }
+
+    /** A photo that would take the account past its room is refused; a retry of one it has already is not. */
+    private suspend fun quotaRefusal(owner: OwnerId, size: Int): Result<PhotoRecord>? {
+        val limit = quotaBytes ?: return null
+        return if (photos.usedBytes(owner) + size > limit) {
+            ServiceError.QuotaExceeded("The room for pictures of this account is used up").asFailure()
+        } else {
+            null
+        }
     }
 
     suspend fun upload(

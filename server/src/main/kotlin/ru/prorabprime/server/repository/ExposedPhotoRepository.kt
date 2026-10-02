@@ -15,6 +15,7 @@ import org.jetbrains.exposed.v1.core.isNotNull
 import org.jetbrains.exposed.v1.core.isNull
 import org.jetbrains.exposed.v1.core.less
 import org.jetbrains.exposed.v1.core.max
+import org.jetbrains.exposed.v1.core.sum
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.select
@@ -168,6 +169,11 @@ class ExposedPhotoRepository(
             it[receiptAt] = receipt?.purchasedAt
             it[receiptQr] = receipt?.qr
         } > 0
+    }
+
+    override suspend fun usedBytes(owner: OwnerId): Long = db.query {
+        val total = PhotosTable.sizeBytes.sum()
+        PhotosTable.select(total).where { PhotosTable.objectId.ownedBy(owner) }.single()[total] ?: 0L
     }
 
     override suspend fun nextSortOrder(objectId: UUID): Int = db.query {

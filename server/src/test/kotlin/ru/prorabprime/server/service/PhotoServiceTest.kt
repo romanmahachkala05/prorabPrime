@@ -68,6 +68,59 @@ class PhotoServiceTest {
 
     private fun cover() = objects.records.getValue(objectId).coverPhotoId
 
+    // --- the room an account has ---
+
+    private fun serviceWithRoom(limit: Long) = PhotoService(
+        objects,
+        photos,
+        storage,
+        images,
+        receipts,
+        ImmediateTransactor,
+        clock,
+        quotaBytes = limit,
+    )
+
+    @Test
+    fun `a photo that would pass the room of the account is refused and writes nothing`() = runTest {
+        val small = serviceWithRoom(limit = 10)
+        small.upload(TEST_OWNER, objectId, ByteArray(6)).getOrThrow()
+
+        val refused = small.upload(TEST_OWNER, objectId, ByteArray(5))
+
+        assertThat(refused.serviceError()).isInstanceOf(ServiceError.QuotaExceeded::class.java)
+        assertThat(photos.records).hasSize(1)
+        assertThat(storage.files).hasSize(2)
+    }
+
+    @Test
+    fun `a photo that fills the room exactly is taken`() = runTest {
+        val small = serviceWithRoom(limit = 10)
+        small.upload(TEST_OWNER, objectId, ByteArray(6)).getOrThrow()
+
+        assertThat(small.upload(TEST_OWNER, objectId, ByteArray(4)).isSuccess).isTrue()
+    }
+
+    @Test
+    fun `the trash still takes room, because its files are still kept`() = runTest {
+        val small = serviceWithRoom(limit = 10)
+        val first = small.upload(TEST_OWNER, objectId, ByteArray(8)).getOrThrow()
+        small.delete(TEST_OWNER, first.id).getOrThrow()
+
+        val refused = small.upload(TEST_OWNER, objectId, ByteArray(8))
+
+        assertThat(refused.serviceError()).isInstanceOf(ServiceError.QuotaExceeded::class.java)
+    }
+
+    @Test
+    fun `a retry of an upload that was made is not refused for room it already took`() = runTest {
+        val small = serviceWithRoom(limit = 10)
+        val id = UUID.randomUUID()
+        small.upload(TEST_OWNER, objectId, ByteArray(9), clientId = id).getOrThrow()
+
+        assertThat(small.upload(TEST_OWNER, objectId, ByteArray(9), clientId = id).getOrThrow().id).isEqualTo(id)
+    }
+
     // --- upload ---
 
     @Test
