@@ -14,6 +14,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.koin.core.module.Module
@@ -40,6 +41,7 @@ import ru.prorabprime.server.routes.photoRoutes
 import ru.prorabprime.server.routes.taskRoutes
 import ru.prorabprime.server.routes.trashRoutes
 import ru.prorabprime.server.routes.webAppRoutes
+import ru.prorabprime.server.service.AccountService
 import ru.prorabprime.server.service.TrashService
 
 /** Wire format shared by every route. Unknown fields are ignored so older clients keep working. */
@@ -58,6 +60,8 @@ fun Application.module() {
     monitor.subscribe(ApplicationStopped) { dataSource.close() }
 
     configure(config, listOf(configModule(config), databaseModule(database), serviceModule))
+    // Before the first request: the configured token opens the first account (ADR-0021).
+    runBlocking { inject<AccountService>().value.registerEnvToken(config.apiToken) }
     keepTrashTidy()
 }
 
@@ -90,10 +94,11 @@ fun Application.configure(config: AppConfig, koinModules: List<Module>) {
         slf4jLogger()
         modules(koinModules)
     }
+    val accounts by inject<AccountService>()
     install(ContentNegotiation) { json(ApiJson) }
     install(CallLogging)
     installErrorHandling()
-    installTokenAuth(config.apiToken)
+    installTokenAuth(accounts)
 
     routing {
         healthRoutes()

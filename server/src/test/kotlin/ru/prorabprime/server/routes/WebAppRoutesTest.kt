@@ -23,6 +23,7 @@ import ru.prorabprime.server.fakes.FakeContactRepository
 import ru.prorabprime.server.fakes.FakeObjectRepository
 import ru.prorabprime.server.fakes.FakePhotoRepository
 import ru.prorabprime.server.fakes.FixedClock
+import ru.prorabprime.server.fakes.accountFakes
 import ru.prorabprime.server.fakes.financeFakes
 import ru.prorabprime.server.repository.ContactRepository
 import ru.prorabprime.server.repository.ObjectRepository
@@ -51,7 +52,9 @@ class WebAppRoutesTest {
         val config: AppConfig = testConfig.copy(webDir = dir.absolutePath)
         testApplication {
             environment { this.config = MapApplicationConfig() }
-            application { configure(config, listOf(configModule(config), fakes, financeFakes(), serviceModule)) }
+            application {
+                configure(config, listOf(configModule(config), accountFakes(), fakes, financeFakes(), serviceModule))
+            }
             block(dir.absolutePath)
         }
     }
@@ -102,7 +105,10 @@ class WebAppRoutesTest {
         testApplication {
             environment { config = MapApplicationConfig() }
             application {
-                configure(testConfig, listOf(configModule(testConfig), fakes, financeFakes(), serviceModule))
+                configure(
+                    testConfig,
+                    listOf(configModule(testConfig), accountFakes(), fakes, financeFakes(), serviceModule),
+                )
             }
 
             assertThat(client.get("/").status).isEqualTo(HttpStatusCode.NotFound)
@@ -114,7 +120,9 @@ class WebAppRoutesTest {
         val config = testConfig.copy(webDir = folder.root.resolve("nowhere").absolutePath)
         testApplication {
             environment { this.config = MapApplicationConfig() }
-            application { configure(config, listOf(configModule(config), fakes, financeFakes(), serviceModule)) }
+            application {
+                configure(config, listOf(configModule(config), accountFakes(), fakes, financeFakes(), serviceModule))
+            }
 
             assertThat(client.get("/").status).isEqualTo(HttpStatusCode.NotFound)
             assertThat(client.get("/health").status).isEqualTo(HttpStatusCode.OK)

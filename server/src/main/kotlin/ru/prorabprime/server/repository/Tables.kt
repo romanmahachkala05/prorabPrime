@@ -131,3 +131,21 @@ object TasksTable : Table("tasks") {
 
     override val primaryKey = PrimaryKey(id)
 }
+
+object UsersTable : Table("users") {
+    val id = javaUUID("id")
+    val name = varchar("name", 100)
+    val createdAt = timestamp("created_at")
+
+    override val primaryKey = PrimaryKey(id)
+}
+
+object ApiTokensTable : Table("api_tokens") {
+    val id = javaUUID("id")
+    val userId = javaUUID("user_id")
+    val tokenHash = char("token_hash", 64)
+    val tokenSource = varchar("source", 10)
+    val createdAt = timestamp("created_at")
+
+    override val primaryKey = PrimaryKey(id)
+}

@@ -22,8 +22,10 @@ import ru.prorabprime.server.model.ReceiptData
 import ru.prorabprime.server.model.TaskFields
 import ru.prorabprime.server.model.TaskQuery
 import ru.prorabprime.server.model.TaskRecord
+import ru.prorabprime.server.model.TokenSource
 import ru.prorabprime.server.model.TrashedObject
 import ru.prorabprime.server.model.TrashedPhoto
+import ru.prorabprime.server.model.UserRecord
 
 // The trash is part of what an object's store does: it is the same rows, marked.
 @Suppress("TooManyFunctions")
@@ -200,4 +202,35 @@ interface TaskRepository {
 
     /** Returns false when there is no such task. */
     suspend fun delete(id: UUID): Boolean
+}
+
+interface UserRepository {
+    /** The account a token (given as its hash) opens, or null for a token nobody holds. */
+    suspend fun findByTokenHash(hash: String): UserRecord?
+
+    suspend fun findByName(name: String): UserRecord?
+
+    /** The account made first: the one the server's own `API_TOKEN` belongs to. */
+    suspend fun first(): UserRecord?
+
+    /** In the order they were made. */
+    suspend fun list(): List<UserRecord>
+
+    /** Fails on a name that is taken. */
+    suspend fun insert(user: UserRecord)
+
+    suspend fun addToken(
+        userId: UUID,
+        hash: String,
+        source: TokenSource,
+        at: Instant,
+    )
+
+    suspend fun hasToken(hash: String): Boolean
+
+    /** Removes the tokens of [source] other than [exceptHash]. Returns how many went. */
+    suspend fun removeTokens(source: TokenSource, exceptHash: String?): Int
+
+    /** Removes every token of the user: the account stays, with its data, but nobody can reach it. */
+    suspend fun removeTokensOf(userId: UUID): Int
 }

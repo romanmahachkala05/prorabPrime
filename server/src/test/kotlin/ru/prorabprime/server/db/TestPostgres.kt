@@ -43,7 +43,11 @@ object TestPostgres {
     fun freshDataSource(): HikariDataSource {
         val dataSource = createDataSource(checkNotNull(database))
         migrate(dataSource)
-        dataSource.connection.use { it.createStatement().execute("TRUNCATE objects, photos, tasks CASCADE") }
+        dataSource.connection.use {
+            it.createStatement().execute("TRUNCATE objects, photos, tasks, api_tokens CASCADE")
+        }
+        // The migration makes the first account; any other was made by a test.
+        dataSource.connection.use { it.createStatement().execute("DELETE FROM users WHERE name <> 'owner'") }
         return dataSource
     }
 }
