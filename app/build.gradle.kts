@@ -19,8 +19,10 @@ val localProperties = Properties().apply {
     if (file.exists()) file.inputStream().use(::load)
 }
 
+// A Gradle property wins over local.properties, so `-Pprorab.serverUrl= -Pprorab.apiToken=` builds an APK
+// with no address and no token in it: the one to give to anybody else.
 fun buildConfigString(key: String): String {
-    val value = localProperties.getProperty(key).orEmpty()
+    val value = providers.gradleProperty(key).orNull ?: localProperties.getProperty(key).orEmpty()
     return "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
 }
 

@@ -162,8 +162,16 @@ On a build machine the same four values come from `PRORAB_STORE_FILE`, `PRORAB_S
 ```
 
 builds `app/build/outputs/apk/release/app-release.apk`. Without a key the same task produces an unsigned
-APK, which a phone will not install. The release build still speaks plain HTTP to the server (see above),
-so until the server has HTTPS, use the debug build on the phone.
+APK, which a phone will not install.
+
+**That APK carries the server address and token from `local.properties`.** For an APK that goes to anybody
+else (GitHub, a store) leave them out; the address and token are then typed in the settings:
+
+```bash
+./gradlew :app:assembleRelease -Pprorab.serverUrl= -Pprorab.apiToken=
+```
+
+The release build speaks only HTTPS (see "HTTPS" below); over plain HTTP on the home network use the debug build.
 
 ## Checking a change
 
