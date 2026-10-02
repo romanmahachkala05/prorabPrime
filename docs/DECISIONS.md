@@ -39,6 +39,7 @@ entries below are the points where this project departs from it or goes beyond i
 | [0018](#adr-0018) | A photo is turned by the server, which makes new files named by the client | Accepted |
 | [0019](#adr-0019) | A deleted object or photo waits thirty days in a trash kept by the server | Accepted |
 | [0020](#adr-0020) | The server speaks HTTP; HTTPS is a proxy in front of it | Accepted |
+| [0021](#adr-0021) | Several accounts on one server, a token per account, every query scoped by the owner | Accepted, **amends** 0005 |
 
 ---
 
@@ -715,3 +716,56 @@ address cannot use this and must take a tunnel instead.
 **Review when:** the server moves to a VPS (then Caddy simply moves with it), or a second person gets access
 and one token is no longer enough.
 
+---
+
+## ADR-0021
+
+### Several accounts on one server, a token per account, every query scoped by the owner
+
+**Accepted** · 2026-10-02 · **amends** ADR-0005
+
+**Context.** The server had one database and one `API_TOKEN`: whoever held the token saw and changed
+everything. To let anyone but the owner use the app (a friend, a store reviewer, later strangers) without
+running a server of their own, each person needs their own data on the one server.
+
+**Decision.**
+- *Accounts.* A `users` table (id, unique name). An account is made by the owner from a command of the server
+  (`ru.prorabprime.server.admin`), not over HTTP: there is no sign-up page and no password in the app.
+- *Tokens.* An `api_tokens` table maps a token to a user. A token is 32 random bytes, shown once when made and
+  stored only as its SHA-256 (the token is random and long, so a plain hash is enough; a slow one would only
+  cost every request). The app is unchanged: it still sends one `Authorization: Bearer` token.
+- *`API_TOKEN` stays.* At every start it is registered as a token of the first account (the one migration
+  `V13` makes, named `owner`, which takes all the data that existed). A token of source `ENV` that is no longer
+  the configured one is removed, so changing `API_TOKEN` in `.env` still revokes the old value, as before.
+  Tokens made by the command are never touched by this.
+- *Ownership.* `owner_id` on `objects` and `tasks`, the two things that hang on no other. Everything else hangs
+  on an object and is reached through it.
+- *Scoping is in the repositories, not the routes.* Every repository call by id, and every list, takes an
+  `OwnerId` (a value class, so it is never confused with an object id); the Exposed implementations filter by
+  it, the children (photos, contacts, payments, ...) through the owner of their object. A route has no way to
+  ask for a record without naming whose it is, and the account comes from the authenticated principal only.
+  Listings by an object id are reached only after the service has found that object for the owner.
+- *Another account's id is a conflict, not a leak.* A client may choose the id of what it creates (ADR-0017).
+  An id already used by someone else makes the insert fail on the primary key, which is answered `409`;
+  a lookup by the same id as another account's finds nothing (`404`).
+- *Files.* `/files/{objectId}/...` first checks the object is the caller's.
+- *Not scoped, on purpose.* The trash's expiry job (it works over every account), the geocoder (a function of the
+  address) and `/health`.
+
+**Alternatives rejected.**
+- *The owner id taken from the coroutine context inside the repositories.* Fewer signatures, but a hidden
+  input; a call outside a request would fail at run time instead of at compile time.
+- *PostgreSQL row-level security.* It is the strongest guard, but it does not apply to a superuser, which is what
+  the compose file's `POSTGRES_USER` and the embedded test database are.
+- *Passwords or a sign-in call.* More to build and to get wrong (hashing, reset, throttling) for an app whose
+  users get an account from a person they know.
+- *One database per user.* Strong separation, but a migration run, a connection pool and a backup per person.
+- *The same token for everyone with the owner's data copied.* No isolation at all.
+
+**Consequences.** Every repository signature gained an owner, and every test of a route now has two accounts to
+check against. The person who runs the server can still read everything in the database and on disk: this
+separates people inside the app, it is not privacy from the operator (said in the README). A lost token is
+replaced by the owner with a new one. There are no quotas on files; one account can fill the disk.
+
+**Review when:** accounts are made by strangers (then a sign-up flow, throttling and quotas), or a second
+server instance is needed (the stores are not shared).
