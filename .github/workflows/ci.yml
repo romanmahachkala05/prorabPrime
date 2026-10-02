@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  # Every pull request, whatever it targets: a stacked PR based on another branch would
+  # otherwise run no checks at all.
+  pull_request:
+  # dev and main themselves are verified too, so a bad merge is caught even when
+  # every PR into them was green on its own base.
+  push:
+    branches: [dev, main]
+
+# A new push supersedes the run it interrupted.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # Caches the Gradle user home and the configuration cache between runs.
+      - uses: gradle/actions/setup-gradle@v6
+
+      # gradlew is committed without the executable bit, which Linux needs.
+      - name: Make the Gradle wrapper executable
+        run: chmod +x gradlew
+
+      # The same task a developer runs locally — one definition of the gate.
+      - name: Verify
+        # --stacktrace: a worker failure otherwise reports only the task name, with no cause.
+        run: ./gradlew verify --stacktrace
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-reports
+          path: |
+            **/build/reports/tests/
+            **/build/test-results/
+          retention-days: 7

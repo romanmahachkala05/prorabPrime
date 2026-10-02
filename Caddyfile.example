@@ -1,0 +1,15 @@
+# HTTPS in front of the server, for reaching it from outside the home network (README, "HTTPS").
+# Copy to `Caddyfile`, put your own name in place of prorab.duckdns.org, and run `caddy run` next to it.
+# Caddy gets and renews the certificate by itself; it needs ports 80 and 443 reachable from the internet.
+
+prorab.duckdns.org {
+	# The server itself stays on this computer: set HOST=127.0.0.1 in .env so only Caddy can reach it.
+	reverse_proxy 127.0.0.1:8080
+
+	# A photo may be up to 15 MB; anything much bigger is not from this app.
+	request_body {
+		max_size 20MB
+	}
+
+	encode zstd gzip
+}

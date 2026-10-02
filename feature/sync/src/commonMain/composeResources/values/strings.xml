@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sync_offline">Нет связи</string>
+    <string name="sync_offline_pending">Нет связи · ждут отправки: %1$d</string>
+    <string name="sync_sending">Отправляем: %1$d</string>
+    <string name="sync_pending">Ждут отправки: %1$d</string>
+    <string name="sync_failed">Не отправлено: %1$d</string>
+    <string name="sync_unauthorized">Сервер не принял токен</string>
+
+    <string name="sync_failed_title">Не отправлено</string>
+    <string name="sync_failed_hint">Сервер отказался принять эти изменения. Повторите отправку или отмените изменение.</string>
+    <string name="sync_retry_all">Повторить все</string>
+    <string name="sync_retry">Повторить</string>
+    <string name="sync_discard">Отменить изменение</string>
+    <string name="sync_close">Закрыть</string>
+
+    <string name="sync_action_create">Создание</string>
+    <string name="sync_action_update">Изменение</string>
+    <string name="sync_action_delete">Удаление</string>
+
+    <string name="sync_kind_object">объект</string>
+    <string name="sync_kind_cover">обложка</string>
+    <string name="sync_kind_photo">фото</string>
+    <string name="sync_kind_contact">контакт</string>
+    <string name="sync_kind_terms">суммы объекта</string>
+    <string name="sync_kind_payment">платёж</string>
+    <string name="sync_kind_extra_work">дополнительная работа</string>
+    <string name="sync_kind_material">материал</string>
+    <string name="sync_kind_task">дело</string>
+
+    <string name="sync_reason_validation">Сервер не принял данные</string>
+    <string name="sync_reason_not_found">Записи больше нет на сервере</string>
+    <string name="sync_reason_photo_too_large">Фото слишком большое</string>
+    <string name="sync_reason_photo_unsupported">Такой формат фото не поддерживается</string>
+    <string name="sync_reason_server">Ошибка сервера (%1$s)</string>
+    <string name="sync_reason_unknown">Не удалось отправить</string>
+</resources>

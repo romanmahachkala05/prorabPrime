@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="map_title">Карта объектов</string>
+    <string name="map_back">Назад</string>
+    <string name="map_attribution">© участники OpenStreetMap</string>
+    <string name="map_zoom_in">Приблизить</string>
+    <string name="map_zoom_out">Отдалить</string>
+    <string name="map_fit">Показать все объекты</string>
+    <string name="map_open_object">Открыть объект</string>
+    <string name="map_close_card">Закрыть</string>
+    <string name="map_unlocated">Без метки на карте: %1$d</string>
+    <string name="map_unlocated_title">Адрес не найден на карте</string>
+    <string name="map_unlocated_hint">Проверьте адрес в карточке объекта или попробуйте найти его снова.</string>
+    <string name="map_find">Найти на карте</string>
+    <string name="map_find_requested">Ищем адрес на карте</string>
+    <string name="map_empty">Пока нет ни одного объекта</string>
+    <string name="picker_title">Выбор места</string>
+    <string name="picker_back">Назад</string>
+    <string name="picker_hint">Сдвиньте карту так, чтобы метка встала на нужный дом.</string>
+    <string name="picker_confirm">Выбрать это место</string>
+    <string name="picker_pin">Выбранное место</string>
+    <string name="map_error_gone">Не удалось загрузить объекты.</string>
+</resources>

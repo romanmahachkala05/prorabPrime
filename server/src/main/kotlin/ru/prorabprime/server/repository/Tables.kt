@@ -1,0 +1,133 @@
+package ru.prorabprime.server.repository
+
+import org.jetbrains.exposed.v1.core.Table
+import org.jetbrains.exposed.v1.core.java.javaUUID
+import org.jetbrains.exposed.v1.javatime.date
+import org.jetbrains.exposed.v1.javatime.timestamp
+
+/** Mirrors `V1__init.sql` and later migrations; Flyway owns the schema, these only read and write it. */
+object ObjectsTable : Table("objects") {
+    val id = javaUUID("id")
+    val title = varchar("title", 200).nullable()
+    val address = varchar("address", 500)
+    val status = varchar("status", 20)
+    val clientName = varchar("client_name", 200).nullable()
+    val clientPhone = varchar("client_phone", 50).nullable()
+    val notes = text("notes").nullable()
+    val chatLink = varchar("chat_link", 500).nullable()
+    val latitude = double("latitude").nullable()
+    val longitude = double("longitude").nullable()
+    val coverPhotoId = javaUUID("cover_photo_id").nullable()
+    val searchText = text("search_text")
+    val createdAt = timestamp("created_at")
+    val updatedAt = timestamp("updated_at")
+
+    /** Set while the object waits in the trash. */
+    val deletedAt = timestamp("deleted_at").nullable()
+
+    override val primaryKey = PrimaryKey(id)
+}
+
+object PhotosTable : Table("photos") {
+    val id = javaUUID("id")
+    val objectId = javaUUID("object_id")
+    val fileName = varchar("file_name", 255)
+    val thumbFileName = varchar("thumb_file_name", 255)
+    val contentType = varchar("content_type", 100)
+    val sizeBytes = long("size_bytes")
+    val width = integer("width")
+    val height = integer("height")
+    val sortOrder = integer("sort_order")
+    val kind = varchar("kind", 20)
+    val note = text("note").nullable()
+    val receiptAmountKopecks = long("receipt_amount_kopecks").nullable()
+    val receiptAt = varchar("receipt_at", 20).nullable()
+    val receiptQr = text("receipt_qr").nullable()
+    val createdAt = timestamp("created_at")
+
+    /** Set while the photo waits in the trash. */
+    val deletedAt = timestamp("deleted_at").nullable()
+
+    override val primaryKey = PrimaryKey(id)
+}
+
+object ContactsTable : Table("contacts") {
+    val id = javaUUID("id")
+    val objectId = javaUUID("object_id")
+    val name = varchar("name", 200)
+    val phone = varchar("phone", 50).nullable()
+    val role = varchar("role", 20)
+    val sortOrder = integer("sort_order")
+    val createdAt = timestamp("created_at")
+
+    override val primaryKey = PrimaryKey(id)
+}
+
+object FinanceTermsTable : Table("finance_terms") {
+    val objectId = javaUUID("object_id")
+    val clientTotalKopecks = long("client_total_kopecks").nullable()
+    val crewTotalKopecks = long("crew_total_kopecks").nullable()
+
+    override val primaryKey = PrimaryKey(objectId)
+}
+
+object PaymentsTable : Table("payments") {
+    val id = javaUUID("id")
+    val objectId = javaUUID("object_id")
+    val side = varchar("side", 10)
+    val amountKopecks = long("amount_kopecks")
+    val method = varchar("method", 10)
+    val paidOn = date("paid_on")
+    val note = varchar("note", 500).nullable()
+    val createdAt = timestamp("created_at")
+
+    override val primaryKey = PrimaryKey(id)
+}
+
+object PaymentHistoryTable : Table("payment_history") {
+    val id = javaUUID("id")
+    val objectId = javaUUID("object_id")
+    val paymentId = javaUUID("payment_id")
+    val action = varchar("action", 10)
+    val side = varchar("side", 10)
+    val amountKopecks = long("amount_kopecks")
+    val method = varchar("method", 10)
+    val paidOn = date("paid_on")
+    val note = varchar("note", 500).nullable()
+    val at = timestamp("at")
+
+    override val primaryKey = PrimaryKey(id)
+}
+
+object ExtraWorksTable : Table("extra_works") {
+    val id = javaUUID("id")
+    val objectId = javaUUID("object_id")
+    val title = varchar("title", 200)
+    val amountKopecks = long("amount_kopecks")
+    val status = varchar("status", 12)
+    val createdAt = timestamp("created_at")
+
+    override val primaryKey = PrimaryKey(id)
+}
+
+object MaterialsTable : Table("materials") {
+    val id = javaUUID("id")
+    val objectId = javaUUID("object_id")
+    val title = varchar("title", 200)
+    val status = varchar("status", 12)
+    val sortOrder = integer("sort_order")
+    val createdAt = timestamp("created_at")
+
+    override val primaryKey = PrimaryKey(id)
+}
+
+object TasksTable : Table("tasks") {
+    val id = javaUUID("id")
+    val title = varchar("title", 300)
+    val day = date("day")
+    val remindAtMinutes = integer("remind_at_minutes").nullable()
+    val done = bool("done")
+    val createdAt = timestamp("created_at")
+
+    override val primaryKey = PrimaryKey(id)
+}

@@ -1,0 +1,123 @@
+package ru.prorabprime.data.mapper
+
+import kotlinx.collections.immutable.toImmutableList
+import ru.prorabprime.contract.AttachmentKindDto
+import ru.prorabprime.contract.ContactDto
+import ru.prorabprime.contract.ContactRequestDto
+import ru.prorabprime.contract.ContactRoleDto
+import ru.prorabprime.contract.FieldProblemDto
+import ru.prorabprime.contract.ObjectDetailsDto
+import ru.prorabprime.contract.ObjectFieldDto
+import ru.prorabprime.contract.ObjectRequestDto
+import ru.prorabprime.contract.ObjectStatusDto
+import ru.prorabprime.contract.ObjectSummaryDto
+import ru.prorabprime.contract.PhotoDto
+import ru.prorabprime.contract.SortFieldDto
+import ru.prorabprime.contract.SortOrderDto
+import ru.prorabprime.domain.model.AttachmentKind
+import ru.prorabprime.domain.model.Contact
+import ru.prorabprime.domain.model.ContactDraft
+import ru.prorabprime.domain.model.ContactId
+import ru.prorabprime.domain.model.ContactRole
+import ru.prorabprime.domain.model.FieldProblem
+import ru.prorabprime.domain.model.ObjectDetails
+import ru.prorabprime.domain.model.ObjectDraft
+import ru.prorabprime.domain.model.ObjectField
+import ru.prorabprime.domain.model.ObjectId
+import ru.prorabprime.domain.model.ObjectSort
+import ru.prorabprime.domain.model.ObjectStatus
+import ru.prorabprime.domain.model.ObjectSummary
+import ru.prorabprime.domain.model.Photo
+import ru.prorabprime.domain.model.PhotoId
+import ru.prorabprime.domain.model.ReceiptInfo
+import ru.prorabprime.domain.model.ServerFilePath
+
+internal fun ObjectSummaryDto.toDomain() = ObjectSummary(
+    id = ObjectId(id),
+    title = title,
+    address = address,
+    status = status.toDomain(),
+    clientName = clientName,
+    coverThumbPath = coverThumbUrl?.let(::ServerFilePath),
+    photoCount = photoCount,
+    createdAt = createdAt,
+    updatedAt = updatedAt,
+    latitude = latitude,
+    longitude = longitude,
+)
+
+internal fun ObjectDetailsDto.toDomain() = ObjectDetails(
+    id = ObjectId(id),
+    title = title,
+    address = address,
+    status = status.toDomain(),
+    clientName = clientName,
+    clientPhone = clientPhone,
+    notes = notes,
+    chatLink = chatLink,
+    latitude = latitude,
+    longitude = longitude,
+    coverPhotoId = coverPhotoId?.let(::PhotoId),
+    contacts = contacts.map { it.toDomain() }.toImmutableList(),
+    photos = photos.map { it.toDomain() }.toImmutableList(),
+    createdAt = createdAt,
+    updatedAt = updatedAt,
+)
+
+internal fun PhotoDto.toDomain() = Photo(
+    id = PhotoId(id),
+    path = ServerFilePath(url),
+    thumbPath = ServerFilePath(thumbUrl),
+    width = width,
+    height = height,
+    createdAt = createdAt,
+    kind = kind.toDomain(),
+    note = note,
+    receipt = receipt?.let { ReceiptInfo(it.amountKopecks, it.purchasedAt) },
+)
+
+internal fun ObjectDraft.toRequestDto() = ObjectRequestDto(
+    title = title,
+    address = address,
+    status = status.toDto(),
+    clientName = clientName,
+    clientPhone = clientPhone,
+    notes = notes,
+    chatLink = chatLink,
+    latitude = point?.latitude,
+    longitude = point?.longitude,
+)
+
+internal fun ObjectStatusDto.toDomain(): ObjectStatus = when (this) {
+    ObjectStatusDto.PLANNED -> ObjectStatus.PLANNED
+    ObjectStatusDto.IN_PROGRESS -> ObjectStatus.IN_PROGRESS
+    ObjectStatusDto.DONE -> ObjectStatus.DONE
+    ObjectStatusDto.PAUSED -> ObjectStatus.PAUSED
+}
+
+internal fun ObjectStatus.toDto(): ObjectStatusDto = when (this) {
+    ObjectStatus.PLANNED -> ObjectStatusDto.PLANNED
+    ObjectStatus.IN_PROGRESS -> ObjectStatusDto.IN_PROGRESS
+    ObjectStatus.DONE -> ObjectStatusDto.DONE
+    ObjectStatus.PAUSED -> ObjectStatusDto.PAUSED
+}
+
+/**
+ * By name: the two enums list the same fields and grow together, which `MappersTest` checks, so a
+ * `when` here would only be a third list to keep in step.
+ */
+internal fun ObjectFieldDto.toDomain(): ObjectField = ObjectField.valueOf(name)
+
+internal fun FieldProblemDto.toDomain(): FieldProblem = when (this) {
+    FieldProblemDto.REQUIRED -> FieldProblem.REQUIRED
+    FieldProblemDto.TOO_LONG -> FieldProblem.TOO_LONG
+    FieldProblemDto.INVALID -> FieldProblem.INVALID
+}
+
+/** The query parameters one [ObjectSort] option asks for. */
+internal fun ObjectSort.toQuery(): Pair<SortFieldDto, SortOrderDto> = when (this) {
+    ObjectSort.ADDRESS_ASC -> SortFieldDto.ADDRESS to SortOrderDto.ASC
+    ObjectSort.ADDRESS_DESC -> SortFieldDto.ADDRESS to SortOrderDto.DESC
+    ObjectSort.CREATED_NEWEST -> SortFieldDto.CREATED to SortOrderDto.DESC
+    ObjectSort.UPDATED_NEWEST -> SortFieldDto.UPDATED to SortOrderDto.DESC
+}

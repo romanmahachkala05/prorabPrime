@@ -1,0 +1,80 @@
+package ru.prorabprime.server.config
+
+import com.google.common.truth.Truth.assertThat
+import io.ktor.server.config.MapApplicationConfig
+import org.junit.Assert.assertThrows
+import org.junit.Test
+import ru.prorabprime.server.model.Coordinates
+
+class AppConfigTest {
+
+    private fun config(token: String? = "a-long-enough-random-token") = MapApplicationConfig().apply {
+        put("prorab.database.url", "jdbc:postgresql://localhost:5432/prorab")
+        put("prorab.database.user", "prorab")
+        put("prorab.database.password", "db-secret")
+        put("prorab.storage.dir", "./data/uploads")
+        token?.let { put("prorab.auth.token", it) }
+    }
+
+    @Test
+    fun `reads every value`() {
+        val config = AppConfig.from(config())
+
+        assertThat(config.database.url).isEqualTo("jdbc:postgresql://localhost:5432/prorab")
+        assertThat(config.storageDir).isEqualTo("./data/uploads")
+        assertThat(config.apiToken).isEqualTo("a-long-enough-random-token")
+    }
+
+    @Test
+    fun `the geocoder is the public Nominatim unless set, and off switches it off`() {
+        assertThat(AppConfig.from(config()).geocoderUrl).isEqualTo(AppConfig.DEFAULT_GEOCODER_URL)
+        assertThat(AppConfig.from(config().apply { put("prorab.geocoder.url", "http://localhost:8088") }).geocoderUrl)
+            .isEqualTo("http://localhost:8088")
+        assertThat(AppConfig.from(config().apply { put("prorab.geocoder.url", " OFF ") }).geocoderUrl).isNull()
+        assertThat(AppConfig.from(config().apply { put("prorab.geocoder.url", "") }).geocoderUrl)
+            .isEqualTo(AppConfig.DEFAULT_GEOCODER_URL)
+    }
+
+    @Test
+    fun `addresses are resolved around Yekaterinburg unless told otherwise`() {
+        assertThat(AppConfig.from(config()).geocoderNear).isEqualTo(AppConfig.DEFAULT_GEOCODER_NEAR)
+        assertThat(AppConfig.from(config().apply { put("prorab.geocoder.near", " 58.01, 56.25 ") }).geocoderNear)
+            .isEqualTo(Coordinates(58.01, 56.25))
+        assertThat(AppConfig.from(config().apply { put("prorab.geocoder.near", "OFF") }).geocoderNear).isNull()
+        assertThrows(IllegalStateException::class.java) {
+            AppConfig.from(config().apply { put("prorab.geocoder.near", "Екатеринбург") })
+        }
+    }
+
+    @Test
+    fun `the web directory is read when set and absent otherwise`() {
+        assertThat(AppConfig.from(config()).webDir).isNull()
+        assertThat(AppConfig.from(config().apply { put("prorab.web.dir", " ./web ") }).webDir).isEqualTo("./web")
+        assertThat(AppConfig.from(config().apply { put("prorab.web.dir", "  ") }).webDir).isNull()
+    }
+
+    @Test
+    fun `a missing token names the variable to set`() {
+        val error = assertThrows(IllegalStateException::class.java) { AppConfig.from(config(token = null)) }
+
+        assertThat(error).hasMessageThat().contains("API_TOKEN")
+    }
+
+    @Test
+    fun `the placeholder token from env example is refused`() {
+        assertThrows(IllegalArgumentException::class.java) { AppConfig.from(config(token = "change-me")) }
+    }
+
+    @Test
+    fun `a short token is refused`() {
+        assertThrows(IllegalArgumentException::class.java) { AppConfig.from(config(token = "short")) }
+    }
+
+    @Test
+    fun `printing the config hides the secrets`() {
+        val printed = AppConfig.from(config()).toString()
+
+        assertThat(printed).doesNotContain("a-long-enough-random-token")
+        assertThat(printed).doesNotContain("db-secret")
+    }
+}

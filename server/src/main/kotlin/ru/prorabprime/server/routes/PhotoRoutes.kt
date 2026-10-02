@@ -1,0 +1,129 @@
+package ru.prorabprime.server.routes
+
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.content.PartData
+import io.ktor.http.content.forEachPart
+import io.ktor.server.request.receive
+import io.ktor.server.request.receiveMultipart
+import io.ktor.server.response.header
+import io.ktor.server.response.respond
+import io.ktor.server.response.respondFile
+import io.ktor.server.routing.Route
+import io.ktor.server.routing.RoutingCall
+import io.ktor.server.routing.delete
+import io.ktor.server.routing.get
+import io.ktor.server.routing.post
+import io.ktor.server.routing.put
+import io.ktor.utils.io.readBuffer
+import java.util.UUID
+import kotlinx.io.readByteArray
+import org.koin.ktor.ext.inject
+import ru.prorabprime.contract.ApiMultipart
+import ru.prorabprime.contract.ApiParams
+import ru.prorabprime.contract.ApiPaths
+import ru.prorabprime.contract.ApiQuery
+import ru.prorabprime.contract.AttachmentKindDto
+import ru.prorabprime.contract.PhotoLimits
+import ru.prorabprime.contract.PhotoNoteRequestDto
+import ru.prorabprime.contract.ReceiptRequestDto
+import ru.prorabprime.contract.RotatePhotoRequestDto
+import ru.prorabprime.contract.SetCoverRequestDto
+import ru.prorabprime.server.error.ServiceError
+import ru.prorabprime.server.error.ServiceException
+import ru.prorabprime.server.service.PhotoService
+import ru.prorabprime.server.service.ReceiptService
+import ru.prorabprime.server.service.parseClientId
+import ru.prorabprime.server.storage.FileStorage
+
+fun Route.photoRoutes() {
+    val service by inject<PhotoService>()
+    val receipts by inject<ReceiptService>()
+
+    post(ApiPaths.OBJECT_PHOTOS) {
+        val objectId = call.uuidParam(ApiParams.ID)
+        val file = call.receiveUploadedFile()
+        val clientId = parseClientId(call.request.queryParameters[ApiQuery.ID]).getOrThrow()
+        val photo = service.upload(objectId, file.bytes, call.attachmentKind(), clientId, file.note).getOrThrow()
+        call.respond(HttpStatusCode.Created, photo.toDto())
+    }
+    delete(ApiPaths.PHOTO) {
+        service.delete(call.uuidParam(ApiParams.ID)).getOrThrow()
+        call.respond(HttpStatusCode.NoContent)
+    }
+    put(ApiPaths.PHOTO_NOTE) {
+        service.setNote(call.uuidParam(ApiParams.ID), call.receive<PhotoNoteRequestDto>().note).getOrThrow()
+        call.respond(HttpStatusCode.NoContent)
+    }
+    put(ApiPaths.PHOTO_RECEIPT) {
+        receipts.set(call.uuidParam(ApiParams.ID), call.receive<ReceiptRequestDto>()).getOrThrow()
+        call.respond(HttpStatusCode.NoContent)
+    }
+    post(ApiPaths.PHOTO_ROTATE) {
+        val request = call.receive<RotatePhotoRequestDto>()
+        val rotationId = parseClientId(request.rotationId).getOrThrow()
+            ?: throw ServiceException(ServiceError.Validation("rotationId is required"))
+        val photo = service.rotate(call.uuidParam(ApiParams.ID), request.quarterTurns, rotationId).getOrThrow()
+        call.respond(HttpStatusCode.OK, photo.toDto())
+    }
+    put(ApiPaths.OBJECT_COVER) {
+        val objectId = call.uuidParam(ApiParams.ID)
+        val photoId = call.receive<SetCoverRequestDto>().photoId.toUuidOrNull()
+            ?: throw ServiceException(ServiceError.Validation("photoId is not a valid id"))
+        service.setCover(objectId, photoId).getOrThrow()
+        call.respond(HttpStatusCode.NoContent)
+    }
+}
+
+/**
+ * Under the same token as the API. File names are never reused, so clients may cache for good;
+ * `respondFile` sets the content type from the extension.
+ */
+fun Route.fileRoutes() {
+    val storage by inject<FileStorage>()
+
+    get(ApiPaths.FILE) {
+        val objectId = call.parameters[ApiParams.OBJECT_ID].orEmpty()
+        val fileName = call.parameters[ApiParams.FILE_NAME].orEmpty()
+        val file = storage.locate(objectId, fileName)
+            ?: throw ServiceException(ServiceError.NotFound("No such file"))
+        call.response.header(HttpHeaders.CacheControl, "private, max-age=31536000, immutable")
+        call.respondFile(file.toFile())
+    }
+}
+
+/** The `file` part's bytes and the optional `note` part's text. */
+private class UploadedFile(
+    val bytes: ByteArray,
+    val note: String?,
+)
+
+/**
+ * Reads at most one byte past the limit of the file, so an oversized upload is recognized without
+ * buffering all of it.
+ */
+private suspend fun RoutingCall.receiveUploadedFile(): UploadedFile {
+    var bytes: ByteArray? = null
+    var note: String? = null
+    receiveMultipart(formFieldLimit = PhotoLimits.MAX_UPLOAD_BYTES + 1).forEachPart { part ->
+        when {
+            part is PartData.FileItem && part.name == ApiMultipart.FILE && bytes == null ->
+                bytes = part.provider().readBuffer(PhotoLimits.MAX_UPLOAD_BYTES + 1).readByteArray()
+
+            part is PartData.FormItem && part.name == ApiMultipart.NOTE -> note = part.value
+        }
+        part.release()
+    }
+    val file = bytes ?: throw ServiceException(
+        ServiceError.Validation("Expected a multipart '${ApiMultipart.FILE}' part"),
+    )
+    return UploadedFile(file, note)
+}
+
+private fun RoutingCall.attachmentKind(): AttachmentKindDto {
+    val raw = request.queryParameters[ApiQuery.KIND] ?: return AttachmentKindDto.PHOTO
+    return AttachmentKindDto.entries.find { it.name.equals(raw, ignoreCase = true) }
+        ?: throw ServiceException(ServiceError.Validation("Unknown ${ApiQuery.KIND}: $raw"))
+}
+
+private fun String.toUuidOrNull(): UUID? = runCatching { UUID.fromString(this) }.getOrNull()
