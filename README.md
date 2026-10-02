@@ -134,6 +134,37 @@ only the debug build allows.
 
 The phone and the computer must be on the same Wi-Fi network.
 
+## A signed release APK
+
+The release build is signed with a key that stays on your computer. Make it once (the JDK that comes
+with Android Studio has `keytool`) and **keep the file and both passwords safe: a phone only accepts an
+update signed with the same key, and a lost key cannot be replaced**:
+
+```bash
+keytool -genkeypair -v -keystore prorab-release.jks -alias prorab -keyalg RSA -keysize 4096 -validity 10000
+```
+
+Put it outside the repository or next to it (`*.jks` is gitignored), and tell Gradle where it is in
+`keystore.properties` (gitignored too):
+
+```properties
+storeFile=prorab-release.jks
+storePassword=...
+keyAlias=prorab
+keyPassword=...
+```
+
+On a build machine the same four values come from `PRORAB_STORE_FILE`, `PRORAB_STORE_PASSWORD`,
+`PRORAB_KEY_ALIAS` and `PRORAB_KEY_PASSWORD`. Then:
+
+```bash
+./gradlew :app:assembleRelease
+```
+
+builds `app/build/outputs/apk/release/app-release.apk`. Without a key the same task produces an unsigned
+APK, which a phone will not install. The release build still speaks plain HTTP to the server (see above),
+so until the server has HTTPS, use the debug build on the phone.
+
 ## Checking a change
 
 ```bash

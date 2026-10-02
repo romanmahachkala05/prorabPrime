@@ -24,6 +24,18 @@ fun buildConfigString(key: String): String {
     return "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
 }
 
+// The release signing key, from keystore.properties (gitignored) or, on a build machine, from the
+// environment. Without either the release build is simply left unsigned, so `verify` needs no key.
+val keystoreProperties = Properties().apply {
+    val file = rootProject.file("keystore.properties")
+    if (file.exists()) file.inputStream().use(::load)
+}
+
+fun signingValue(key: String, variable: String): String? =
+    keystoreProperties.getProperty(key) ?: providers.environmentVariable(variable).orNull
+
+val releaseStoreFile = signingValue("storeFile", "PRORAB_STORE_FILE")
+
 android {
     namespace = "ru.prorabprime"
     compileSdk = 37
@@ -37,6 +49,23 @@ android {
 
         buildConfigField("String", "DEFAULT_SERVER_URL", buildConfigString("prorab.serverUrl"))
         buildConfigField("String", "DEFAULT_API_TOKEN", buildConfigString("prorab.apiToken"))
+    }
+
+    signingConfigs {
+        if (releaseStoreFile != null) {
+            create("release") {
+                storeFile = rootProject.file(releaseStoreFile)
+                storePassword = signingValue("storePassword", "PRORAB_STORE_PASSWORD")
+                keyAlias = signingValue("keyAlias", "PRORAB_KEY_ALIAS")
+                keyPassword = signingValue("keyPassword", "PRORAB_KEY_PASSWORD")
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig = signingConfigs.findByName("release")
+        }
     }
 
     buildFeatures {
