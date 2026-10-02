@@ -24,6 +24,8 @@ class FakeUserRepository : UserRepository {
 
     override suspend fun findByTokenHash(hash: String): UserRecord? = tokens[hash]?.let { users[it.first] }
 
+    override suspend fun find(id: UUID): UserRecord? = users[id]
+
     override suspend fun findByName(name: String): UserRecord? = users.values.find { it.name == name }
 
     override suspend fun first(): UserRecord? = users.values.minWithOrNull(compareBy({ it.createdAt }, { it.id }))

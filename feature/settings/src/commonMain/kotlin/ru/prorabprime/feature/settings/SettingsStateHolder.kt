@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import ru.prorabprime.domain.model.Account
 import ru.prorabprime.domain.model.ServerSettings
 import ru.prorabprime.ui.StateOwner
 import ru.prorabprime.ui.UiText
@@ -20,6 +21,8 @@ internal interface ISettingsStateHolder : StateOwner<SettingsState> {
     fun setCheck(check: ConnectionCheck)
 
     fun setSaving(saving: Boolean)
+
+    fun showAccount(account: Account?)
 }
 
 internal class SettingsStateHolder : ISettingsStateHolder {
@@ -45,4 +48,6 @@ internal class SettingsStateHolder : ISettingsStateHolder {
     override fun setCheck(check: ConnectionCheck) = _state.update { it.copy(check = check) }
 
     override fun setSaving(saving: Boolean) = _state.update { it.copy(isSaving = saving) }
+
+    override fun showAccount(account: Account?) = _state.update { it.copy(account = account) }
 }

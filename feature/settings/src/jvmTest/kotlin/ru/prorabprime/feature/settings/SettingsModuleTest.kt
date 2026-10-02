@@ -6,8 +6,10 @@ import org.junit.Test
 import org.koin.dsl.koinApplication
 import org.koin.dsl.module
 import ru.prorabprime.domain.usecase.CheckConnectionUseCase
+import ru.prorabprime.domain.usecase.GetAccountUseCase
 import ru.prorabprime.domain.usecase.ObserveServerSettingsUseCase
 import ru.prorabprime.domain.usecase.SaveServerSettingsUseCase
+import ru.prorabprime.testing.FakeAccountRepository
 import ru.prorabprime.testing.FakeConnectionChecker
 import ru.prorabprime.testing.FakeSettingsRepository
 import ru.prorabprime.testing.FakeSnackbarNotifier
@@ -27,6 +29,7 @@ class SettingsModuleTest {
             factory { ObserveServerSettingsUseCase(settings) }
             factory { SaveServerSettingsUseCase(settings) }
             factory { CheckConnectionUseCase(FakeConnectionChecker()) }
+            factory { GetAccountUseCase(FakeAccountRepository()) }
             single<SnackbarNotifier> { FakeSnackbarNotifier() }
         }
 

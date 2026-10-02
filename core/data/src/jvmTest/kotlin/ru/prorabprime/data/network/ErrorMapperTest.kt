@@ -32,6 +32,8 @@ class ErrorMapperTest {
         assertThat(errorForStatus(HttpStatusCode.NotFound)).isEqualTo(AppError.NotFound)
         assertThat(errorForStatus(HttpStatusCode.PayloadTooLarge))
             .isEqualTo(AppError.PhotoRejected(PhotoRejection.TOO_LARGE))
+        assertThat(errorForStatus(HttpStatusCode.InsufficientStorage))
+            .isEqualTo(AppError.PhotoRejected(PhotoRejection.QUOTA_EXCEEDED))
         assertThat(errorForStatus(HttpStatusCode.UnsupportedMediaType))
             .isEqualTo(AppError.PhotoRejected(PhotoRejection.UNSUPPORTED_TYPE))
         assertThat(errorForStatus(HttpStatusCode.ServiceUnavailable)).isEqualTo(AppError.Server(503))

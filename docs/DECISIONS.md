@@ -40,6 +40,7 @@ entries below are the points where this project departs from it or goes beyond i
 | [0019](#adr-0019) | A deleted object or photo waits thirty days in a trash kept by the server | Accepted |
 | [0020](#adr-0020) | The server speaks HTTP; HTTPS is a proxy in front of it | Accepted |
 | [0021](#adr-0021) | Several accounts on one server, a token per account, every query scoped by the owner | Accepted, **amends** 0005 |
+| [0022](#adr-0022) | An account has a room for pictures, one gigabyte unless set otherwise | Accepted, **amends** 0021 |
 
 ---
 
@@ -769,3 +770,42 @@ replaced by the owner with a new one. There are no quotas on files; one account 
 
 **Review when:** accounts are made by strangers (then a sign-up flow, throttling and quotas), or a second
 server instance is needed (the stores are not shared).
+
+---
+
+## ADR-0022
+
+### An account has a room for pictures, one gigabyte unless set otherwise
+
+**Accepted** · 2026-10-02 · **amends** ADR-0021
+
+**Context.** ADR-0021 left one account free to fill the server's disk. With a second person, and a store
+reviewer, on the owner's computer, that is the one way an account can harm the others.
+
+**Decision.**
+- *What is counted:* the `size_bytes` of the original files of every photo and receipt of the account's objects,
+  **the ones in the trash included**: their files stay on disk for thirty days. Thumbnails are not counted
+  (they are a few kilobytes each and their size is not stored); the number is therefore a little under what the
+  disk really holds.
+- *The limit* is `ACCOUNT_QUOTA_MB` (default 1024, `off` for none), the same for every account.
+- *Enforced on upload* only: a photo that would take the account past the limit is refused with `507` and the
+  error code `QUOTA_EXCEEDED`, before anything is written. A retry of an upload the account already made is not
+  refused for the room it already took (the id is found first). Two uploads at the same moment may overshoot by
+  one photo; that is accepted over a lock.
+- *Shown to the account* by `GET /api/account` (its name, the bytes used, the limit), which the app puts in the
+  settings. The app maps `507` to its own message, so the refused change does not read as a broken server.
+
+**Alternatives rejected.**
+- *A limit per account in the database.* A column and a command to change it, for three people who can all be
+  told the same number. One setting is enough until accounts differ.
+- *Counting the disk with a directory walk.* Exact, but a walk of every file on each upload and each look at
+  the settings; the database already knows the sizes.
+- *Refusing at the object level too (a limit on objects).* Photos are what weighs; text is not worth a rule.
+
+**Consequences.** Emptying the trash is how an account gets room back before thirty days. A change refused for
+room waits in the phone's list of refused changes until the user frees room and retries. Lowering the limit
+below what an account holds refuses its uploads but takes nothing away.
+
+**Review when:** accounts need different limits, or the thumbnails or the web client's files become a real share
+of the disk.
+

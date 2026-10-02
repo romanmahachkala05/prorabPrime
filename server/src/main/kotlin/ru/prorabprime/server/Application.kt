@@ -30,6 +30,7 @@ import ru.prorabprime.server.di.configModule
 import ru.prorabprime.server.di.databaseModule
 import ru.prorabprime.server.di.serviceModule
 import ru.prorabprime.server.error.installErrorHandling
+import ru.prorabprime.server.routes.accountRoutes
 import ru.prorabprime.server.routes.contactRoutes
 import ru.prorabprime.server.routes.fileRoutes
 import ru.prorabprime.server.routes.financeRoutes
@@ -103,6 +104,7 @@ fun Application.configure(config: AppConfig, koinModules: List<Module>) {
     routing {
         healthRoutes()
         authenticate(API_AUTH) {
+            accountRoutes()
             objectRoutes()
             geocodeRoutes()
             photoRoutes()

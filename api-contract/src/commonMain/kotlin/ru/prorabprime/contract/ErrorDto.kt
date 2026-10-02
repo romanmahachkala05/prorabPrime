@@ -17,6 +17,7 @@ enum class ErrorCode {
     VALIDATION,
     UNSUPPORTED_MEDIA,
     PAYLOAD_TOO_LARGE,
+    QUOTA_EXCEEDED,
     CONFLICT,
     INTERNAL,
 }

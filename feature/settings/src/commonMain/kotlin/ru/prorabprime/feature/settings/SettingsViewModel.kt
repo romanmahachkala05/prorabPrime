@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.first
 import ru.prorabprime.domain.model.ServerSettings
 import ru.prorabprime.domain.model.asAppError
 import ru.prorabprime.domain.usecase.CheckConnectionUseCase
+import ru.prorabprime.domain.usecase.GetAccountUseCase
 import ru.prorabprime.domain.usecase.ObserveServerSettingsUseCase
 import ru.prorabprime.domain.usecase.SaveServerSettingsUseCase
 import ru.prorabprime.feature.settings.resources.Res
@@ -21,6 +22,7 @@ internal class SettingsViewModel(
     observeServerSettings: ObserveServerSettingsUseCase,
     private val saveServerSettings: SaveServerSettingsUseCase,
     private val checkConnection: CheckConnectionUseCase,
+    getAccount: GetAccountUseCase,
     private val notifier: SnackbarNotifier,
 ) : ViewModel(),
     StateOwner<SettingsState> by stateHolder {
@@ -29,6 +31,10 @@ internal class SettingsViewModel(
         // The saved values once, as the starting text of the fields; later edits are the user's.
         launchCatching(onFailure = { stateHolder.showSettings(ServerSettings("", "")) }) {
             stateHolder.showSettings(observeServerSettings().first())
+        }
+        // Whose the token is and how much room it has used; without a signal there is simply nothing to show.
+        launchCatching(onFailure = {}) {
+            getAccount().onSuccess(stateHolder::showAccount)
         }
     }
 
@@ -46,7 +52,11 @@ internal class SettingsViewModel(
         stateHolder.setCheck(ConnectionCheck.Running)
         launchCatching(onFailure = { errorHandler.onCheckFailure(it.asAppError()) }) {
             checkConnection(candidate)
-                .onSuccess { stateHolder.setCheck(ConnectionCheck.Succeeded) }
+                .onSuccess { account ->
+                    stateHolder.setCheck(ConnectionCheck.Succeeded)
+                    // The token just tried may be another person's: show whose it is.
+                    account?.let(stateHolder::showAccount)
+                }
                 .onFailure { errorHandler.onCheckFailure(it.asAppError()) }
         }
     }

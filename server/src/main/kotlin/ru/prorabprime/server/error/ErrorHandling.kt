@@ -57,4 +57,7 @@ internal fun ServiceError.toResponse(): Pair<HttpStatusCode, ErrorDto> = when (t
     is ServiceError.Conflict -> HttpStatusCode.Conflict to ErrorDto(ErrorCode.CONFLICT, message)
 
     is ServiceError.TooLarge -> HttpStatusCode.PayloadTooLarge to ErrorDto(ErrorCode.PAYLOAD_TOO_LARGE, message)
+
+    is ServiceError.QuotaExceeded ->
+        HttpStatusCode.InsufficientStorage to ErrorDto(ErrorCode.QUOTA_EXCEEDED, message)
 }

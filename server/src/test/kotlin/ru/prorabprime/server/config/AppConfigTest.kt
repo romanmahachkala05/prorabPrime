@@ -47,6 +47,26 @@ class AppConfigTest {
     }
 
     @Test
+    fun `an account may keep a gigabyte of pictures unless told otherwise`() {
+        assertThat(AppConfig.from(config()).accountQuotaBytes).isEqualTo(1024L * 1024 * 1024)
+        assertThat(AppConfig.from(config().apply { put("prorab.quota.mb", " 200 ") }).accountQuotaBytes)
+            .isEqualTo(200L * 1024 * 1024)
+        assertThat(AppConfig.from(config().apply { put("prorab.quota.mb", "OFF") }).accountQuotaBytes).isNull()
+        assertThat(AppConfig.from(config().apply { put("prorab.quota.mb", "") }).accountQuotaBytes)
+            .isEqualTo(1024L * 1024 * 1024)
+    }
+
+    @Test
+    fun `a quota that is not a number above zero is refused by name`() {
+        for (bad in listOf("0", "-5", "lots")) {
+            val error = assertThrows(IllegalStateException::class.java) {
+                AppConfig.from(config().apply { put("prorab.quota.mb", bad) })
+            }
+            assertThat(error).hasMessageThat().contains("ACCOUNT_QUOTA_MB")
+        }
+    }
+
+    @Test
     fun `the web directory is read when set and absent otherwise`() {
         assertThat(AppConfig.from(config()).webDir).isNull()
         assertThat(AppConfig.from(config().apply { put("prorab.web.dir", " ./web ") }).webDir).isEqualTo("./web")

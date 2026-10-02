@@ -16,6 +16,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -38,7 +39,9 @@ import ru.prorabprime.designsystem.components.OutlinedButton
 import ru.prorabprime.designsystem.components.TopAppBar
 import ru.prorabprime.designsystem.theme.ProrabTheme
 import ru.prorabprime.designsystem.theme.Spacing
+import ru.prorabprime.domain.model.Account
 import ru.prorabprime.feature.settings.resources.Res
+import ru.prorabprime.feature.settings.resources.settings_account
 import ru.prorabprime.feature.settings.resources.settings_address_hint
 import ru.prorabprime.feature.settings.resources.settings_address_label
 import ru.prorabprime.feature.settings.resources.settings_back
@@ -46,9 +49,15 @@ import ru.prorabprime.feature.settings.resources.settings_check
 import ru.prorabprime.feature.settings.resources.settings_check_running
 import ru.prorabprime.feature.settings.resources.settings_check_succeeded
 import ru.prorabprime.feature.settings.resources.settings_save
+import ru.prorabprime.feature.settings.resources.settings_storage
+import ru.prorabprime.feature.settings.resources.settings_storage_unlimited
 import ru.prorabprime.feature.settings.resources.settings_title
 import ru.prorabprime.feature.settings.resources.settings_token_label
 import ru.prorabprime.feature.settings.resources.settings_trash
+import ru.prorabprime.feature.settings.resources.settings_unit_bytes
+import ru.prorabprime.feature.settings.resources.settings_unit_gigabytes
+import ru.prorabprime.feature.settings.resources.settings_unit_kilobytes
+import ru.prorabprime.feature.settings.resources.settings_unit_megabytes
 import ru.prorabprime.ui.UiText
 import ru.prorabprime.ui.resolve
 
@@ -125,6 +134,7 @@ private fun SettingsForm(
         modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Spacing.m),
         verticalArrangement = Arrangement.spacedBy(Spacing.m),
     ) {
+        state.account?.let { AccountInfo(it) }
         OutlinedTextField(
             value = state.baseUrl,
             onValueChange = { onEvent(SettingsEvent.BaseUrlChanged(it)) },
@@ -153,6 +163,31 @@ private fun SettingsForm(
         ) { Text(stringResource(Res.string.settings_save)) }
         OutlinedButton(onClick = onOpenTrash, modifier = Modifier.fillMaxWidth()) {
             Text(stringResource(Res.string.settings_trash))
+        }
+    }
+}
+
+/** Whose the token is, and how much of the room for pictures it has used. */
+@Composable
+private fun AccountInfo(account: Account) {
+    val units = ByteUnits(
+        bytes = stringResource(Res.string.settings_unit_bytes),
+        kilobytes = stringResource(Res.string.settings_unit_kilobytes),
+        megabytes = stringResource(Res.string.settings_unit_megabytes),
+        gigabytes = stringResource(Res.string.settings_unit_gigabytes),
+    )
+    val used = formatBytes(account.usedBytes, units)
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+        Text(stringResource(Res.string.settings_account, account.name), style = MaterialTheme.typography.titleMedium)
+        val limit = account.limitBytes
+        if (limit == null) {
+            Text(stringResource(Res.string.settings_storage_unlimited, used))
+        } else {
+            Text(stringResource(Res.string.settings_storage, used, formatBytes(limit, units)))
+            LinearProgressIndicator(
+                progress = { (account.usedBytes.toFloat() / limit).coerceIn(0f, 1f) },
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
     }
 }

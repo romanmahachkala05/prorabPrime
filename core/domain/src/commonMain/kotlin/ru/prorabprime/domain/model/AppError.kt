@@ -24,7 +24,7 @@ sealed interface AppError {
         val fieldErrors: ImmutableMap<ObjectField, FieldProblem>,
     ) : AppError
 
-    /** The server refused an upload (HTTP 415 or 413). */
+    /** The server refused an upload (HTTP 415, 413 or 507). */
     data class PhotoRejected(
         val reason: PhotoRejection,
     ) : AppError
@@ -41,6 +41,9 @@ sealed interface AppError {
 enum class PhotoRejection {
     UNSUPPORTED_TYPE,
     TOO_LARGE,
+
+    /** The account has used its room for pictures on the server. */
+    QUOTA_EXCEEDED,
 }
 
 /**

@@ -160,6 +160,9 @@ interface PhotoRepository {
 
     /** One past the object's highest sort order, so a new photo goes to the end. */
     suspend fun nextSortOrder(objectId: UUID): Int
+
+    /** The size of the original files of all the owner's photos, the trashed ones too: they are still on disk. */
+    suspend fun usedBytes(owner: OwnerId): Long
 }
 
 interface ContactRepository {
@@ -280,6 +283,8 @@ interface UserRepository {
     suspend fun findByTokenHash(hash: String): UserRecord?
 
     suspend fun findByName(name: String): UserRecord?
+
+    suspend fun find(id: UUID): UserRecord?
 
     /** The account made first: the one the server's own `API_TOKEN` belongs to. */
     suspend fun first(): UserRecord?

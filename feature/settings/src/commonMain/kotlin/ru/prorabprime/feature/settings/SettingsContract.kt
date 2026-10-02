@@ -1,6 +1,7 @@
 package ru.prorabprime.feature.settings
 
 import androidx.compose.runtime.Immutable
+import ru.prorabprime.domain.model.Account
 import ru.prorabprime.ui.UiText
 
 @Immutable
@@ -33,6 +34,8 @@ internal data class SettingsState(
     val addressError: UiText? = null,
     val check: ConnectionCheck = ConnectionCheck.Idle,
     val isSaving: Boolean = false,
+    /** Whose the saved token is and how much room it has used; null until the server has said. */
+    val account: Account? = null,
 )
 
 internal sealed interface SettingsEvent {
