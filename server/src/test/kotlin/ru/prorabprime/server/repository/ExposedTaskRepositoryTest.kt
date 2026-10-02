@@ -12,6 +12,8 @@ import org.jetbrains.exposed.v1.jdbc.Database
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
+import ru.prorabprime.server.OTHER_OWNER
+import ru.prorabprime.server.TEST_OWNER
 import ru.prorabprime.server.db.DbExecutor
 import ru.prorabprime.server.db.TestPostgres
 import ru.prorabprime.server.model.TaskFields
@@ -45,6 +47,7 @@ class ExposedTaskRepositoryTest {
         title: String = "t",
     ) = TaskRecord(
         UUID.randomUUID(),
+        TEST_OWNER,
         TaskFields(title, LocalDate.parse(day), minutes, done),
         base + minutesLater.minutes,
     )
@@ -54,7 +57,7 @@ class ExposedTaskRepositoryTest {
         val task = task("2026-09-25", 570, title = "Позвонить")
         tasks.insert(task)
 
-        assertThat(tasks.find(task.id)).isEqualTo(task)
+        assertThat(tasks.find(TEST_OWNER, task.id)).isEqualTo(task)
     }
 
     @Test
@@ -65,7 +68,7 @@ class ExposedTaskRepositoryTest {
         val tomorrow = task("2026-09-26", 7 * 60, 3)
         listOf(tomorrow, untimed, late, early).forEach { tasks.insert(it) }
 
-        assertThat(tasks.list(TaskQuery())).containsExactly(early, late, untimed, tomorrow).inOrder()
+        assertThat(tasks.list(TEST_OWNER, TaskQuery())).containsExactly(early, late, untimed, tomorrow).inOrder()
     }
 
     @Test
@@ -77,9 +80,11 @@ class ExposedTaskRepositoryTest {
         listOf(yesterday, today, doneToday, tomorrow).forEach { tasks.insert(it) }
         val day = LocalDate.of(2026, 9, 25)
 
-        assertThat(tasks.list(TaskQuery(from = day, to = day))).containsExactly(today, doneToday)
-        assertThat(tasks.list(TaskQuery(to = LocalDate.of(2026, 9, 24), openOnly = true))).containsExactly(yesterday)
-        assertThat(tasks.list(TaskQuery(from = day, openOnly = true))).containsExactly(today, tomorrow)
+        assertThat(tasks.list(TEST_OWNER, TaskQuery(from = day, to = day))).containsExactly(today, doneToday)
+        assertThat(
+            tasks.list(TEST_OWNER, TaskQuery(to = LocalDate.of(2026, 9, 24), openOnly = true)),
+        ).containsExactly(yesterday)
+        assertThat(tasks.list(TEST_OWNER, TaskQuery(from = day, openOnly = true))).containsExactly(today, tomorrow)
     }
 
     @Test
@@ -88,10 +93,26 @@ class ExposedTaskRepositoryTest {
         tasks.insert(task)
 
         val changed = TaskFields("Готово", LocalDate.of(2026, 9, 27), 600, true)
-        assertThat(tasks.update(task.id, changed)).isTrue()
-        assertThat(tasks.find(task.id)?.fields).isEqualTo(changed)
-        assertThat(tasks.update(UUID.randomUUID(), changed)).isFalse()
-        assertThat(tasks.delete(task.id)).isTrue()
-        assertThat(tasks.delete(task.id)).isFalse()
+        assertThat(tasks.update(TEST_OWNER, task.id, changed)).isTrue()
+        assertThat(tasks.find(TEST_OWNER, task.id)?.fields).isEqualTo(changed)
+        assertThat(tasks.update(TEST_OWNER, UUID.randomUUID(), changed)).isFalse()
+        assertThat(tasks.delete(TEST_OWNER, task.id)).isTrue()
+        assertThat(tasks.delete(TEST_OWNER, task.id)).isFalse()
+    }
+
+    @Test
+    fun `an account sees and changes only its own tasks`() = runTest {
+        val mine = task("2026-09-25", null)
+        val theirs = task("2026-09-25", null).copy(ownerId = OTHER_OWNER)
+        tasks.insert(mine)
+        tasks.insert(theirs)
+        val changed = TaskFields("Чужая", LocalDate.of(2026, 9, 27), null, true)
+
+        assertThat(tasks.list(TEST_OWNER, TaskQuery())).containsExactly(mine)
+        assertThat(tasks.list(OTHER_OWNER, TaskQuery())).containsExactly(theirs)
+        assertThat(tasks.find(TEST_OWNER, theirs.id)).isNull()
+        assertThat(tasks.update(TEST_OWNER, theirs.id, changed)).isFalse()
+        assertThat(tasks.delete(TEST_OWNER, theirs.id)).isFalse()
+        assertThat(tasks.find(OTHER_OWNER, theirs.id)).isEqualTo(theirs)
     }
 }

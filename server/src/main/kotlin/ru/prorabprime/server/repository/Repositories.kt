@@ -14,6 +14,7 @@ import ru.prorabprime.server.model.ObjectFields
 import ru.prorabprime.server.model.ObjectListItem
 import ru.prorabprime.server.model.ObjectListQuery
 import ru.prorabprime.server.model.ObjectRecord
+import ru.prorabprime.server.model.OwnerId
 import ru.prorabprime.server.model.PaymentFields
 import ru.prorabprime.server.model.PaymentRecord
 import ru.prorabprime.server.model.PaymentRevisionRecord
@@ -27,48 +28,79 @@ import ru.prorabprime.server.model.TrashedObject
 import ru.prorabprime.server.model.TrashedPhoto
 import ru.prorabprime.server.model.UserRecord
 
+// Whose data it is (ADR-0021). A repository call that names a record by its own id, or lists records, takes
+// the `OwnerId` and finds nothing of anybody else's: an id of another account is "no such record", never a
+// leak. The rows that hang on an object (photos, contacts, ...) are filtered through the owner of their
+// object. What is keyed by an object id alone (a list of its contacts, the next sort order) is only reached
+// after the service has found that object for the owner, which is what makes the id safe to use.
+
 // The trash is part of what an object's store does: it is the same rows, marked.
 @Suppress("TooManyFunctions")
 interface ObjectRepository {
-    suspend fun list(query: ObjectListQuery): List<ObjectListItem>
+    suspend fun list(owner: OwnerId, query: ObjectListQuery): List<ObjectListItem>
 
-    suspend fun find(id: UUID): ObjectRecord?
+    suspend fun find(owner: OwnerId, id: UUID): ObjectRecord?
 
+    /** The record names its owner. A taken id fails on the primary key, whoever has it. */
     suspend fun insert(record: ObjectRecord)
 
     /** Returns false when there is no such object. */
     suspend fun update(
+        owner: OwnerId,
         id: UUID,
         fields: ObjectFields,
         updatedAt: Instant,
     ): Boolean
 
     /** Like [find], but also an object that is in the trash: for a create that is retried after a delete. */
-    suspend fun findAny(id: UUID): ObjectRecord?
+    suspend fun findAny(owner: OwnerId, id: UUID): ObjectRecord?
 
     /** Puts a live object in the trash. Returns false when there is no such live object. */
-    suspend fun trash(id: UUID, at: Instant): Boolean
+    suspend fun trash(
+        owner: OwnerId,
+        id: UUID,
+        at: Instant,
+    ): Boolean
 
     /** Takes an object out of the trash. Returns false when it is not there. */
-    suspend fun restore(id: UUID): Boolean
+    suspend fun restore(owner: OwnerId, id: UUID): Boolean
 
     /** An object in the trash. */
-    suspend fun findTrashed(id: UUID): ObjectRecord?
+    suspend fun findTrashed(owner: OwnerId, id: UUID): ObjectRecord?
 
     /** Most recently deleted first. */
-    suspend fun listTrashed(): List<TrashedObject>
+    suspend fun listTrashed(owner: OwnerId): List<TrashedObject>
 
     /** Deletes the object for good and, by cascade, its photo rows. Returns false when there is no such object. */
-    suspend fun delete(id: UUID): Boolean
+    suspend fun delete(owner: OwnerId, id: UUID): Boolean
+
+    /**
+     * Deletes, for every account, the objects that have been in the trash since before [cutoff] (and, by
+     * cascade, their photo rows). The one call that is not about an owner: the expiry job works over all of them.
+     * Returns the ids, whose files are then removed.
+     */
+    suspend fun deleteTrashedBefore(cutoff: Instant): List<UUID>
 
     /** The database rejects a photo of another object (composite foreign key). */
-    suspend fun setCover(id: UUID, photoId: UUID?)
+    suspend fun setCover(
+        owner: OwnerId,
+        id: UUID,
+        photoId: UUID?,
+    )
 
     /** Where the object is, or null when that is not known (any more). */
-    suspend fun setCoordinates(id: UUID, coordinates: Coordinates?)
+    suspend fun setCoordinates(
+        owner: OwnerId,
+        id: UUID,
+        coordinates: Coordinates?,
+    )
 
     /** Moves `updated_at`: a change to an object's photos is a change to the object. */
-    suspend fun touch(id: UUID, at: Instant)
+    suspend fun touch(
+        owner: OwnerId,
+        id: UUID,
+        at: Instant,
+    )
 }
 
 // The trash is part of what a photo's store does: it is the same rows, marked.
@@ -77,36 +109,54 @@ interface PhotoRepository {
     /** In carousel order. */
     suspend fun listByObject(objectId: UUID): List<PhotoRecord>
 
-    suspend fun find(id: UUID): PhotoRecord?
+    suspend fun find(owner: OwnerId, id: UUID): PhotoRecord?
 
     /** Like [find], but also a photo that is in the trash. */
-    suspend fun findAny(id: UUID): PhotoRecord?
+    suspend fun findAny(owner: OwnerId, id: UUID): PhotoRecord?
 
     suspend fun insert(photo: PhotoRecord)
 
     /** Puts a live photo in the trash. Returns false when there is no such live photo. */
-    suspend fun trash(id: UUID, at: Instant): Boolean
+    suspend fun trash(
+        owner: OwnerId,
+        id: UUID,
+        at: Instant,
+    ): Boolean
 
     /** Takes a photo out of the trash. Returns false when it is not there. */
-    suspend fun restore(id: UUID): Boolean
+    suspend fun restore(owner: OwnerId, id: UUID): Boolean
 
     /** A photo in the trash. */
-    suspend fun findTrashed(id: UUID): PhotoRecord?
+    suspend fun findTrashed(owner: OwnerId, id: UUID): PhotoRecord?
 
     /** The trashed photos of objects that are not themselves in the trash; most recently deleted first. */
-    suspend fun listTrashed(): List<TrashedPhoto>
+    suspend fun listTrashed(owner: OwnerId): List<TrashedPhoto>
 
     /** Deletes the photo for good. Returns false when there is no such photo. */
-    suspend fun delete(id: UUID): Boolean
+    suspend fun delete(owner: OwnerId, id: UUID): Boolean
+
+    /**
+     * Deletes, for every account, the photos that have been in the trash since before [cutoff] and whose
+     * objects are not themselves in it (those go with their object). Returns them, whose files are then removed.
+     */
+    suspend fun deleteTrashedBefore(cutoff: Instant): List<PhotoRecord>
 
     /** Returns false when there is no such photo. */
-    suspend fun setNote(id: UUID, note: String?): Boolean
+    suspend fun setNote(
+        owner: OwnerId,
+        id: UUID,
+        note: String?,
+    ): Boolean
 
     /** Returns false when there is no such photo. */
-    suspend fun setReceipt(id: UUID, receipt: ReceiptData?): Boolean
+    suspend fun setReceipt(
+        owner: OwnerId,
+        id: UUID,
+        receipt: ReceiptData?,
+    ): Boolean
 
     /** Points the photo at its new files (after a turn); everything else about it stays. */
-    suspend fun replaceFiles(photo: PhotoRecord)
+    suspend fun replaceFiles(owner: OwnerId, photo: PhotoRecord)
 
     /** One past the object's highest sort order, so a new photo goes to the end. */
     suspend fun nextSortOrder(objectId: UUID): Int
@@ -116,15 +166,19 @@ interface ContactRepository {
     /** In the order they were added. */
     suspend fun listByObject(objectId: UUID): List<ContactRecord>
 
-    suspend fun find(id: UUID): ContactRecord?
+    suspend fun find(owner: OwnerId, id: UUID): ContactRecord?
 
     suspend fun insert(contact: ContactRecord)
 
     /** Returns false when there is no such contact. */
-    suspend fun update(id: UUID, fields: ContactFields): Boolean
+    suspend fun update(
+        owner: OwnerId,
+        id: UUID,
+        fields: ContactFields,
+    ): Boolean
 
     /** Returns false when there is no such contact. */
-    suspend fun delete(id: UUID): Boolean
+    suspend fun delete(owner: OwnerId, id: UUID): Boolean
 
     /** One past the object's highest sort order, so a new contact goes to the end. */
     suspend fun nextSortOrder(objectId: UUID): Int
@@ -141,15 +195,19 @@ interface PaymentRepository {
     /** Oldest payment day first, ties in the order they were entered. */
     suspend fun listByObject(objectId: UUID): List<PaymentRecord>
 
-    suspend fun find(id: UUID): PaymentRecord?
+    suspend fun find(owner: OwnerId, id: UUID): PaymentRecord?
 
     suspend fun insert(payment: PaymentRecord)
 
     /** Returns false when there is no such payment. */
-    suspend fun update(id: UUID, fields: PaymentFields): Boolean
+    suspend fun update(
+        owner: OwnerId,
+        id: UUID,
+        fields: PaymentFields,
+    ): Boolean
 
     /** Returns false when there is no such payment. */
-    suspend fun delete(id: UUID): Boolean
+    suspend fun delete(owner: OwnerId, id: UUID): Boolean
 
     suspend fun addRevision(revision: PaymentRevisionRecord)
 
@@ -160,30 +218,38 @@ interface PaymentRepository {
 interface ExtraWorkRepository {
     suspend fun listByObject(objectId: UUID): List<ExtraWorkRecord>
 
-    suspend fun find(id: UUID): ExtraWorkRecord?
+    suspend fun find(owner: OwnerId, id: UUID): ExtraWorkRecord?
 
     suspend fun insert(work: ExtraWorkRecord)
 
     /** Returns false when there is no such work. */
-    suspend fun update(id: UUID, fields: ExtraWorkFields): Boolean
+    suspend fun update(
+        owner: OwnerId,
+        id: UUID,
+        fields: ExtraWorkFields,
+    ): Boolean
 
     /** Returns false when there is no such work. */
-    suspend fun delete(id: UUID): Boolean
+    suspend fun delete(owner: OwnerId, id: UUID): Boolean
 }
 
 interface MaterialRepository {
     /** In checklist order. */
     suspend fun listByObject(objectId: UUID): List<MaterialRecord>
 
-    suspend fun find(id: UUID): MaterialRecord?
+    suspend fun find(owner: OwnerId, id: UUID): MaterialRecord?
 
     suspend fun insert(material: MaterialRecord)
 
     /** Returns false when there is no such material. */
-    suspend fun update(id: UUID, fields: MaterialFields): Boolean
+    suspend fun update(
+        owner: OwnerId,
+        id: UUID,
+        fields: MaterialFields,
+    ): Boolean
 
     /** Returns false when there is no such material. */
-    suspend fun delete(id: UUID): Boolean
+    suspend fun delete(owner: OwnerId, id: UUID): Boolean
 
     /** One past the object's highest sort order, so a new material goes to the end. */
     suspend fun nextSortOrder(objectId: UUID): Int
@@ -191,17 +257,22 @@ interface MaterialRepository {
 
 interface TaskRepository {
     /** By day, then by reminder time (tasks without one last), then in the order they were added. */
-    suspend fun list(query: TaskQuery): List<TaskRecord>
+    suspend fun list(owner: OwnerId, query: TaskQuery): List<TaskRecord>
 
-    suspend fun find(id: UUID): TaskRecord?
+    suspend fun find(owner: OwnerId, id: UUID): TaskRecord?
 
+    /** The record names its owner. */
     suspend fun insert(task: TaskRecord)
 
     /** Returns false when there is no such task. */
-    suspend fun update(id: UUID, fields: TaskFields): Boolean
+    suspend fun update(
+        owner: OwnerId,
+        id: UUID,
+        fields: TaskFields,
+    ): Boolean
 
     /** Returns false when there is no such task. */
-    suspend fun delete(id: UUID): Boolean
+    suspend fun delete(owner: OwnerId, id: UUID): Boolean
 }
 
 interface UserRepository {

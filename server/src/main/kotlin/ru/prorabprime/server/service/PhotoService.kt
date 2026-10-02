@@ -10,6 +10,7 @@ import ru.prorabprime.contract.PhotoLimits
 import ru.prorabprime.server.db.Transactor
 import ru.prorabprime.server.error.ServiceError
 import ru.prorabprime.server.error.asFailure
+import ru.prorabprime.server.model.OwnerId
 import ru.prorabprime.server.model.PhotoRecord
 import ru.prorabprime.server.model.ReceiptData
 import ru.prorabprime.server.repository.ObjectRepository
@@ -40,6 +41,7 @@ class PhotoService(
      * the phone never heard the answer — the photo this id already made.
      */
     private suspend fun refusalOrExisting(
+        owner: OwnerId,
         objectId: UUID,
         bytes: ByteArray,
         clientId: UUID?,
@@ -47,12 +49,13 @@ class PhotoService(
         bytes.size > PhotoLimits.MAX_UPLOAD_BYTES ->
             ServiceError.TooLarge("A photo may be at most ${PhotoLimits.MAX_UPLOAD_BYTES} bytes").asFailure()
 
-        objects.find(objectId) == null -> objectNotFound(objectId)
+        objects.find(owner, objectId) == null -> objectNotFound(objectId)
 
-        else -> alreadyCreated(clientId?.let { photos.findAny(it) }) { it.objectId == objectId }
+        else -> alreadyCreated(clientId?.let { photos.findAny(owner, it) }) { it.objectId == objectId }
     }
 
     suspend fun upload(
+        owner: OwnerId,
         objectId: UUID,
         bytes: ByteArray,
         kind: AttachmentKindDto = AttachmentKindDto.PHOTO,
@@ -60,18 +63,19 @@ class PhotoService(
         note: String? = null,
     ): Result<PhotoRecord> {
         val cleanNote = normalizedNote(note).getOrElse { return Result.failure(it) }
-        return refusalOrExisting(objectId, bytes, clientId)
+        return refusalOrExisting(owner, objectId, bytes, clientId)
             ?: images.process(bytes).fold(
                 onSuccess = { image ->
                     // A receipt's code is read for the sum and date; a code that cannot be read costs nothing.
                     val receipt = if (kind == AttachmentKindDto.RECEIPT) receipts.read(bytes) else null
-                    store(objectId, bytes, image, UploadMeta(kind, clientId ?: newId(), cleanNote, receipt))
+                    store(owner, objectId, bytes, image, UploadMeta(kind, clientId ?: newId(), cleanNote, receipt))
                 },
                 onFailure = { Result.failure(it) },
             )
     }
 
     private suspend fun store(
+        owner: OwnerId,
         objectId: UUID,
         bytes: ByteArray,
         image: ProcessedImage,
@@ -102,43 +106,48 @@ class PhotoService(
                 )
                 photos.insert(photo)
                 // The first photo of an object without a cover becomes the cover; a receipt never does.
-                if (meta.kind == AttachmentKindDto.PHOTO && objects.find(objectId)?.coverPhotoId == null) {
-                    objects.setCover(objectId, id)
+                if (meta.kind == AttachmentKindDto.PHOTO && objects.find(owner, objectId)?.coverPhotoId == null) {
+                    objects.setCover(owner, objectId, id)
                 }
-                objects.touch(objectId, now)
+                objects.touch(owner, objectId, now)
                 Result.success(photo)
             }
         }
     }
 
     /** Only moves the photo to the trash, files and all; [TrashService] is what removes anything for good. */
-    suspend fun delete(photoId: UUID): Result<Unit> {
+    suspend fun delete(owner: OwnerId, photoId: UUID): Result<Unit> {
         transactor.inTransaction {
-            val photo = photos.find(photoId) ?: return@inTransaction null
-            val wasCover = objects.find(photo.objectId)?.coverPhotoId == photoId
-            photos.trash(photoId, clock.now())
+            val photo = photos.find(owner, photoId) ?: return@inTransaction null
+            val wasCover = objects.find(owner, photo.objectId)?.coverPhotoId == photoId
+            photos.trash(owner, photoId, clock.now())
             // A deleted cover is replaced by the newest remaining photo, or by none.
             if (wasCover) {
                 objects.setCover(
+                    owner,
                     photo.objectId,
                     photos.listByObject(photo.objectId)
                         .filter { it.kind == AttachmentKindDto.PHOTO }
                         .maxByOrNull { it.createdAt }?.id,
                 )
             }
-            objects.touch(photo.objectId, clock.now())
+            objects.touch(owner, photo.objectId, clock.now())
             photo
         } ?: return ServiceError.NotFound("No photo $photoId").asFailure()
         return Result.success(Unit)
     }
 
     /** An empty note clears it. */
-    suspend fun setNote(photoId: UUID, note: String?): Result<Unit> {
+    suspend fun setNote(
+        owner: OwnerId,
+        photoId: UUID,
+        note: String?,
+    ): Result<Unit> {
         val clean = normalizedNote(note).getOrElse { return Result.failure(it) }
-        val photo = photos.find(photoId) ?: return ServiceError.NotFound("No photo $photoId").asFailure()
+        val photo = photos.find(owner, photoId) ?: return ServiceError.NotFound("No photo $photoId").asFailure()
         transactor.inTransaction {
-            photos.setNote(photoId, clean)
-            objects.touch(photo.objectId, clock.now())
+            photos.setNote(owner, photoId, clean)
+            objects.touch(owner, photo.objectId, clock.now())
         }
         return Result.success(Unit)
     }
@@ -148,6 +157,7 @@ class PhotoService(
      * ones removed once the row points at the new. A repeat of the same turn finds the work done.
      */
     suspend fun rotate(
+        owner: OwnerId,
         photoId: UUID,
         quarterTurns: Int,
         rotationId: UUID,
@@ -155,7 +165,7 @@ class PhotoService(
         if (quarterTurns !in MIN_TURNS..MAX_TURNS) {
             return ServiceError.Validation("quarterTurns must be $MIN_TURNS to $MAX_TURNS").asFailure()
         }
-        val photo = photos.find(photoId) ?: return ServiceError.NotFound("No photo $photoId").asFailure()
+        val photo = photos.find(owner, photoId) ?: return ServiceError.NotFound("No photo $photoId").asFailure()
         val fileName = "$rotationId.${ImageFormat.JPEG.extension}"
         if (photo.fileName == fileName) return Result.success(photo)
         val original = storage.read(photo.objectId, photo.fileName)
@@ -175,8 +185,8 @@ class PhotoService(
             storage.write(photo.objectId, fileName, turned)
             storage.write(photo.objectId, thumbFileName, image.thumbnail)
             transactor.inTransaction {
-                photos.replaceFiles(updated)
-                objects.touch(photo.objectId, clock.now())
+                photos.replaceFiles(owner, updated)
+                objects.touch(owner, photo.objectId, clock.now())
             }
             Result.success(Unit)
         }
@@ -184,9 +194,13 @@ class PhotoService(
         return Result.success(updated)
     }
 
-    suspend fun setCover(objectId: UUID, photoId: UUID): Result<Unit> {
-        if (objects.find(objectId) == null) return objectNotFound(objectId)
-        val photo = photos.find(photoId)
+    suspend fun setCover(
+        owner: OwnerId,
+        objectId: UUID,
+        photoId: UUID,
+    ): Result<Unit> {
+        if (objects.find(owner, objectId) == null) return objectNotFound(objectId)
+        val photo = photos.find(owner, photoId)
         if (photo == null || photo.objectId != objectId) {
             return ServiceError.Validation("Photo $photoId does not belong to object $objectId").asFailure()
         }
@@ -194,8 +208,8 @@ class PhotoService(
             return ServiceError.Validation("Receipt $photoId cannot be the cover").asFailure()
         }
         transactor.inTransaction {
-            objects.setCover(objectId, photoId)
-            objects.touch(objectId, clock.now())
+            objects.setCover(owner, objectId, photoId)
+            objects.touch(owner, objectId, clock.now())
         }
         return Result.success(Unit)
     }

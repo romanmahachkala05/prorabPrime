@@ -19,6 +19,7 @@ import ru.prorabprime.server.model.ObjectFields
 import ru.prorabprime.server.model.ObjectListItem
 import ru.prorabprime.server.model.ObjectListQuery
 import ru.prorabprime.server.model.ObjectRecord
+import ru.prorabprime.server.model.OwnerId
 import ru.prorabprime.server.model.PaymentFields
 import ru.prorabprime.server.model.PaymentRecord
 import ru.prorabprime.server.model.PaymentRevisionRecord
@@ -61,10 +62,10 @@ class FakeObjectRepository(
         photos.objects = this
     }
 
-    override suspend fun list(query: ObjectListQuery): List<ObjectListItem> {
+    override suspend fun list(owner: OwnerId, query: ObjectListQuery): List<ObjectListItem> {
         val search = query.search?.trim()?.lowercase()?.takeIf { it.isNotEmpty() }
         val matching = records.values.filter {
-            it.id !in trashedAt &&
+            it.ownerId == owner && it.id !in trashedAt &&
                 (search == null || search in searchTextOf(it.fields))
         }
         val sorted = when (query.sort) {
@@ -82,21 +83,31 @@ class FakeObjectRepository(
         }
     }
 
-    override suspend fun find(id: UUID): ObjectRecord? = records[id]?.takeIf { id !in trashedAt }
+    private fun mine(owner: OwnerId, id: UUID): ObjectRecord? = records[id]?.takeIf { it.ownerId == owner }
 
-    override suspend fun findAny(id: UUID): ObjectRecord? = records[id]
+    override suspend fun find(owner: OwnerId, id: UUID): ObjectRecord? = mine(owner, id)?.takeIf { id !in trashedAt }
 
-    override suspend fun trash(id: UUID, at: Instant): Boolean {
-        if (id !in records || id in trashedAt) return false
+    override suspend fun findAny(owner: OwnerId, id: UUID): ObjectRecord? = mine(owner, id)
+
+    override suspend fun trash(
+        owner: OwnerId,
+        id: UUID,
+        at: Instant,
+    ): Boolean {
+        if (mine(owner, id) == null || id in trashedAt) return false
         trashedAt[id] = at
         return true
     }
 
-    override suspend fun restore(id: UUID): Boolean = trashedAt.remove(id) != null
+    override suspend fun restore(owner: OwnerId, id: UUID): Boolean =
+        mine(owner, id) != null && trashedAt.remove(id) != null
 
-    override suspend fun findTrashed(id: UUID): ObjectRecord? = records[id]?.takeIf { id in trashedAt }
+    override suspend fun findTrashed(owner: OwnerId, id: UUID): ObjectRecord? =
+        mine(owner, id)?.takeIf { id in trashedAt }
 
-    override suspend fun listTrashed(): List<TrashedObject> = trashedAt.entries.sortedByDescending {
+    override suspend fun listTrashed(owner: OwnerId): List<TrashedObject> = trashedAt.entries.filter {
+        records.getValue(it.key).ownerId == owner
+    }.sortedByDescending {
         it.value
     }.map { (id, at) ->
         val objectPhotos = photos.records.values.filter { it.objectId == id && it.id !in photos.trashedAt }
@@ -114,31 +125,56 @@ class FakeObjectRepository(
     }
 
     override suspend fun update(
+        owner: OwnerId,
         id: UUID,
         fields: ObjectFields,
         updatedAt: Instant,
     ): Boolean {
-        val record = records[id] ?: return false
+        val record = mine(owner, id) ?: return false
         records[id] = record.copy(fields = fields, updatedAt = updatedAt)
         return true
     }
 
-    override suspend fun delete(id: UUID): Boolean {
+    override suspend fun delete(owner: OwnerId, id: UUID): Boolean {
+        if (mine(owner, id) == null) return false
+        removeWithPhotos(id)
+        return true
+    }
+
+    override suspend fun deleteTrashedBefore(cutoff: Instant): List<UUID> {
+        val expired = trashedAt.filterValues { it < cutoff }.keys.toList()
+        expired.forEach(::removeWithPhotos)
+        return expired
+    }
+
+    private fun removeWithPhotos(id: UUID) {
         photos.records.values.removeAll { it.objectId == id }
         trashedAt.remove(id)
-        return records.remove(id) != null
+        records.remove(id)
     }
 
-    override suspend fun setCover(id: UUID, photoId: UUID?) {
-        records[id]?.let { records[id] = it.copy(coverPhotoId = photoId) }
+    override suspend fun setCover(
+        owner: OwnerId,
+        id: UUID,
+        photoId: UUID?,
+    ) {
+        mine(owner, id)?.let { records[id] = it.copy(coverPhotoId = photoId) }
     }
 
-    override suspend fun touch(id: UUID, at: Instant) {
-        records[id]?.let { records[id] = it.copy(updatedAt = at) }
+    override suspend fun touch(
+        owner: OwnerId,
+        id: UUID,
+        at: Instant,
+    ) {
+        mine(owner, id)?.let { records[id] = it.copy(updatedAt = at) }
     }
 
-    override suspend fun setCoordinates(id: UUID, coordinates: Coordinates?) {
-        records[id]?.let { records[id] = it.copy(coordinates = coordinates) }
+    override suspend fun setCoordinates(
+        owner: OwnerId,
+        id: UUID,
+        coordinates: Coordinates?,
+    ) {
+        mine(owner, id)?.let { records[id] = it.copy(coordinates = coordinates) }
     }
 }
 
@@ -158,25 +194,42 @@ class FakePhotoRepository : PhotoRepository {
     override suspend fun listByObject(objectId: UUID): List<PhotoRecord> =
         records.values.filter { it.objectId == objectId && it.id !in trashedAt }.sortedBy { it.sortOrder }
 
-    override suspend fun find(id: UUID): PhotoRecord? = records[id]?.takeIf { id !in trashedAt }
+    /**
+     * Whose a photo is follows its object. A photo with no object repository linked to this one is nobody's in
+     * particular, and passes: the filtering itself is tested on PostgreSQL, where it is real.
+     */
+    private fun mine(owner: OwnerId, id: UUID): PhotoRecord? = records[id]?.takeIf { photo ->
+        objects?.records?.get(photo.objectId)?.let { it.ownerId == owner } ?: true
+    }
 
-    override suspend fun findAny(id: UUID): PhotoRecord? = records[id]
+    override suspend fun find(owner: OwnerId, id: UUID): PhotoRecord? = mine(owner, id)?.takeIf { id !in trashedAt }
 
-    override suspend fun trash(id: UUID, at: Instant): Boolean {
-        if (id !in records || id in trashedAt) return false
+    override suspend fun findAny(owner: OwnerId, id: UUID): PhotoRecord? = mine(owner, id)
+
+    override suspend fun trash(
+        owner: OwnerId,
+        id: UUID,
+        at: Instant,
+    ): Boolean {
+        if (mine(owner, id) == null || id in trashedAt) return false
         trashedAt[id] = at
         return true
     }
 
-    override suspend fun restore(id: UUID): Boolean = trashedAt.remove(id) != null
+    override suspend fun restore(owner: OwnerId, id: UUID): Boolean =
+        mine(owner, id) != null && trashedAt.remove(id) != null
 
-    override suspend fun findTrashed(id: UUID): PhotoRecord? = records[id]?.takeIf { id in trashedAt }
+    override suspend fun findTrashed(owner: OwnerId, id: UUID): PhotoRecord? = mine(owner, id)?.takeIf {
+        id in trashedAt
+    }
 
-    override suspend fun listTrashed(): List<TrashedPhoto> = trashedAt.entries.sortedByDescending { it.value }
+    override suspend fun listTrashed(owner: OwnerId): List<TrashedPhoto> = trashedAt.entries
+        .filter { mine(owner, it.key) != null }
+        .sortedByDescending { it.value }
         .mapNotNull { (id, at) ->
             val photo = records.getValue(id)
-            val owner = objects?.find(photo.objectId) ?: return@mapNotNull null
-            TrashedPhoto(photo, owner.fields.title, owner.fields.address, at)
+            val parent = objects?.find(owner, photo.objectId) ?: return@mapNotNull null
+            TrashedPhoto(photo, parent.fields.title, parent.fields.address, at)
         }
 
     override suspend fun insert(photo: PhotoRecord) {
@@ -184,25 +237,45 @@ class FakePhotoRepository : PhotoRepository {
         records[photo.id] = photo
     }
 
-    override suspend fun delete(id: UUID): Boolean {
+    override suspend fun delete(owner: OwnerId, id: UUID): Boolean {
+        if (mine(owner, id) == null) return false
         trashedAt.remove(id)
         return records.remove(id) != null
     }
 
-    override suspend fun setNote(id: UUID, note: String?): Boolean {
-        val record = records[id] ?: return false
+    override suspend fun deleteTrashedBefore(cutoff: Instant): List<PhotoRecord> {
+        val expired = trashedAt.filterValues { it < cutoff }.keys
+            .mapNotNull { records[it] }
+            .filter { objects?.records?.get(it.objectId)?.let { parent -> parent.id !in objects!!.trashedAt } ?: true }
+        expired.forEach {
+            trashedAt.remove(it.id)
+            records.remove(it.id)
+        }
+        return expired
+    }
+
+    override suspend fun setNote(
+        owner: OwnerId,
+        id: UUID,
+        note: String?,
+    ): Boolean {
+        val record = mine(owner, id) ?: return false
         records[id] = record.copy(note = note)
         return true
     }
 
-    override suspend fun setReceipt(id: UUID, receipt: ReceiptData?): Boolean {
-        val record = records[id] ?: return false
+    override suspend fun setReceipt(
+        owner: OwnerId,
+        id: UUID,
+        receipt: ReceiptData?,
+    ): Boolean {
+        val record = mine(owner, id) ?: return false
         records[id] = record.copy(receipt = receipt)
         return true
     }
 
-    override suspend fun replaceFiles(photo: PhotoRecord) {
-        records[photo.id] = photo
+    override suspend fun replaceFiles(owner: OwnerId, photo: PhotoRecord) {
+        if (mine(owner, photo.id) != null) records[photo.id] = photo
     }
 
     override suspend fun nextSortOrder(objectId: UUID): Int =
@@ -216,19 +289,23 @@ class FakeContactRepository : ContactRepository {
     override suspend fun listByObject(objectId: UUID): List<ContactRecord> =
         records.values.filter { it.objectId == objectId }.sortedBy { it.sortOrder }
 
-    override suspend fun find(id: UUID): ContactRecord? = records[id]
+    override suspend fun find(owner: OwnerId, id: UUID): ContactRecord? = records[id]
 
     override suspend fun insert(contact: ContactRecord) {
         records[contact.id] = contact
     }
 
-    override suspend fun update(id: UUID, fields: ContactFields): Boolean {
+    override suspend fun update(
+        owner: OwnerId,
+        id: UUID,
+        fields: ContactFields,
+    ): Boolean {
         val record = records[id] ?: return false
         records[id] = record.copy(fields = fields)
         return true
     }
 
-    override suspend fun delete(id: UUID): Boolean = records.remove(id) != null
+    override suspend fun delete(owner: OwnerId, id: UUID): Boolean = records.remove(id) != null
 
     override suspend fun nextSortOrder(objectId: UUID): Int =
         (records.values.filter { it.objectId == objectId }.maxOfOrNull { it.sortOrder } ?: 0) + 1
@@ -253,19 +330,23 @@ class FakePaymentRepository : PaymentRepository {
     override suspend fun listByObject(objectId: UUID): List<PaymentRecord> =
         records.values.filter { it.objectId == objectId }.sortedBy { it.fields.paidOn }
 
-    override suspend fun find(id: UUID): PaymentRecord? = records[id]
+    override suspend fun find(owner: OwnerId, id: UUID): PaymentRecord? = records[id]
 
     override suspend fun insert(payment: PaymentRecord) {
         records[payment.id] = payment
     }
 
-    override suspend fun update(id: UUID, fields: PaymentFields): Boolean {
+    override suspend fun update(
+        owner: OwnerId,
+        id: UUID,
+        fields: PaymentFields,
+    ): Boolean {
         val record = records[id] ?: return false
         records[id] = record.copy(fields = fields)
         return true
     }
 
-    override suspend fun delete(id: UUID): Boolean = records.remove(id) != null
+    override suspend fun delete(owner: OwnerId, id: UUID): Boolean = records.remove(id) != null
 
     override suspend fun addRevision(revision: PaymentRevisionRecord) {
         revisions += revision
@@ -282,19 +363,23 @@ class FakeExtraWorkRepository : ExtraWorkRepository {
     override suspend fun listByObject(objectId: UUID): List<ExtraWorkRecord> =
         records.values.filter { it.objectId == objectId }.sortedBy { it.createdAt }
 
-    override suspend fun find(id: UUID): ExtraWorkRecord? = records[id]
+    override suspend fun find(owner: OwnerId, id: UUID): ExtraWorkRecord? = records[id]
 
     override suspend fun insert(work: ExtraWorkRecord) {
         records[work.id] = work
     }
 
-    override suspend fun update(id: UUID, fields: ExtraWorkFields): Boolean {
+    override suspend fun update(
+        owner: OwnerId,
+        id: UUID,
+        fields: ExtraWorkFields,
+    ): Boolean {
         val record = records[id] ?: return false
         records[id] = record.copy(fields = fields)
         return true
     }
 
-    override suspend fun delete(id: UUID): Boolean = records.remove(id) != null
+    override suspend fun delete(owner: OwnerId, id: UUID): Boolean = records.remove(id) != null
 }
 
 class FakeMaterialRepository : MaterialRepository {
@@ -304,19 +389,23 @@ class FakeMaterialRepository : MaterialRepository {
     override suspend fun listByObject(objectId: UUID): List<MaterialRecord> =
         records.values.filter { it.objectId == objectId }.sortedBy { it.sortOrder }
 
-    override suspend fun find(id: UUID): MaterialRecord? = records[id]
+    override suspend fun find(owner: OwnerId, id: UUID): MaterialRecord? = records[id]
 
     override suspend fun insert(material: MaterialRecord) {
         records[material.id] = material
     }
 
-    override suspend fun update(id: UUID, fields: MaterialFields): Boolean {
+    override suspend fun update(
+        owner: OwnerId,
+        id: UUID,
+        fields: MaterialFields,
+    ): Boolean {
         val record = records[id] ?: return false
         records[id] = record.copy(fields = fields)
         return true
     }
 
-    override suspend fun delete(id: UUID): Boolean = records.remove(id) != null
+    override suspend fun delete(owner: OwnerId, id: UUID): Boolean = records.remove(id) != null
 
     override suspend fun nextSortOrder(objectId: UUID): Int =
         (records.values.filter { it.objectId == objectId }.maxOfOrNull { it.sortOrder } ?: 0) + 1
@@ -326,7 +415,8 @@ class FakeTaskRepository : TaskRepository {
 
     val records = linkedMapOf<UUID, TaskRecord>()
 
-    override suspend fun list(query: TaskQuery): List<TaskRecord> = records.values
+    override suspend fun list(owner: OwnerId, query: TaskQuery): List<TaskRecord> = records.values
+        .filter { it.ownerId == owner }
         .filter { query.from == null || it.fields.day >= query.from }
         .filter { query.to == null || it.fields.day <= query.to }
         .filter { !query.openOnly || !it.fields.done }
@@ -336,19 +426,24 @@ class FakeTaskRepository : TaskRepository {
                 .thenBy { it.createdAt },
         )
 
-    override suspend fun find(id: UUID): TaskRecord? = records[id]
+    override suspend fun find(owner: OwnerId, id: UUID): TaskRecord? = records[id]?.takeIf { it.ownerId == owner }
 
     override suspend fun insert(task: TaskRecord) {
         records[task.id] = task
     }
 
-    override suspend fun update(id: UUID, fields: TaskFields): Boolean {
-        val record = records[id] ?: return false
+    override suspend fun update(
+        owner: OwnerId,
+        id: UUID,
+        fields: TaskFields,
+    ): Boolean {
+        val record = records[id]?.takeIf { it.ownerId == owner } ?: return false
         records[id] = record.copy(fields = fields)
         return true
     }
 
-    override suspend fun delete(id: UUID): Boolean = records.remove(id) != null
+    override suspend fun delete(owner: OwnerId, id: UUID): Boolean =
+        records[id]?.takeIf { it.ownerId == owner }?.let { records.remove(id) } != null
 }
 
 /** Runs the block directly; the fakes have no transactions to join. */

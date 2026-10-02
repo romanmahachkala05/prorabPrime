@@ -9,6 +9,7 @@ import ru.prorabprime.contract.ReceiptRequestDto
 import ru.prorabprime.server.db.Transactor
 import ru.prorabprime.server.error.ServiceError
 import ru.prorabprime.server.error.asFailure
+import ru.prorabprime.server.model.OwnerId
 import ru.prorabprime.server.model.ReceiptData
 import ru.prorabprime.server.repository.ObjectRepository
 import ru.prorabprime.server.repository.PhotoRepository
@@ -21,15 +22,19 @@ class ReceiptService(
     private val clock: Clock,
 ) {
     /** No amount in the request clears what the receipt knows. */
-    suspend fun set(photoId: UUID, request: ReceiptRequestDto): Result<Unit> {
-        val photo = photos.find(photoId) ?: return ServiceError.NotFound("No photo $photoId").asFailure()
+    suspend fun set(
+        owner: OwnerId,
+        photoId: UUID,
+        request: ReceiptRequestDto,
+    ): Result<Unit> {
+        val photo = photos.find(owner, photoId) ?: return ServiceError.NotFound("No photo $photoId").asFailure()
         if (photo.kind != AttachmentKindDto.RECEIPT) {
             return ServiceError.Validation("Photo $photoId is not a receipt").asFailure()
         }
         val receipt = receiptOf(request, photo.receipt?.qr.orEmpty()).getOrElse { return Result.failure(it) }
         transactor.inTransaction {
-            photos.setReceipt(photoId, receipt)
-            objects.touch(photo.objectId, clock.now())
+            photos.setReceipt(owner, photoId, receipt)
+            objects.touch(owner, photo.objectId, clock.now())
         }
         return Result.success(Unit)
     }

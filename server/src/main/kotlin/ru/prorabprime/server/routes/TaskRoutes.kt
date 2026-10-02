@@ -18,6 +18,7 @@ import ru.prorabprime.contract.ApiQuery
 import ru.prorabprime.contract.IdDto
 import ru.prorabprime.contract.TaskDto
 import ru.prorabprime.contract.TaskRequestDto
+import ru.prorabprime.server.auth.owner
 import ru.prorabprime.server.error.ServiceError
 import ru.prorabprime.server.error.ServiceException
 import ru.prorabprime.server.model.TaskQuery
@@ -28,18 +29,18 @@ fun Route.taskRoutes() {
     val service by inject<TaskService>()
 
     get(ApiPaths.TASKS) {
-        call.respond(service.list(call.taskQuery()).map { it.toDto() })
+        call.respond(service.list(call.owner, call.taskQuery()).map { it.toDto() })
     }
     post(ApiPaths.TASKS) {
-        val created = service.create(call.receive<TaskRequestDto>()).getOrThrow()
+        val created = service.create(call.owner, call.receive<TaskRequestDto>()).getOrThrow()
         call.respond(HttpStatusCode.Created, IdDto(created.id.toString()))
     }
     put(ApiPaths.TASK) {
-        service.update(call.uuidParam(ApiParams.ID), call.receive<TaskRequestDto>()).getOrThrow()
+        service.update(call.owner, call.uuidParam(ApiParams.ID), call.receive<TaskRequestDto>()).getOrThrow()
         call.respond(HttpStatusCode.NoContent)
     }
     delete(ApiPaths.TASK) {
-        service.delete(call.uuidParam(ApiParams.ID)).getOrThrow()
+        service.delete(call.owner, call.uuidParam(ApiParams.ID)).getOrThrow()
         call.respond(HttpStatusCode.NoContent)
     }
 }

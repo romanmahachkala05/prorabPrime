@@ -5,6 +5,7 @@ import kotlin.time.Instant
 import kotlin.time.toJavaInstant
 import kotlin.time.toKotlinInstant
 import org.jetbrains.exposed.v1.core.LikePattern
+import org.jetbrains.exposed.v1.core.Op
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.and
@@ -13,6 +14,7 @@ import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.core.isNotNull
 import org.jetbrains.exposed.v1.core.isNull
+import org.jetbrains.exposed.v1.core.less
 import org.jetbrains.exposed.v1.core.like
 import org.jetbrains.exposed.v1.core.statements.UpdateBuilder
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
@@ -30,6 +32,7 @@ import ru.prorabprime.server.model.ObjectFields
 import ru.prorabprime.server.model.ObjectListItem
 import ru.prorabprime.server.model.ObjectListQuery
 import ru.prorabprime.server.model.ObjectRecord
+import ru.prorabprime.server.model.OwnerId
 import ru.prorabprime.server.model.TrashedObject
 
 @Suppress("TooManyFunctions") // The interface's, see there.
@@ -37,7 +40,7 @@ class ExposedObjectRepository(
     private val db: DbExecutor,
 ) : ObjectRepository {
 
-    override suspend fun list(query: ObjectListQuery): List<ObjectListItem> = db.query {
+    override suspend fun list(owner: OwnerId, query: ObjectListQuery): List<ObjectListItem> = db.query {
         val search = query.search?.trim()?.lowercase()?.takeIf { it.isNotEmpty() }
         val sortColumn = when (query.sort) {
             SortFieldDto.ADDRESS -> ObjectsTable.address
@@ -46,7 +49,7 @@ class ExposedObjectRepository(
         }
         val order = if (query.order == SortOrderDto.ASC) SortOrder.ASC else SortOrder.DESC
 
-        val live = ObjectsTable.deletedAt.isNull()
+        val live = ObjectsTable.deletedAt.isNull() and (ObjectsTable.ownerId eq owner.value)
         val records = ObjectsTable.selectAll()
             .where { if (search != null) live and (ObjectsTable.searchText like containing(search)) else live }
             // The id breaks ties, so equal addresses or timestamps keep a stable order.
@@ -85,37 +88,45 @@ class ExposedObjectRepository(
         }
     }
 
-    override suspend fun find(id: UUID): ObjectRecord? = db.query {
+    /** The one object [id] names, if it belongs to [owner]. */
+    private fun mine(owner: OwnerId, id: UUID): Op<Boolean> =
+        (ObjectsTable.id eq id) and (ObjectsTable.ownerId eq owner.value)
+
+    override suspend fun find(owner: OwnerId, id: UUID): ObjectRecord? = db.query {
         ObjectsTable.selectAll()
-            .where { (ObjectsTable.id eq id) and ObjectsTable.deletedAt.isNull() }
+            .where { mine(owner, id) and ObjectsTable.deletedAt.isNull() }
             .singleOrNull()?.toObjectRecord()
     }
 
-    override suspend fun findAny(id: UUID): ObjectRecord? = db.query {
-        ObjectsTable.selectAll().where { ObjectsTable.id eq id }.singleOrNull()?.toObjectRecord()
+    override suspend fun findAny(owner: OwnerId, id: UUID): ObjectRecord? = db.query {
+        ObjectsTable.selectAll().where { mine(owner, id) }.singleOrNull()?.toObjectRecord()
     }
 
-    override suspend fun trash(id: UUID, at: Instant): Boolean = db.query {
-        ObjectsTable.update({ (ObjectsTable.id eq id) and ObjectsTable.deletedAt.isNull() }) {
+    override suspend fun trash(
+        owner: OwnerId,
+        id: UUID,
+        at: Instant,
+    ): Boolean = db.query {
+        ObjectsTable.update({ mine(owner, id) and ObjectsTable.deletedAt.isNull() }) {
             it[deletedAt] = at.toJavaInstant()
         } > 0
     }
 
-    override suspend fun restore(id: UUID): Boolean = db.query {
-        ObjectsTable.update({ (ObjectsTable.id eq id) and ObjectsTable.deletedAt.isNotNull() }) {
+    override suspend fun restore(owner: OwnerId, id: UUID): Boolean = db.query {
+        ObjectsTable.update({ mine(owner, id) and ObjectsTable.deletedAt.isNotNull() }) {
             it[deletedAt] = null
         } > 0
     }
 
-    override suspend fun findTrashed(id: UUID): ObjectRecord? = db.query {
+    override suspend fun findTrashed(owner: OwnerId, id: UUID): ObjectRecord? = db.query {
         ObjectsTable.selectAll()
-            .where { (ObjectsTable.id eq id) and ObjectsTable.deletedAt.isNotNull() }
+            .where { mine(owner, id) and ObjectsTable.deletedAt.isNotNull() }
             .singleOrNull()?.toObjectRecord()
     }
 
-    override suspend fun listTrashed(): List<TrashedObject> = db.query {
+    override suspend fun listTrashed(owner: OwnerId): List<TrashedObject> = db.query {
         val rows = ObjectsTable.selectAll()
-            .where { ObjectsTable.deletedAt.isNotNull() }
+            .where { ObjectsTable.deletedAt.isNotNull() and (ObjectsTable.ownerId eq owner.value) }
             .orderBy(ObjectsTable.deletedAt to SortOrder.DESC, ObjectsTable.id to SortOrder.ASC)
             .toList()
         val deletedAt = rows.associate {
@@ -131,6 +142,7 @@ class ExposedObjectRepository(
         db.query {
             ObjectsTable.insert {
                 it[ObjectsTable.id] = record.id
+                it[ObjectsTable.ownerId] = record.ownerId.value
                 it.setFields(record.fields)
                 it[ObjectsTable.coverPhotoId] = record.coverPhotoId
                 it[ObjectsTable.createdAt] = record.createdAt.toJavaInstant()
@@ -140,35 +152,56 @@ class ExposedObjectRepository(
     }
 
     override suspend fun update(
+        owner: OwnerId,
         id: UUID,
         fields: ObjectFields,
         updatedAt: Instant,
     ): Boolean = db.query {
-        ObjectsTable.update({ ObjectsTable.id eq id }) {
+        ObjectsTable.update({ mine(owner, id) }) {
             it.setFields(fields)
             it[ObjectsTable.updatedAt] = updatedAt.toJavaInstant()
         } > 0
     }
 
-    override suspend fun delete(id: UUID): Boolean = db.query {
-        ObjectsTable.deleteWhere { ObjectsTable.id eq id } > 0
+    override suspend fun delete(owner: OwnerId, id: UUID): Boolean = db.query {
+        ObjectsTable.deleteWhere { mine(owner, id) } > 0
     }
 
-    override suspend fun setCover(id: UUID, photoId: UUID?) {
-        db.query { ObjectsTable.update({ ObjectsTable.id eq id }) { it[coverPhotoId] = photoId } }
+    override suspend fun deleteTrashedBefore(cutoff: Instant): List<UUID> = db.query {
+        val expired = ObjectsTable.select(ObjectsTable.id)
+            .where { ObjectsTable.deletedAt less cutoff.toJavaInstant() }
+            .map { it[ObjectsTable.id] }
+        if (expired.isNotEmpty()) ObjectsTable.deleteWhere { ObjectsTable.id inList expired }
+        expired
     }
 
-    override suspend fun setCoordinates(id: UUID, coordinates: Coordinates?) {
+    override suspend fun setCover(
+        owner: OwnerId,
+        id: UUID,
+        photoId: UUID?,
+    ) {
+        db.query { ObjectsTable.update({ mine(owner, id) }) { it[coverPhotoId] = photoId } }
+    }
+
+    override suspend fun setCoordinates(
+        owner: OwnerId,
+        id: UUID,
+        coordinates: Coordinates?,
+    ) {
         db.query {
-            ObjectsTable.update({ ObjectsTable.id eq id }) {
+            ObjectsTable.update({ mine(owner, id) }) {
                 it[latitude] = coordinates?.latitude
                 it[longitude] = coordinates?.longitude
             }
         }
     }
 
-    override suspend fun touch(id: UUID, at: Instant) {
-        db.query { ObjectsTable.update({ ObjectsTable.id eq id }) { it[updatedAt] = at.toJavaInstant() } }
+    override suspend fun touch(
+        owner: OwnerId,
+        id: UUID,
+        at: Instant,
+    ) {
+        db.query { ObjectsTable.update({ mine(owner, id) }) { it[updatedAt] = at.toJavaInstant() } }
     }
 
     private fun UpdateBuilder<*>.setFields(fields: ObjectFields) {
@@ -195,6 +228,7 @@ private fun containing(text: String): LikePattern {
 
 private fun ResultRow.toObjectRecord() = ObjectRecord(
     id = this[ObjectsTable.id],
+    ownerId = OwnerId(this[ObjectsTable.ownerId]),
     fields = ObjectFields(
         title = this[ObjectsTable.title],
         address = this[ObjectsTable.address],

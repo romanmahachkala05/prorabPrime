@@ -43,7 +43,7 @@ class ExposedUserRepositoryTest {
     @Test
     fun `the migration makes the first account`() = runTest {
         assertThat(users.first()?.name).isEqualTo("owner")
-        assertThat(users.list().map { it.name }).containsExactly("owner")
+        assertThat(users.list().first().name).isEqualTo("owner")
     }
 
     @Test

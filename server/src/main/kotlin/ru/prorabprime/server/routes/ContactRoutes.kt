@@ -12,6 +12,7 @@ import ru.prorabprime.contract.ApiParams
 import ru.prorabprime.contract.ApiPaths
 import ru.prorabprime.contract.ContactCreatedDto
 import ru.prorabprime.contract.ContactRequestDto
+import ru.prorabprime.server.auth.owner
 import ru.prorabprime.server.service.ContactService
 
 fun Route.contactRoutes() {
@@ -19,15 +20,15 @@ fun Route.contactRoutes() {
 
     post(ApiPaths.OBJECT_CONTACTS) {
         val objectId = call.uuidParam(ApiParams.ID)
-        val created = service.create(objectId, call.receive<ContactRequestDto>()).getOrThrow()
+        val created = service.create(call.owner, objectId, call.receive<ContactRequestDto>()).getOrThrow()
         call.respond(HttpStatusCode.Created, ContactCreatedDto(created.id.toString()))
     }
     put(ApiPaths.CONTACT) {
-        service.update(call.uuidParam(ApiParams.ID), call.receive<ContactRequestDto>()).getOrThrow()
+        service.update(call.owner, call.uuidParam(ApiParams.ID), call.receive<ContactRequestDto>()).getOrThrow()
         call.respond(HttpStatusCode.NoContent)
     }
     delete(ApiPaths.CONTACT) {
-        service.delete(call.uuidParam(ApiParams.ID)).getOrThrow()
+        service.delete(call.owner, call.uuidParam(ApiParams.ID)).getOrThrow()
         call.respond(HttpStatusCode.NoContent)
     }
 }

@@ -14,6 +14,7 @@ import ru.prorabprime.contract.ApiPaths
 import ru.prorabprime.contract.IdDto
 import ru.prorabprime.contract.MaterialDto
 import ru.prorabprime.contract.MaterialRequestDto
+import ru.prorabprime.server.auth.owner
 import ru.prorabprime.server.model.MaterialRecord
 import ru.prorabprime.server.service.MaterialService
 
@@ -21,21 +22,25 @@ fun Route.materialRoutes() {
     val service by inject<MaterialService>()
 
     get(ApiPaths.OBJECT_MATERIALS) {
-        call.respond(service.list(call.uuidParam(ApiParams.ID)).getOrThrow().map { it.toDto() })
+        call.respond(service.list(call.owner, call.uuidParam(ApiParams.ID)).getOrThrow().map { it.toDto() })
     }
     post(ApiPaths.OBJECT_MATERIALS) {
-        val created = service.create(call.uuidParam(ApiParams.ID), call.receive<MaterialRequestDto>()).getOrThrow()
+        val created = service.create(
+            call.owner,
+            call.uuidParam(ApiParams.ID),
+            call.receive<MaterialRequestDto>(),
+        ).getOrThrow()
         call.respond(HttpStatusCode.Created, IdDto(created.id.toString()))
     }
     post(ApiPaths.OBJECT_MATERIAL_DEFAULTS) {
-        call.respond(service.addDefaults(call.uuidParam(ApiParams.ID)).getOrThrow().map { it.toDto() })
+        call.respond(service.addDefaults(call.owner, call.uuidParam(ApiParams.ID)).getOrThrow().map { it.toDto() })
     }
     put(ApiPaths.MATERIAL) {
-        service.update(call.uuidParam(ApiParams.ID), call.receive<MaterialRequestDto>()).getOrThrow()
+        service.update(call.owner, call.uuidParam(ApiParams.ID), call.receive<MaterialRequestDto>()).getOrThrow()
         call.respond(HttpStatusCode.NoContent)
     }
     delete(ApiPaths.MATERIAL) {
-        service.delete(call.uuidParam(ApiParams.ID)).getOrThrow()
+        service.delete(call.owner, call.uuidParam(ApiParams.ID)).getOrThrow()
         call.respond(HttpStatusCode.NoContent)
     }
 }

@@ -32,6 +32,7 @@ import ru.prorabprime.server.repository.UserRepository
 import ru.prorabprime.server.service.AccountService
 import ru.prorabprime.server.service.ContactService
 import ru.prorabprime.server.service.ExtraWorkService
+import ru.prorabprime.server.service.FileService
 import ru.prorabprime.server.service.FinanceService
 import ru.prorabprime.server.service.Geocoder
 import ru.prorabprime.server.service.MaterialService
@@ -81,6 +82,7 @@ fun databaseModule(database: Database): Module = module {
 
 val serviceModule: Module = module {
     single { AccountService(get(), get(), get()) }
+    single { FileService(get(), get()) }
     single { ObjectService(get(), get(), get(), get(), geocoder = get()) }
     single { TrashService(get(), get(), get(), get(), get()) }
     single { ContactService(get(), get(), get()) }

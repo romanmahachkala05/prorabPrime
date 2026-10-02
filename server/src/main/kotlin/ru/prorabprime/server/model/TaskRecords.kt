@@ -14,6 +14,7 @@ data class TaskFields(
 
 data class TaskRecord(
     val id: UUID,
+    val ownerId: OwnerId,
     val fields: TaskFields,
     val createdAt: Instant,
 )

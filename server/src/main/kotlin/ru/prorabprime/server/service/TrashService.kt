@@ -4,12 +4,13 @@ import io.ktor.util.logging.KtorSimpleLogger
 import java.util.UUID
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.days
-import kotlin.time.Instant
 import kotlinx.coroutines.CancellationException
 import ru.prorabprime.contract.TrashLimits
 import ru.prorabprime.server.db.Transactor
 import ru.prorabprime.server.error.ServiceError
 import ru.prorabprime.server.error.asFailure
+import ru.prorabprime.server.model.OwnerId
+import ru.prorabprime.server.model.PhotoRecord
 import ru.prorabprime.server.model.TrashedObject
 import ru.prorabprime.server.model.TrashedPhoto
 import ru.prorabprime.server.repository.ObjectRepository
@@ -34,63 +35,73 @@ class TrashService(
     private val transactor: Transactor,
     private val clock: Clock,
 ) {
-    suspend fun list(): Trash = Trash(objects.listTrashed(), photos.listTrashed())
+    suspend fun list(owner: OwnerId): Trash = Trash(objects.listTrashed(owner), photos.listTrashed(owner))
 
     /** Moves `updated_at`, so phones that copy objects down learn the object is back. */
-    suspend fun restoreObject(id: UUID): Result<Unit> {
+    suspend fun restoreObject(owner: OwnerId, id: UUID): Result<Unit> {
         val restored = transactor.inTransaction {
-            (objects.restore(id)).also { if (it) objects.touch(id, clock.now()) }
+            (objects.restore(owner, id)).also { if (it) objects.touch(owner, id, clock.now()) }
         }
         return if (restored) Result.success(Unit) else ServiceError.NotFound("No object $id in the trash").asFailure()
     }
 
     /** A photo whose object is itself in the trash comes back with that object, not alone. */
-    suspend fun restorePhoto(id: UUID): Result<Unit> {
-        val photo = photos.findTrashed(id) ?: return photoNotFound(id)
-        if (objects.find(photo.objectId) == null) return photoNotFound(id)
+    suspend fun restorePhoto(owner: OwnerId, id: UUID): Result<Unit> {
+        val photo = photos.findTrashed(owner, id) ?: return photoNotFound(id)
+        if (objects.find(owner, photo.objectId) == null) return photoNotFound(id)
         transactor.inTransaction {
-            photos.restore(id)
-            objects.touch(photo.objectId, clock.now())
+            photos.restore(owner, id)
+            objects.touch(owner, photo.objectId, clock.now())
         }
         return Result.success(Unit)
     }
 
-    suspend fun purgeObject(id: UUID): Result<Unit> {
-        objects.findTrashed(id) ?: return ServiceError.NotFound("No object $id in the trash").asFailure()
-        objects.delete(id)
+    suspend fun purgeObject(owner: OwnerId, id: UUID): Result<Unit> {
+        objects.findTrashed(owner, id) ?: return ServiceError.NotFound("No object $id in the trash").asFailure()
+        objects.delete(owner, id)
         quietly("files of $id") { storage.deleteAll(id) }
         return Result.success(Unit)
     }
 
-    suspend fun purgePhoto(id: UUID): Result<Unit> {
-        val photo = photos.findTrashed(id) ?: return photoNotFound(id)
-        photos.delete(id)
-        quietly("files of photo $id") {
-            storage.delete(photo.objectId, photo.fileName)
-            storage.delete(photo.objectId, photo.thumbFileName)
-        }
+    suspend fun purgePhoto(owner: OwnerId, id: UUID): Result<Unit> {
+        val photo = photos.findTrashed(owner, id) ?: return photoNotFound(id)
+        photos.delete(owner, id)
+        removeFilesOf(photo)
         return Result.success(Unit)
     }
 
-    /** Removes everything in the trash for good; returns how many objects and photos went. */
-    suspend fun empty(): Int = purgeWhere { true }
-
-    /** Removes what has waited longer than the retention period; returns how many objects and photos went. */
-    suspend fun purgeExpired(): Int {
-        val cutoff = clock.now() - TrashLimits.RETENTION_DAYS.days
-        return purgeWhere { it < cutoff }
-    }
-
-    private suspend fun purgeWhere(expired: (Instant) -> Boolean): Int {
+    /** Removes everything of the owner in the trash for good; returns how many objects and photos went. */
+    suspend fun empty(owner: OwnerId): Int {
         var count = 0
         // Objects first: their trashed photos go with them, and are then no longer there to purge.
-        for (trashed in objects.listTrashed().filter { expired(it.deletedAt) }) {
-            if (purgeObject(trashed.record.id).isSuccess) count++
+        for (trashed in objects.listTrashed(owner)) {
+            if (purgeObject(owner, trashed.record.id).isSuccess) count++
         }
-        for (trashed in photos.listTrashed().filter { expired(it.deletedAt) }) {
-            if (purgePhoto(trashed.photo.id).isSuccess) count++
+        for (trashed in photos.listTrashed(owner)) {
+            if (purgePhoto(owner, trashed.photo.id).isSuccess) count++
         }
         return count
+    }
+
+    /**
+     * Removes, for every account, what has waited longer than the retention period; returns how many objects
+     * and photos went. Not about one owner: it is the server tidying up after all of them.
+     */
+    suspend fun purgeExpired(): Int {
+        val cutoff = clock.now() - TrashLimits.RETENTION_DAYS.days
+        // Objects first: their trashed photos go with them, and are then no longer there to purge.
+        val objectIds = objects.deleteTrashedBefore(cutoff)
+        for (id in objectIds) quietly("files of $id") { storage.deleteAll(id) }
+        val expiredPhotos = photos.deleteTrashedBefore(cutoff)
+        expiredPhotos.forEach { removeFilesOf(it) }
+        return objectIds.size + expiredPhotos.size
+    }
+
+    private suspend fun removeFilesOf(photo: PhotoRecord) {
+        quietly("files of photo ${photo.id}") {
+            storage.delete(photo.objectId, photo.fileName)
+            storage.delete(photo.objectId, photo.thumbFileName)
+        }
     }
 
     /** A file left behind is harmless; failing the request over it would not be. */

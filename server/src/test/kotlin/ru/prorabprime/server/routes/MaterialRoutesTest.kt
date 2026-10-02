@@ -21,6 +21,7 @@ import ru.prorabprime.contract.MaterialDto
 import ru.prorabprime.contract.MaterialRequestDto
 import ru.prorabprime.contract.MaterialStatusDto
 import ru.prorabprime.contract.ObjectStatusDto
+import ru.prorabprime.server.TEST_OWNER
 import ru.prorabprime.server.TEST_TOKEN
 import ru.prorabprime.server.di.serviceModule
 import ru.prorabprime.server.fakes.FIXED_NOW
@@ -44,6 +45,7 @@ class MaterialRoutesTest {
     private val objects = FakeObjectRepository(photos).also {
         it.records[objectId] = ObjectRecord(
             id = objectId,
+            ownerId = TEST_OWNER,
             fields = ObjectFields(null, "Тверская, 5", ObjectStatusDto.IN_PROGRESS, null, null, null),
             coverPhotoId = null,
             createdAt = FIXED_NOW,

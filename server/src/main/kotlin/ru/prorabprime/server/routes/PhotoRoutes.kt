@@ -29,12 +29,13 @@ import ru.prorabprime.contract.PhotoNoteRequestDto
 import ru.prorabprime.contract.ReceiptRequestDto
 import ru.prorabprime.contract.RotatePhotoRequestDto
 import ru.prorabprime.contract.SetCoverRequestDto
+import ru.prorabprime.server.auth.owner
 import ru.prorabprime.server.error.ServiceError
 import ru.prorabprime.server.error.ServiceException
+import ru.prorabprime.server.service.FileService
 import ru.prorabprime.server.service.PhotoService
 import ru.prorabprime.server.service.ReceiptService
 import ru.prorabprime.server.service.parseClientId
-import ru.prorabprime.server.storage.FileStorage
 
 fun Route.photoRoutes() {
     val service by inject<PhotoService>()
@@ -44,33 +45,45 @@ fun Route.photoRoutes() {
         val objectId = call.uuidParam(ApiParams.ID)
         val file = call.receiveUploadedFile()
         val clientId = parseClientId(call.request.queryParameters[ApiQuery.ID]).getOrThrow()
-        val photo = service.upload(objectId, file.bytes, call.attachmentKind(), clientId, file.note).getOrThrow()
+        val photo = service.upload(
+            call.owner,
+            objectId,
+            file.bytes,
+            call.attachmentKind(),
+            clientId,
+            file.note,
+        ).getOrThrow()
         call.respond(HttpStatusCode.Created, photo.toDto())
     }
     delete(ApiPaths.PHOTO) {
-        service.delete(call.uuidParam(ApiParams.ID)).getOrThrow()
+        service.delete(call.owner, call.uuidParam(ApiParams.ID)).getOrThrow()
         call.respond(HttpStatusCode.NoContent)
     }
     put(ApiPaths.PHOTO_NOTE) {
-        service.setNote(call.uuidParam(ApiParams.ID), call.receive<PhotoNoteRequestDto>().note).getOrThrow()
+        service.setNote(call.owner, call.uuidParam(ApiParams.ID), call.receive<PhotoNoteRequestDto>().note).getOrThrow()
         call.respond(HttpStatusCode.NoContent)
     }
     put(ApiPaths.PHOTO_RECEIPT) {
-        receipts.set(call.uuidParam(ApiParams.ID), call.receive<ReceiptRequestDto>()).getOrThrow()
+        receipts.set(call.owner, call.uuidParam(ApiParams.ID), call.receive<ReceiptRequestDto>()).getOrThrow()
         call.respond(HttpStatusCode.NoContent)
     }
     post(ApiPaths.PHOTO_ROTATE) {
         val request = call.receive<RotatePhotoRequestDto>()
         val rotationId = parseClientId(request.rotationId).getOrThrow()
             ?: throw ServiceException(ServiceError.Validation("rotationId is required"))
-        val photo = service.rotate(call.uuidParam(ApiParams.ID), request.quarterTurns, rotationId).getOrThrow()
+        val photo = service.rotate(
+            call.owner,
+            call.uuidParam(ApiParams.ID),
+            request.quarterTurns,
+            rotationId,
+        ).getOrThrow()
         call.respond(HttpStatusCode.OK, photo.toDto())
     }
     put(ApiPaths.OBJECT_COVER) {
         val objectId = call.uuidParam(ApiParams.ID)
         val photoId = call.receive<SetCoverRequestDto>().photoId.toUuidOrNull()
             ?: throw ServiceException(ServiceError.Validation("photoId is not a valid id"))
-        service.setCover(objectId, photoId).getOrThrow()
+        service.setCover(call.owner, objectId, photoId).getOrThrow()
         call.respond(HttpStatusCode.NoContent)
     }
 }
@@ -80,13 +93,12 @@ fun Route.photoRoutes() {
  * `respondFile` sets the content type from the extension.
  */
 fun Route.fileRoutes() {
-    val storage by inject<FileStorage>()
+    val files by inject<FileService>()
 
     get(ApiPaths.FILE) {
         val objectId = call.parameters[ApiParams.OBJECT_ID].orEmpty()
         val fileName = call.parameters[ApiParams.FILE_NAME].orEmpty()
-        val file = storage.locate(objectId, fileName)
-            ?: throw ServiceException(ServiceError.NotFound("No such file"))
+        val file = files.locate(call.owner, objectId, fileName).getOrThrow()
         call.response.header(HttpHeaders.CacheControl, "private, max-age=31536000, immutable")
         call.respondFile(file.toFile())
     }

@@ -12,6 +12,7 @@ import org.junit.Before
 import org.junit.Test
 import ru.prorabprime.contract.ContactRoleDto
 import ru.prorabprime.contract.ObjectStatusDto
+import ru.prorabprime.server.TEST_OWNER
 import ru.prorabprime.server.db.DbExecutor
 import ru.prorabprime.server.db.TestPostgres
 import ru.prorabprime.server.model.ContactFields
@@ -38,6 +39,7 @@ class ExposedContactRepositoryTest {
         objects.insert(
             ObjectRecord(
                 id = objectId,
+                ownerId = TEST_OWNER,
                 fields = ObjectFields(null, "Тверская, 5", ObjectStatusDto.IN_PROGRESS, null, null, null),
                 coverPhotoId = null,
                 createdAt = base,
@@ -66,7 +68,7 @@ class ExposedContactRepositoryTest {
         contacts.insert(second)
         contacts.insert(first)
 
-        assertThat(contacts.find(first.id)).isEqualTo(first)
+        assertThat(contacts.find(TEST_OWNER, first.id)).isEqualTo(first)
         assertThat(contacts.listByObject(objectId)).containsExactly(first, second).inOrder()
     }
 
@@ -76,12 +78,12 @@ class ExposedContactRepositoryTest {
         contacts.insert(contact)
 
         val changed = ContactFields("Анна П.", null, ContactRoleDto.EXECUTOR)
-        assertThat(contacts.update(contact.id, changed)).isTrue()
-        assertThat(contacts.find(contact.id)?.fields).isEqualTo(changed)
-        assertThat(contacts.update(UUID.randomUUID(), changed)).isFalse()
+        assertThat(contacts.update(TEST_OWNER, contact.id, changed)).isTrue()
+        assertThat(contacts.find(TEST_OWNER, contact.id)?.fields).isEqualTo(changed)
+        assertThat(contacts.update(TEST_OWNER, UUID.randomUUID(), changed)).isFalse()
 
-        assertThat(contacts.delete(contact.id)).isTrue()
-        assertThat(contacts.delete(contact.id)).isFalse()
+        assertThat(contacts.delete(TEST_OWNER, contact.id)).isTrue()
+        assertThat(contacts.delete(TEST_OWNER, contact.id)).isFalse()
     }
 
     @Test
@@ -90,7 +92,7 @@ class ExposedContactRepositoryTest {
         contacts.insert(contact(sortOrder = 4))
         assertThat(contacts.nextSortOrder(objectId)).isEqualTo(5)
 
-        objects.delete(objectId)
+        objects.delete(TEST_OWNER, objectId)
 
         assertThat(contacts.listByObject(objectId)).isEmpty()
     }

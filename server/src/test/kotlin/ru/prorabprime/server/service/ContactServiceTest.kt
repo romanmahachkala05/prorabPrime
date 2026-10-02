@@ -12,6 +12,7 @@ import ru.prorabprime.contract.FieldProblemDto
 import ru.prorabprime.contract.ObjectFieldDto
 import ru.prorabprime.contract.ObjectRequestDto
 import ru.prorabprime.contract.ObjectStatusDto
+import ru.prorabprime.server.TEST_OWNER
 import ru.prorabprime.server.error.ServiceError
 import ru.prorabprime.server.error.ServiceException
 import ru.prorabprime.server.fakes.FIXED_NOW
@@ -32,7 +33,7 @@ class ContactServiceTest {
     private fun Result<*>.serviceError() = (exceptionOrNull() as? ServiceException)?.error
 
     private suspend fun anObject(): UUID = objectService
-        .create(ObjectRequestDto(address = "Тверская, 5", status = ObjectStatusDto.IN_PROGRESS))
+        .create(TEST_OWNER, ObjectRequestDto(address = "Тверская, 5", status = ObjectStatusDto.IN_PROGRESS))
         .getOrThrow().id
 
     @Test
@@ -40,8 +41,16 @@ class ContactServiceTest {
         val objectId = anObject()
         clock.now = FIXED_NOW + 1.hours
 
-        service.create(objectId, ContactRequestDto("  Анна ", " 8 900 ", ContactRoleDto.CLIENT)).getOrThrow()
-        val second = service.create(objectId, ContactRequestDto("Бригадир", null, ContactRoleDto.EXECUTOR)).getOrThrow()
+        service.create(
+            TEST_OWNER,
+            objectId,
+            ContactRequestDto("  Анна ", " 8 900 ", ContactRoleDto.CLIENT),
+        ).getOrThrow()
+        val second = service.create(
+            TEST_OWNER,
+            objectId,
+            ContactRequestDto("Бригадир", null, ContactRoleDto.EXECUTOR),
+        ).getOrThrow()
 
         val stored = contacts.listByObject(objectId)
         assertThat(stored.map { it.fields.name }).containsExactly("Анна", "Бригадир").inOrder()
@@ -52,7 +61,7 @@ class ContactServiceTest {
 
     @Test
     fun `a contact of an unknown object is not found`() = runTest {
-        val result = service.create(UUID.randomUUID(), ContactRequestDto("Анна"))
+        val result = service.create(TEST_OWNER, UUID.randomUUID(), ContactRequestDto("Анна"))
 
         assertThat(result.serviceError()).isInstanceOf(ServiceError.NotFound::class.java)
     }
@@ -61,8 +70,12 @@ class ContactServiceTest {
     fun `a blank name is required and an oversized phone is too long`() = runTest {
         val objectId = anObject()
 
-        val blank = service.create(objectId, ContactRequestDto("  ")).serviceError() as ServiceError.Validation
-        val long = service.create(objectId, ContactRequestDto("Анна", "1".repeat(ContactLimits.PHONE + 1)))
+        val blank = service.create(
+            TEST_OWNER,
+            objectId,
+            ContactRequestDto("  "),
+        ).serviceError() as ServiceError.Validation
+        val long = service.create(TEST_OWNER, objectId, ContactRequestDto("Анна", "1".repeat(ContactLimits.PHONE + 1)))
             .serviceError() as ServiceError.Validation
 
         assertThat(blank.fieldErrors.map { it.field to it.problem })
@@ -74,22 +87,22 @@ class ContactServiceTest {
     @Test
     fun `updating replaces the fields and deleting removes the contact`() = runTest {
         val objectId = anObject()
-        val id = service.create(objectId, ContactRequestDto("Анна")).getOrThrow().id
+        val id = service.create(TEST_OWNER, objectId, ContactRequestDto("Анна")).getOrThrow().id
 
-        service.update(id, ContactRequestDto("Анна П.", "123", ContactRoleDto.CLIENT)).getOrThrow()
+        service.update(TEST_OWNER, id, ContactRequestDto("Анна П.", "123", ContactRoleDto.CLIENT)).getOrThrow()
         assertThat(contacts.records.getValue(id).fields.name).isEqualTo("Анна П.")
         assertThat(contacts.records.getValue(id).fields.role).isEqualTo(ContactRoleDto.CLIENT)
 
-        service.delete(id).getOrThrow()
+        service.delete(TEST_OWNER, id).getOrThrow()
         assertThat(contacts.records).isEmpty()
-        assertThat(service.delete(id).serviceError()).isInstanceOf(ServiceError.NotFound::class.java)
+        assertThat(service.delete(TEST_OWNER, id).serviceError()).isInstanceOf(ServiceError.NotFound::class.java)
     }
 
     @Test
     fun `an object's details carry its contacts`() = runTest {
         val objectId = anObject()
-        service.create(objectId, ContactRequestDto("Анна")).getOrThrow()
+        service.create(TEST_OWNER, objectId, ContactRequestDto("Анна")).getOrThrow()
 
-        assertThat(objectService.get(objectId).getOrThrow().contacts).hasSize(1)
+        assertThat(objectService.get(TEST_OWNER, objectId).getOrThrow().contacts).hasSize(1)
     }
 }

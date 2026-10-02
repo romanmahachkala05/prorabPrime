@@ -5,6 +5,8 @@ import io.zonky.test.db.postgres.embedded.EmbeddedPostgres
 import org.junit.Assume.assumeTrue
 import org.testcontainers.DockerClientFactory
 import org.testcontainers.postgresql.PostgreSQLContainer
+import ru.prorabprime.server.OTHER_OWNER
+import ru.prorabprime.server.TEST_OWNER
 import ru.prorabprime.server.config.DatabaseConfig
 
 /**
@@ -46,8 +48,15 @@ object TestPostgres {
         dataSource.connection.use {
             it.createStatement().execute("TRUNCATE objects, photos, tasks, api_tokens CASCADE")
         }
-        // The migration makes the first account; any other was made by a test.
-        dataSource.connection.use { it.createStatement().execute("DELETE FROM users WHERE name <> 'owner'") }
+        // The migration makes the first account; any other was made by a test. The two accounts the tests
+        // use (TEST_OWNER, OTHER_OWNER) are made again, as objects and tasks must belong to somebody.
+        dataSource.connection.use {
+            it.createStatement().execute("DELETE FROM users WHERE name <> 'owner'")
+            it.createStatement().execute(
+                "INSERT INTO users (id, name, created_at) VALUES " +
+                    "('${TEST_OWNER.value}', 'test-owner', now()), ('${OTHER_OWNER.value}', 'other-owner', now())",
+            )
+        }
         return dataSource
     }
 }

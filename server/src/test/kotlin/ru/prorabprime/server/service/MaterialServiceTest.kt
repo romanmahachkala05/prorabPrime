@@ -11,6 +11,7 @@ import ru.prorabprime.contract.MaterialStatusDto
 import ru.prorabprime.contract.ObjectFieldDto
 import ru.prorabprime.contract.ObjectRequestDto
 import ru.prorabprime.contract.ObjectStatusDto
+import ru.prorabprime.server.TEST_OWNER
 import ru.prorabprime.server.error.ServiceError
 import ru.prorabprime.server.error.ServiceException
 import ru.prorabprime.server.fakes.FakeContactRepository
@@ -30,7 +31,7 @@ class MaterialServiceTest {
     private val service = MaterialService(objects, repository, clock)
 
     private suspend fun anObject(): UUID = objectService
-        .create(ObjectRequestDto(address = "Тверская, 5", status = ObjectStatusDto.IN_PROGRESS))
+        .create(TEST_OWNER, ObjectRequestDto(address = "Тверская, 5", status = ObjectStatusDto.IN_PROGRESS))
         .getOrThrow().id
 
     private fun Result<*>.error() = (exceptionOrNull() as? ServiceException)?.error
@@ -39,10 +40,14 @@ class MaterialServiceTest {
     fun `a material is trimmed, starts not chosen and goes to the end of the list`() = runTest {
         val id = anObject()
 
-        service.create(id, MaterialRequestDto(" Плитка ")).getOrThrow()
-        val second = service.create(id, MaterialRequestDto("Ламинат", MaterialStatusDto.CHOSEN)).getOrThrow()
+        service.create(TEST_OWNER, id, MaterialRequestDto(" Плитка ")).getOrThrow()
+        val second = service.create(
+            TEST_OWNER,
+            id,
+            MaterialRequestDto("Ламинат", MaterialStatusDto.CHOSEN),
+        ).getOrThrow()
 
-        val list = service.list(id).getOrThrow()
+        val list = service.list(TEST_OWNER, id).getOrThrow()
         assertThat(list.map { it.fields.title }).containsExactly("Плитка", "Ламинат").inOrder()
         assertThat(list.first().fields.status).isEqualTo(MaterialStatusDto.NOT_CHOSEN)
         assertThat(second.sortOrder).isEqualTo(2)
@@ -52,8 +57,8 @@ class MaterialServiceTest {
     fun `a blank or oversized title is rejected`() = runTest {
         val id = anObject()
 
-        val blank = service.create(id, MaterialRequestDto("  ")).error() as ServiceError.Validation
-        val long = service.create(id, MaterialRequestDto("я".repeat(MaterialLimits.TITLE + 1))).error()
+        val blank = service.create(TEST_OWNER, id, MaterialRequestDto("  ")).error() as ServiceError.Validation
+        val long = service.create(TEST_OWNER, id, MaterialRequestDto("я".repeat(MaterialLimits.TITLE + 1))).error()
             as ServiceError.Validation
 
         assertThat(blank.fieldErrors.map { it.field to it.problem })
@@ -64,38 +69,42 @@ class MaterialServiceTest {
     @Test
     fun `the status is changed through an update, and a deletion removes the material`() = runTest {
         val id = anObject()
-        val material = service.create(id, MaterialRequestDto("Плитка")).getOrThrow()
+        val material = service.create(TEST_OWNER, id, MaterialRequestDto("Плитка")).getOrThrow()
 
-        service.update(material.id, MaterialRequestDto("Плитка", MaterialStatusDto.IN_APARTMENT)).getOrThrow()
+        service.update(
+            TEST_OWNER,
+            material.id,
+            MaterialRequestDto("Плитка", MaterialStatusDto.IN_APARTMENT),
+        ).getOrThrow()
         assertThat(repository.records.getValue(material.id).fields.status).isEqualTo(MaterialStatusDto.IN_APARTMENT)
 
-        service.delete(material.id).getOrThrow()
+        service.delete(TEST_OWNER, material.id).getOrThrow()
         assertThat(repository.records).isEmpty()
-        assertThat(service.delete(material.id).error()).isInstanceOf(ServiceError.NotFound::class.java)
+        assertThat(service.delete(TEST_OWNER, material.id).error()).isInstanceOf(ServiceError.NotFound::class.java)
     }
 
     @Test
     fun `the defaults fill an empty list and never duplicate a title already there`() = runTest {
         val id = anObject()
         val usual = DEFAULT_MATERIALS.first().lowercase()
-        service.create(id, MaterialRequestDto(usual, MaterialStatusDto.CHOSEN)).getOrThrow()
+        service.create(TEST_OWNER, id, MaterialRequestDto(usual, MaterialStatusDto.CHOSEN)).getOrThrow()
 
-        val list = service.addDefaults(id).getOrThrow()
+        val list = service.addDefaults(TEST_OWNER, id).getOrThrow()
 
         assertThat(list).hasSize(DEFAULT_MATERIALS.size)
         assertThat(list.count { it.fields.title.equals(usual, ignoreCase = true) }).isEqualTo(1)
         assertThat(list.first().fields.status).isEqualTo(MaterialStatusDto.CHOSEN)
         assertThat(list.map { it.sortOrder }).isInOrder()
-        assertThat(service.addDefaults(id).getOrThrow()).hasSize(DEFAULT_MATERIALS.size)
+        assertThat(service.addDefaults(TEST_OWNER, id).getOrThrow()).hasSize(DEFAULT_MATERIALS.size)
     }
 
     @Test
     fun `an unknown object has no checklist`() = runTest {
         val missing = UUID.randomUUID()
 
-        assertThat(service.list(missing).error()).isInstanceOf(ServiceError.NotFound::class.java)
-        assertThat(service.addDefaults(missing).error()).isInstanceOf(ServiceError.NotFound::class.java)
-        assertThat(service.create(missing, MaterialRequestDto("x")).error())
+        assertThat(service.list(TEST_OWNER, missing).error()).isInstanceOf(ServiceError.NotFound::class.java)
+        assertThat(service.addDefaults(TEST_OWNER, missing).error()).isInstanceOf(ServiceError.NotFound::class.java)
+        assertThat(service.create(TEST_OWNER, missing, MaterialRequestDto("x")).error())
             .isInstanceOf(ServiceError.NotFound::class.java)
     }
 }

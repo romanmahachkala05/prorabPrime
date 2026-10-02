@@ -11,6 +11,7 @@ import ru.prorabprime.contract.TaskLimits
 import ru.prorabprime.contract.TaskRequestDto
 import ru.prorabprime.server.error.ServiceError
 import ru.prorabprime.server.error.asFailure
+import ru.prorabprime.server.model.OwnerId
 import ru.prorabprime.server.model.TaskFields
 import ru.prorabprime.server.model.TaskQuery
 import ru.prorabprime.server.model.TaskRecord
@@ -45,23 +46,28 @@ class TaskService(
     private val clock: Clock,
     private val newId: () -> UUID = UUID::randomUUID,
 ) {
-    suspend fun list(query: TaskQuery): List<TaskRecord> = tasks.list(query)
+    suspend fun list(owner: OwnerId, query: TaskQuery): List<TaskRecord> = tasks.list(owner, query)
 
-    suspend fun create(request: TaskRequestDto): Result<TaskRecord> {
+    suspend fun create(owner: OwnerId, request: TaskRequestDto): Result<TaskRecord> {
         val fields = validateTask(request).getOrElse { return Result.failure(it) }
         val clientId = parseClientId(request.id).getOrElse { return Result.failure(it) }
-        alreadyCreated(clientId?.let { tasks.find(it) }) { true }?.let { return it }
-        val record = TaskRecord(clientId ?: newId(), fields, clock.now())
+        alreadyCreated(clientId?.let { tasks.find(owner, it) }) { true }?.let { return it }
+        val record = TaskRecord(clientId ?: newId(), owner, fields, clock.now())
         tasks.insert(record)
         return Result.success(record)
     }
 
-    suspend fun update(id: UUID, request: TaskRequestDto): Result<Unit> {
+    suspend fun update(
+        owner: OwnerId,
+        id: UUID,
+        request: TaskRequestDto,
+    ): Result<Unit> {
         val fields = validateTask(request).getOrElse { return Result.failure(it) }
-        return if (tasks.update(id, fields)) Result.success(Unit) else notFound(id)
+        return if (tasks.update(owner, id, fields)) Result.success(Unit) else notFound(id)
     }
 
-    suspend fun delete(id: UUID): Result<Unit> = if (tasks.delete(id)) Result.success(Unit) else notFound(id)
+    suspend fun delete(owner: OwnerId, id: UUID): Result<Unit> =
+        if (tasks.delete(owner, id)) Result.success(Unit) else notFound(id)
 
     private fun notFound(id: UUID): Result<Unit> = ServiceError.NotFound("No task $id").asFailure()
 }

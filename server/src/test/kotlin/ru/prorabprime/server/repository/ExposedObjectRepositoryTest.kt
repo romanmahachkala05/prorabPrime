@@ -3,6 +3,7 @@ package ru.prorabprime.server.repository
 import com.google.common.truth.Truth.assertThat
 import com.zaxxer.hikari.HikariDataSource
 import java.util.UUID
+import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 import kotlinx.coroutines.Dispatchers
@@ -14,12 +15,15 @@ import org.junit.Test
 import ru.prorabprime.contract.ObjectStatusDto
 import ru.prorabprime.contract.SortFieldDto
 import ru.prorabprime.contract.SortOrderDto
+import ru.prorabprime.server.OTHER_OWNER
+import ru.prorabprime.server.TEST_OWNER
 import ru.prorabprime.server.db.DbExecutor
 import ru.prorabprime.server.db.TestPostgres
 import ru.prorabprime.server.model.Coordinates
 import ru.prorabprime.server.model.ObjectFields
 import ru.prorabprime.server.model.ObjectListQuery
 import ru.prorabprime.server.model.ObjectRecord
+import ru.prorabprime.server.model.OwnerId
 
 class ExposedObjectRepositoryTest {
 
@@ -58,7 +62,7 @@ class ExposedObjectRepositoryTest {
         minutes: Int = 0,
     ): ObjectRecord {
         val at = base + minutes.minutes
-        val record = ObjectRecord(UUID.randomUUID(), fields(address, title), null, at, at)
+        val record = ObjectRecord(UUID.randomUUID(), TEST_OWNER, fields(address, title), null, at, at)
         repository.insert(record)
         return record
     }
@@ -79,13 +83,15 @@ class ExposedObjectRepositoryTest {
         it.createStatement().execute("UPDATE objects SET cover_photo_id = '$photoId' WHERE id = '$objectId'")
     }
 
-    private suspend fun addresses(query: ObjectListQuery) = repository.list(query).map { it.record.fields.address }
+    private suspend fun addresses(query: ObjectListQuery) = repository.list(TEST_OWNER, query).map {
+        it.record.fields.address
+    }
 
     @Test
     fun `an inserted object reads back unchanged`() = runTest {
         val record = insert("Тверская, 5", title = "Кухня")
 
-        assertThat(repository.find(record.id)).isEqualTo(record)
+        assertThat(repository.find(TEST_OWNER, record.id)).isEqualTo(record)
     }
 
     @Test
@@ -122,7 +128,7 @@ class ExposedObjectRepositoryTest {
         val old = insert("старый", minutes = 0)
         insert("средний", minutes = 10)
         insert("новый", minutes = 20)
-        repository.update(old.id, old.fields, base + 30.minutes)
+        repository.update(TEST_OWNER, old.id, old.fields, base + 30.minutes)
 
         assertThat(addresses(ObjectListQuery(sort = SortFieldDto.CREATED, order = SortOrderDto.DESC)))
             .containsExactly("новый", "средний", "старый").inOrder()
@@ -139,7 +145,7 @@ class ExposedObjectRepositoryTest {
         insertPhoto(UUID.randomUUID(), withPhotos.id, sortOrder = 2)
         setCover(withPhotos.id, cover)
 
-        val items = repository.list(ObjectListQuery(sort = SortFieldDto.ADDRESS, order = SortOrderDto.DESC))
+        val items = repository.list(TEST_OWNER, ObjectListQuery(sort = SortFieldDto.ADDRESS, order = SortOrderDto.DESC))
 
         assertThat(items.map { it.photoCount }).containsExactly(2, 0).inOrder()
         assertThat(items.map { it.coverThumbFileName }).containsExactly("${cover}_thumb.jpg", null).inOrder()
@@ -149,18 +155,18 @@ class ExposedObjectRepositoryTest {
     fun `an update changes the fields and the search text`() = runTest {
         val record = insert("Тверская, 5")
 
-        val updated = repository.update(record.id, fields("Арбат, 3", title = "Ванная"), base + 5.minutes)
+        val updated = repository.update(TEST_OWNER, record.id, fields("Арбат, 3", title = "Ванная"), base + 5.minutes)
 
         assertThat(updated).isTrue()
-        assertThat(repository.find(record.id)?.fields?.address).isEqualTo("Арбат, 3")
+        assertThat(repository.find(TEST_OWNER, record.id)?.fields?.address).isEqualTo("Арбат, 3")
         assertThat(addresses(ObjectListQuery(search = "ванн"))).containsExactly("Арбат, 3")
         assertThat(addresses(ObjectListQuery(search = "тверск"))).isEmpty()
     }
 
     @Test
     fun `updating or deleting an unknown object reports false`() = runTest {
-        assertThat(repository.update(UUID.randomUUID(), fields("x"), base)).isFalse()
-        assertThat(repository.delete(UUID.randomUUID())).isFalse()
+        assertThat(repository.update(TEST_OWNER, UUID.randomUUID(), fields("x"), base)).isFalse()
+        assertThat(repository.delete(TEST_OWNER, UUID.randomUUID())).isFalse()
     }
 
     @Test
@@ -168,8 +174,8 @@ class ExposedObjectRepositoryTest {
         val record = insert("Тверская, 5")
         insertPhoto(UUID.randomUUID(), record.id, sortOrder = 1)
 
-        assertThat(repository.delete(record.id)).isTrue()
-        assertThat(repository.find(record.id)).isNull()
+        assertThat(repository.delete(TEST_OWNER, record.id)).isTrue()
+        assertThat(repository.find(TEST_OWNER, record.id)).isNull()
         assertThat(photos.listByObject(record.id)).isEmpty()
     }
 
@@ -187,15 +193,15 @@ class ExposedObjectRepositoryTest {
     @Test
     fun `coordinates are saved, read back in the record, and cleared`() = runTest {
         val record = insert("Тверская, 5")
-        assertThat(repository.find(record.id)?.coordinates).isNull()
+        assertThat(repository.find(TEST_OWNER, record.id)?.coordinates).isNull()
 
-        repository.setCoordinates(record.id, Coordinates(55.76, 37.61))
-        assertThat(repository.find(record.id)?.coordinates).isEqualTo(Coordinates(55.76, 37.61))
-        assertThat(repository.list(ObjectListQuery()).single().record.coordinates)
+        repository.setCoordinates(TEST_OWNER, record.id, Coordinates(55.76, 37.61))
+        assertThat(repository.find(TEST_OWNER, record.id)?.coordinates).isEqualTo(Coordinates(55.76, 37.61))
+        assertThat(repository.list(TEST_OWNER, ObjectListQuery()).single().record.coordinates)
             .isEqualTo(Coordinates(55.76, 37.61))
 
-        repository.setCoordinates(record.id, null)
-        assertThat(repository.find(record.id)?.coordinates).isNull()
+        repository.setCoordinates(TEST_OWNER, record.id, null)
+        assertThat(repository.find(TEST_OWNER, record.id)?.coordinates).isNull()
     }
 
     @Test
@@ -205,15 +211,15 @@ class ExposedObjectRepositoryTest {
         val photoId = UUID.randomUUID()
         insertPhoto(photoId, gone.id, sortOrder = 1)
 
-        assertThat(repository.trash(gone.id, base + 5.minutes)).isTrue()
+        assertThat(repository.trash(TEST_OWNER, gone.id, base + 5.minutes)).isTrue()
 
-        assertThat(repository.list(ObjectListQuery()).map { it.record.id }).containsExactly(kept.id)
-        assertThat(repository.list(ObjectListQuery(search = "Тверская"))).isEmpty()
-        assertThat(repository.find(gone.id)).isNull()
-        assertThat(repository.findAny(gone.id)).isNotNull()
-        assertThat(repository.findTrashed(gone.id)).isNotNull()
-        assertThat(repository.findTrashed(kept.id)).isNull()
-        val trashed = repository.listTrashed().single()
+        assertThat(repository.list(TEST_OWNER, ObjectListQuery()).map { it.record.id }).containsExactly(kept.id)
+        assertThat(repository.list(TEST_OWNER, ObjectListQuery(search = "Тверская"))).isEmpty()
+        assertThat(repository.find(TEST_OWNER, gone.id)).isNull()
+        assertThat(repository.findAny(TEST_OWNER, gone.id)).isNotNull()
+        assertThat(repository.findTrashed(TEST_OWNER, gone.id)).isNotNull()
+        assertThat(repository.findTrashed(TEST_OWNER, kept.id)).isNull()
+        val trashed = repository.listTrashed(TEST_OWNER).single()
         assertThat(trashed.record.id).isEqualTo(gone.id)
         assertThat(trashed.deletedAt).isEqualTo(base + 5.minutes)
         assertThat(trashed.photoCount).isEqualTo(1)
@@ -222,25 +228,29 @@ class ExposedObjectRepositoryTest {
     @Test
     fun `trashing twice, or an unknown object, reports false, and restoring brings the object back`() = runTest {
         val record = insert("Тверская, 5")
-        assertThat(repository.trash(record.id, base)).isTrue()
-        assertThat(repository.trash(record.id, base)).isFalse()
-        assertThat(repository.trash(UUID.randomUUID(), base)).isFalse()
+        assertThat(repository.trash(TEST_OWNER, record.id, base)).isTrue()
+        assertThat(repository.trash(TEST_OWNER, record.id, base)).isFalse()
+        assertThat(repository.trash(TEST_OWNER, UUID.randomUUID(), base)).isFalse()
 
-        assertThat(repository.restore(record.id)).isTrue()
-        assertThat(repository.restore(record.id)).isFalse()
+        assertThat(repository.restore(TEST_OWNER, record.id)).isTrue()
+        assertThat(repository.restore(TEST_OWNER, record.id)).isFalse()
 
-        assertThat(repository.find(record.id)).isNotNull()
-        assertThat(repository.listTrashed()).isEmpty()
+        assertThat(repository.find(TEST_OWNER, record.id)).isNotNull()
+        assertThat(repository.listTrashed(TEST_OWNER)).isEmpty()
     }
 
     @Test
     fun `the trash lists the most recently deleted first`() = runTest {
         val first = insert("А")
         val second = insert("Б")
-        repository.trash(first.id, base + 1.minutes)
-        repository.trash(second.id, base + 9.minutes)
+        repository.trash(TEST_OWNER, first.id, base + 1.minutes)
+        repository.trash(TEST_OWNER, second.id, base + 9.minutes)
 
-        assertThat(repository.listTrashed().map { it.record.id }).containsExactly(second.id, first.id).inOrder()
+        assertThat(
+            repository.listTrashed(TEST_OWNER).map {
+                it.record.id
+            },
+        ).containsExactly(second.id, first.id).inOrder()
     }
 
     @Test
@@ -250,9 +260,74 @@ class ExposedObjectRepositoryTest {
         val dead = UUID.randomUUID()
         insertPhoto(live, record.id, sortOrder = 1)
         insertPhoto(dead, record.id, sortOrder = 2)
-        photos.trash(dead, base)
+        photos.trash(TEST_OWNER, dead, base)
 
-        assertThat(repository.list(ObjectListQuery()).single().photoCount).isEqualTo(1)
+        assertThat(repository.list(TEST_OWNER, ObjectListQuery()).single().photoCount).isEqualTo(1)
         assertThat(photos.listByObject(record.id).map { it.id }).containsExactly(live)
+    }
+
+    private suspend fun insertFor(
+        owner: OwnerId,
+        address: String,
+        minutes: Int = 0,
+    ): ObjectRecord {
+        val at = base + minutes.minutes
+        val record = ObjectRecord(UUID.randomUUID(), owner, fields(address), null, at, at)
+        repository.insert(record)
+        return record
+    }
+
+    @Test
+    fun `an account sees and touches only its own objects`() = runTest {
+        val mine = insertFor(TEST_OWNER, "Тверская, 5")
+        val theirs = insertFor(OTHER_OWNER, "Мира, 3")
+        val changed = fields("Чужой, 1")
+
+        assertThat(repository.list(TEST_OWNER, ObjectListQuery()).map { it.record.id }).containsExactly(mine.id)
+        assertThat(repository.list(OTHER_OWNER, ObjectListQuery()).map { it.record.id }).containsExactly(theirs.id)
+        assertThat(repository.list(TEST_OWNER, ObjectListQuery(search = "мира"))).isEmpty()
+        assertThat(repository.find(TEST_OWNER, theirs.id)).isNull()
+        assertThat(repository.findAny(TEST_OWNER, theirs.id)).isNull()
+        assertThat(repository.update(TEST_OWNER, theirs.id, changed, base)).isFalse()
+        assertThat(repository.trash(TEST_OWNER, theirs.id, base)).isFalse()
+        assertThat(repository.delete(TEST_OWNER, theirs.id)).isFalse()
+        repository.setCover(TEST_OWNER, theirs.id, null)
+        repository.setCoordinates(TEST_OWNER, theirs.id, Coordinates(1.0, 2.0))
+        repository.touch(TEST_OWNER, theirs.id, base + 1.days)
+
+        assertThat(repository.find(OTHER_OWNER, theirs.id)).isEqualTo(theirs)
+    }
+
+    @Test
+    fun `the trash of an account holds only its own, and others cannot restore or purge it`() = runTest {
+        val mine = insertFor(TEST_OWNER, "Тверская, 5")
+        val theirs = insertFor(OTHER_OWNER, "Мира, 3")
+        repository.trash(TEST_OWNER, mine.id, base)
+        repository.trash(OTHER_OWNER, theirs.id, base)
+
+        assertThat(repository.listTrashed(TEST_OWNER).map { it.record.id }).containsExactly(mine.id)
+        assertThat(repository.findTrashed(TEST_OWNER, theirs.id)).isNull()
+        assertThat(repository.restore(TEST_OWNER, theirs.id)).isFalse()
+        assertThat(repository.delete(TEST_OWNER, theirs.id)).isFalse()
+        assertThat(repository.findTrashed(OTHER_OWNER, theirs.id)).isNotNull()
+    }
+
+    @Test
+    fun `the expiry removes the old trash of every account and nothing else`() = runTest {
+        val oldMine = insertFor(TEST_OWNER, "Тверская, 5")
+        val oldTheirs = insertFor(OTHER_OWNER, "Мира, 3")
+        val recent = insertFor(TEST_OWNER, "Ленина, 1")
+        val live = insertFor(OTHER_OWNER, "Арбат, 2")
+        repository.trash(TEST_OWNER, oldMine.id, base)
+        repository.trash(OTHER_OWNER, oldTheirs.id, base)
+        repository.trash(TEST_OWNER, recent.id, base + 10.days)
+
+        val removed = repository.deleteTrashedBefore(base + 5.days)
+
+        assertThat(removed).containsExactly(oldMine.id, oldTheirs.id)
+        assertThat(repository.findAny(TEST_OWNER, oldMine.id)).isNull()
+        assertThat(repository.findAny(OTHER_OWNER, oldTheirs.id)).isNull()
+        assertThat(repository.findTrashed(TEST_OWNER, recent.id)).isNotNull()
+        assertThat(repository.find(OTHER_OWNER, live.id)).isNotNull()
     }
 }

@@ -17,6 +17,7 @@ import ru.prorabprime.contract.ObjectStatusDto
 import ru.prorabprime.contract.PaymentMethodDto
 import ru.prorabprime.contract.PaymentSideDto
 import ru.prorabprime.contract.RevisionActionDto
+import ru.prorabprime.server.TEST_OWNER
 import ru.prorabprime.server.db.DbExecutor
 import ru.prorabprime.server.db.TestPostgres
 import ru.prorabprime.server.model.ExtraWorkFields
@@ -51,6 +52,7 @@ class ExposedFinanceRepositoriesTest {
         objects.insert(
             ObjectRecord(
                 id = objectId,
+                ownerId = TEST_OWNER,
                 fields = ObjectFields(null, "Тверская, 5", ObjectStatusDto.IN_PROGRESS, null, null, null),
                 coverPhotoId = null,
                 createdAt = base,
@@ -92,7 +94,7 @@ class ExposedFinanceRepositoriesTest {
         payments.insert(late)
         payments.insert(early)
 
-        assertThat(payments.find(early.id)).isEqualTo(early)
+        assertThat(payments.find(TEST_OWNER, early.id)).isEqualTo(early)
         assertThat(payments.listByObject(objectId)).containsExactly(early, late).inOrder()
     }
 
@@ -101,11 +103,11 @@ class ExposedFinanceRepositoriesTest {
         val payment = payment("2026-09-01")
         payments.insert(payment)
 
-        assertThat(payments.update(payment.id, fields("2026-09-02", 5))).isTrue()
-        assertThat(payments.find(payment.id)?.fields).isEqualTo(fields("2026-09-02", 5))
-        assertThat(payments.update(UUID.randomUUID(), fields("2026-09-02"))).isFalse()
-        assertThat(payments.delete(payment.id)).isTrue()
-        assertThat(payments.delete(payment.id)).isFalse()
+        assertThat(payments.update(TEST_OWNER, payment.id, fields("2026-09-02", 5))).isTrue()
+        assertThat(payments.find(TEST_OWNER, payment.id)?.fields).isEqualTo(fields("2026-09-02", 5))
+        assertThat(payments.update(TEST_OWNER, UUID.randomUUID(), fields("2026-09-02"))).isFalse()
+        assertThat(payments.delete(TEST_OWNER, payment.id)).isTrue()
+        assertThat(payments.delete(TEST_OWNER, payment.id)).isFalse()
     }
 
     @Test
@@ -130,7 +132,7 @@ class ExposedFinanceRepositoriesTest {
         )
         payments.insert(payment)
         payments.addRevision(created)
-        payments.delete(payment.id)
+        payments.delete(TEST_OWNER, payment.id)
         payments.addRevision(deleted)
 
         assertThat(payments.revisionsOf(objectId)).containsExactly(deleted, created).inOrder()
@@ -145,13 +147,13 @@ class ExposedFinanceRepositoriesTest {
             base,
         )
         extras.insert(work)
-        assertThat(extras.find(work.id)).isEqualTo(work)
+        assertThat(extras.find(TEST_OWNER, work.id)).isEqualTo(work)
 
         val changed = ExtraWorkFields("Штробление", 60_000, ExtraWorkStatusDto.AGREED)
-        assertThat(extras.update(work.id, changed)).isTrue()
+        assertThat(extras.update(TEST_OWNER, work.id, changed)).isTrue()
         assertThat(extras.listByObject(objectId).single().fields).isEqualTo(changed)
 
-        objects.delete(objectId)
+        objects.delete(TEST_OWNER, objectId)
         assertThat(extras.listByObject(objectId)).isEmpty()
         assertThat(payments.listByObject(objectId)).isEmpty()
         assertThat(terms.find(objectId)).isEqualTo(FinanceTerms())

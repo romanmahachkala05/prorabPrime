@@ -27,6 +27,7 @@ data class Coordinates(
 
 data class ObjectRecord(
     val id: UUID,
+    val ownerId: OwnerId,
     val fields: ObjectFields,
     val coverPhotoId: UUID?,
     val createdAt: Instant,

@@ -11,6 +11,7 @@ import ru.prorabprime.server.error.ServiceError
 import ru.prorabprime.server.error.asFailure
 import ru.prorabprime.server.model.ExtraWorkRecord
 import ru.prorabprime.server.model.FinanceOverview
+import ru.prorabprime.server.model.OwnerId
 import ru.prorabprime.server.model.PaymentRecord
 import ru.prorabprime.server.model.PaymentRevisionRecord
 import ru.prorabprime.server.repository.ExtraWorkRepository
@@ -28,19 +29,23 @@ class FinanceService(
     private val extras: ExtraWorkRepository,
     private val clock: Clock,
 ) {
-    suspend fun get(objectId: UUID): Result<FinanceOverview> {
-        if (objects.find(objectId) == null) return objectNotFound(objectId)
+    suspend fun get(owner: OwnerId, objectId: UUID): Result<FinanceOverview> {
+        if (objects.find(owner, objectId) == null) return objectNotFound(objectId)
         return Result.success(
             FinanceOverview(terms.find(objectId), payments.listByObject(objectId), extras.listByObject(objectId)),
         )
     }
 
-    suspend fun setTerms(objectId: UUID, request: FinanceTermsDto): Result<FinanceOverview> {
+    suspend fun setTerms(
+        owner: OwnerId,
+        objectId: UUID,
+        request: FinanceTermsDto,
+    ): Result<FinanceOverview> {
         val validated = validateTerms(request).getOrElse { return Result.failure(it) }
-        if (objects.find(objectId) == null) return objectNotFound(objectId)
+        if (objects.find(owner, objectId) == null) return objectNotFound(objectId)
         terms.save(objectId, validated)
-        objects.touch(objectId, clock.now())
-        return get(objectId)
+        objects.touch(owner, objectId, clock.now())
+        return get(owner, objectId)
     }
 }
 
@@ -52,11 +57,15 @@ class PaymentService(
     private val clock: Clock,
     private val newId: () -> UUID = UUID::randomUUID,
 ) {
-    suspend fun create(objectId: UUID, request: PaymentRequestDto): Result<PaymentRecord> {
+    suspend fun create(
+        owner: OwnerId,
+        objectId: UUID,
+        request: PaymentRequestDto,
+    ): Result<PaymentRecord> {
         val fields = validatePayment(request).getOrElse { return Result.failure(it) }
-        if (objects.find(objectId) == null) return objectNotFound(objectId)
+        if (objects.find(owner, objectId) == null) return objectNotFound(objectId)
         val clientId = parseClientId(request.id).getOrElse { return Result.failure(it) }
-        alreadyCreated(clientId?.let { payments.find(it) }) { it.objectId == objectId }?.let { return it }
+        alreadyCreated(clientId?.let { payments.find(owner, it) }) { it.objectId == objectId }?.let { return it }
         val now = clock.now()
         val record = PaymentRecord(clientId ?: newId(), objectId, fields, now)
         transactor.inTransaction {
@@ -64,39 +73,43 @@ class PaymentService(
             payments.addRevision(
                 PaymentRevisionRecord(newId(), objectId, record.id, RevisionActionDto.CREATED, fields, now),
             )
-            objects.touch(objectId, now)
+            objects.touch(owner, objectId, now)
         }
         return Result.success(record)
     }
 
-    suspend fun update(id: UUID, request: PaymentRequestDto): Result<Unit> {
+    suspend fun update(
+        owner: OwnerId,
+        id: UUID,
+        request: PaymentRequestDto,
+    ): Result<Unit> {
         val fields = validatePayment(request).getOrElse { return Result.failure(it) }
-        val existing = payments.find(id) ?: return notFound(id)
+        val existing = payments.find(owner, id) ?: return notFound(id)
         val now = clock.now()
         transactor.inTransaction {
-            payments.update(id, fields)
+            payments.update(owner, id, fields)
             val revision = PaymentRevisionRecord(newId(), existing.objectId, id, RevisionActionDto.UPDATED, fields, now)
             payments.addRevision(revision)
-            objects.touch(existing.objectId, now)
+            objects.touch(owner, existing.objectId, now)
         }
         return Result.success(Unit)
     }
 
-    suspend fun delete(id: UUID): Result<Unit> {
-        val existing = payments.find(id) ?: return notFound(id)
+    suspend fun delete(owner: OwnerId, id: UUID): Result<Unit> {
+        val existing = payments.find(owner, id) ?: return notFound(id)
         val now = clock.now()
         transactor.inTransaction {
-            payments.delete(id)
+            payments.delete(owner, id)
             val revision =
                 PaymentRevisionRecord(newId(), existing.objectId, id, RevisionActionDto.DELETED, existing.fields, now)
             payments.addRevision(revision)
-            objects.touch(existing.objectId, now)
+            objects.touch(owner, existing.objectId, now)
         }
         return Result.success(Unit)
     }
 
-    suspend fun history(objectId: UUID): Result<List<PaymentRevisionRecord>> {
-        if (objects.find(objectId) == null) return objectNotFound(objectId)
+    suspend fun history(owner: OwnerId, objectId: UUID): Result<List<PaymentRevisionRecord>> {
+        if (objects.find(owner, objectId) == null) return objectNotFound(objectId)
         return Result.success(payments.revisionsOf(objectId))
     }
 
@@ -109,30 +122,38 @@ class ExtraWorkService(
     private val clock: Clock,
     private val newId: () -> UUID = UUID::randomUUID,
 ) {
-    suspend fun create(objectId: UUID, request: ExtraWorkRequestDto): Result<ExtraWorkRecord> {
+    suspend fun create(
+        owner: OwnerId,
+        objectId: UUID,
+        request: ExtraWorkRequestDto,
+    ): Result<ExtraWorkRecord> {
         val fields = validateExtraWork(request).getOrElse { return Result.failure(it) }
-        if (objects.find(objectId) == null) return objectNotFound(objectId)
+        if (objects.find(owner, objectId) == null) return objectNotFound(objectId)
         val clientId = parseClientId(request.id).getOrElse { return Result.failure(it) }
-        alreadyCreated(clientId?.let { extras.find(it) }) { it.objectId == objectId }?.let { return it }
+        alreadyCreated(clientId?.let { extras.find(owner, it) }) { it.objectId == objectId }?.let { return it }
         val now = clock.now()
         val record = ExtraWorkRecord(clientId ?: newId(), objectId, fields, now)
         extras.insert(record)
-        objects.touch(objectId, now)
+        objects.touch(owner, objectId, now)
         return Result.success(record)
     }
 
-    suspend fun update(id: UUID, request: ExtraWorkRequestDto): Result<Unit> {
+    suspend fun update(
+        owner: OwnerId,
+        id: UUID,
+        request: ExtraWorkRequestDto,
+    ): Result<Unit> {
         val fields = validateExtraWork(request).getOrElse { return Result.failure(it) }
-        val existing = extras.find(id) ?: return notFound(id)
-        extras.update(id, fields)
-        objects.touch(existing.objectId, clock.now())
+        val existing = extras.find(owner, id) ?: return notFound(id)
+        extras.update(owner, id, fields)
+        objects.touch(owner, existing.objectId, clock.now())
         return Result.success(Unit)
     }
 
-    suspend fun delete(id: UUID): Result<Unit> {
-        val existing = extras.find(id) ?: return notFound(id)
-        extras.delete(id)
-        objects.touch(existing.objectId, clock.now())
+    suspend fun delete(owner: OwnerId, id: UUID): Result<Unit> {
+        val existing = extras.find(owner, id) ?: return notFound(id)
+        extras.delete(owner, id)
+        objects.touch(owner, existing.objectId, clock.now())
         return Result.success(Unit)
     }
 
