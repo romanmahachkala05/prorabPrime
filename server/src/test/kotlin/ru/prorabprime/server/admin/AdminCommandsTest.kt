@@ -5,10 +5,20 @@ import java.util.UUID
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import ru.prorabprime.server.fakes.FIXED_NOW
+import ru.prorabprime.server.fakes.FakeContactRepository
+import ru.prorabprime.server.fakes.FakeExtraWorkRepository
+import ru.prorabprime.server.fakes.FakeFileStorage
+import ru.prorabprime.server.fakes.FakeFinanceTermsRepository
+import ru.prorabprime.server.fakes.FakeMaterialRepository
+import ru.prorabprime.server.fakes.FakeObjectRepository
+import ru.prorabprime.server.fakes.FakePaymentRepository
+import ru.prorabprime.server.fakes.FakePhotoRepository
+import ru.prorabprime.server.fakes.FakeTaskRepository
 import ru.prorabprime.server.fakes.FakeUserRepository
 import ru.prorabprime.server.fakes.FixedClock
 import ru.prorabprime.server.fakes.ImmediateTransactor
 import ru.prorabprime.server.model.UserRecord
+import ru.prorabprime.server.service.AccountCopyService
 import ru.prorabprime.server.service.AccountService
 
 class AdminCommandsTest {
@@ -20,8 +30,15 @@ class AdminCommandsTest {
     private var made = 0
     private val accounts =
         AccountService(users, ImmediateTransactor, FixedClock(), newToken = { "printed-token-${++made}" })
+    private val photos = FakePhotoRepository()
+    private val objects = FakeObjectRepository(photos)
+    private val copies = AccountCopyService(
+        users, objects, photos, FakeContactRepository(), FakeFinanceTermsRepository(), FakePaymentRepository(),
+        FakeExtraWorkRepository(), FakeMaterialRepository(), FakeTaskRepository(), FakeFileStorage(),
+        ImmediateTransactor, FixedClock(),
+    )
     private val lines = mutableListOf<String>()
-    private val commands = AdminCommands(accounts) { lines += it }
+    private val commands = AdminCommands(accounts, copies) { lines += it }
 
     @Test
     fun `adding an account prints its token once and the token opens it`() = runTest {
@@ -65,6 +82,32 @@ class AdminCommandsTest {
     fun `an account that is not there is reported, not made up`() = runTest {
         assertThat(commands.run(listOf("user", "token", "Никто"))).isEqualTo(1)
         assertThat(commands.run(listOf("user", "revoke", "Никто"))).isEqualTo(1)
+    }
+
+    @Test
+    fun `copying makes the account, says what was copied and prints a token that opens it`() = runTest {
+        val code = commands.run(listOf("user", "copy", "owner", "Заказчик"))
+
+        assertThat(code).isEqualTo(0)
+        assertThat(lines.first()).contains("Copied owner to Заказчик")
+        assertThat(accounts.authenticate(lines.last())).isEqualTo(users.findByName("Заказчик")?.owner)
+    }
+
+    @Test
+    fun `copying into a name that is taken fails and prints no token`() = runTest {
+        commands.run(listOf("user", "add", "Иван"))
+        lines.clear()
+
+        val code = commands.run(listOf("user", "copy", "owner", "Иван"))
+
+        assertThat(code).isEqualTo(1)
+        assertThat(lines.single()).contains("There is an account Иван")
+    }
+
+    @Test
+    fun `copy needs exactly the two names`() = runTest {
+        assertThat(commands.run(listOf("user", "copy", "owner"))).isEqualTo(2)
+        assertThat(commands.run(listOf("user", "copy", "owner", "Иван", "Петров"))).isEqualTo(2)
     }
 
     @Test
