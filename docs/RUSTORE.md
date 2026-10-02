@@ -27,7 +27,7 @@ Give it the demo server instead (section 3), or none:
 | Package | `ru.prorabprime` |
 | Category | Business / Productivity (check the list in the console) |
 | Icon | [`docs/rustore/icon-512.png`](rustore/icon-512.png) |
-| Privacy policy | `https://<your server>/privacy.html` (fill in the contact line in the page first) |
+| Privacy policy | `https://<your server>/privacy.html` |
 | Age rating | 0+: no user content shared between people, no ads, no purchases |
 | Price | Free, no purchases, no ads |
 
@@ -90,7 +90,7 @@ There is no camera or storage permission: photos come from the camera app and th
 - [ ] Developer account in the RuStore console, verified.
 - [ ] `prorab.version` raised; release built with the demo address; installed and tried on a device.
 - [ ] Demo server up, over HTTPS, with its own token and invented data.
-- [ ] Privacy page open at its address, contact line filled in.
+- [ ] Privacy page open at its address.
 - [ ] Icon, descriptions, screenshots, age rating, category entered.
 - [ ] Moderator note with the demo address and token.
 - [ ] `mapping.txt` of the uploaded build kept.
