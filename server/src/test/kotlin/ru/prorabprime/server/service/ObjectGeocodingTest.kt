@@ -6,6 +6,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import ru.prorabprime.contract.ObjectRequestDto
 import ru.prorabprime.contract.ObjectStatusDto
+import ru.prorabprime.server.TEST_OWNER
 import ru.prorabprime.server.fakes.FakeContactRepository
 import ru.prorabprime.server.fakes.FakeFileStorage
 import ru.prorabprime.server.fakes.FakeGeocoder
@@ -37,7 +38,7 @@ class ObjectGeocodingTest {
 
     @Test
     fun `a new object is put on the map by its address`() = runTest {
-        service.create(request("Тверская, 5")).getOrThrow()
+        service.create(TEST_OWNER, request("Тверская, 5")).getOrThrow()
 
         assertThat(objects.records.getValue(id).coordinates).isEqualTo(Coordinates(55.76, 37.61))
         assertThat(geocoder.asked).containsExactly("Тверская, 5")
@@ -45,37 +46,37 @@ class ObjectGeocodingTest {
 
     @Test
     fun `a point picked on the map is kept as it is, without asking the geocoder`() = runTest {
-        service.create(request("Тверская, 5").copy(latitude = 56.0, longitude = 60.0)).getOrThrow()
+        service.create(TEST_OWNER, request("Тверская, 5").copy(latitude = 56.0, longitude = 60.0)).getOrThrow()
 
         assertThat(objects.records.getValue(id).coordinates).isEqualTo(Coordinates(56.0, 60.0))
         assertThat(geocoder.asked).isEmpty()
 
-        service.update(id, request("Арбат, 3").copy(latitude = 57.0, longitude = 61.0)).getOrThrow()
+        service.update(TEST_OWNER, id, request("Арбат, 3").copy(latitude = 57.0, longitude = 61.0)).getOrThrow()
         assertThat(objects.records.getValue(id).coordinates).isEqualTo(Coordinates(57.0, 61.0))
         assertThat(geocoder.asked).isEmpty()
     }
 
     @Test
     fun `half a point or one off the globe is ignored and the address decides`() = runTest {
-        service.create(request("Тверская, 5").copy(latitude = 56.0)).getOrThrow()
+        service.create(TEST_OWNER, request("Тверская, 5").copy(latitude = 56.0)).getOrThrow()
         assertThat(objects.records.getValue(id).coordinates).isEqualTo(Coordinates(55.76, 37.61))
 
-        service.update(id, request("Арбат, 3").copy(latitude = 95.0, longitude = 60.0)).getOrThrow()
+        service.update(TEST_OWNER, id, request("Арбат, 3").copy(latitude = 95.0, longitude = 60.0)).getOrThrow()
         assertThat(objects.records.getValue(id).coordinates).isEqualTo(Coordinates(55.75, 37.59))
     }
 
     @Test
     fun `saving again with the same address and no point leaves the pin alone`() = runTest {
-        service.create(request("Тверская, 5").copy(latitude = 56.0, longitude = 60.0)).getOrThrow()
+        service.create(TEST_OWNER, request("Тверская, 5").copy(latitude = 56.0, longitude = 60.0)).getOrThrow()
 
-        service.update(id, request("Тверская, 5")).getOrThrow()
+        service.update(TEST_OWNER, id, request("Тверская, 5")).getOrThrow()
 
         assertThat(objects.records.getValue(id).coordinates).isEqualTo(Coordinates(56.0, 60.0))
     }
 
     @Test
     fun `an address nobody knows is saved without a pin, not refused`() = runTest {
-        val created = service.create(request("Деревня Гадюкино")).getOrThrow()
+        val created = service.create(TEST_OWNER, request("Деревня Гадюкино")).getOrThrow()
 
         assertThat(created.id).isEqualTo(id)
         assertThat(objects.records.getValue(id).coordinates).isNull()
@@ -83,21 +84,21 @@ class ObjectGeocodingTest {
 
     @Test
     fun `a changed address moves the pin, and an unknown one removes it`() = runTest {
-        service.create(request("Тверская, 5")).getOrThrow()
+        service.create(TEST_OWNER, request("Тверская, 5")).getOrThrow()
 
-        service.update(id, request("Арбат, 3")).getOrThrow()
+        service.update(TEST_OWNER, id, request("Арбат, 3")).getOrThrow()
         assertThat(objects.records.getValue(id).coordinates).isEqualTo(Coordinates(55.75, 37.59))
 
-        service.update(id, request("Деревня Гадюкино")).getOrThrow()
+        service.update(TEST_OWNER, id, request("Деревня Гадюкино")).getOrThrow()
         assertThat(objects.records.getValue(id).coordinates).isNull()
     }
 
     @Test
     fun `an edit that keeps the address does not ask the geocoder again`() = runTest {
-        service.create(request("Тверская, 5")).getOrThrow()
+        service.create(TEST_OWNER, request("Тверская, 5")).getOrThrow()
         geocoder.asked.clear()
 
-        service.update(id, request("Тверская, 5").copy(title = "Кухня")).getOrThrow()
+        service.update(TEST_OWNER, id, request("Тверская, 5").copy(title = "Кухня")).getOrThrow()
 
         assertThat(geocoder.asked).isEmpty()
         assertThat(objects.records.getValue(id).coordinates).isNotNull()
@@ -105,16 +106,16 @@ class ObjectGeocodingTest {
 
     @Test
     fun `asking again finds an address the geocoder learned since`() = runTest {
-        service.create(request("Деревня Гадюкино")).getOrThrow()
+        service.create(TEST_OWNER, request("Деревня Гадюкино")).getOrThrow()
         geocoder.known["Деревня Гадюкино"] = Coordinates(60.0, 30.0)
 
-        val details = service.geocode(id).getOrThrow()
+        val details = service.geocode(TEST_OWNER, id).getOrThrow()
 
         assertThat(details.record.coordinates).isEqualTo(Coordinates(60.0, 30.0))
     }
 
     @Test
     fun `an unknown object cannot be geocoded`() = runTest {
-        assertThat(service.geocode(UUID.randomUUID()).isFailure).isTrue()
+        assertThat(service.geocode(TEST_OWNER, UUID.randomUUID()).isFailure).isTrue()
     }
 }

@@ -8,6 +8,7 @@ import org.jetbrains.exposed.v1.javatime.timestamp
 /** Mirrors `V1__init.sql` and later migrations; Flyway owns the schema, these only read and write it. */
 object ObjectsTable : Table("objects") {
     val id = javaUUID("id")
+    val ownerId = javaUUID("owner_id")
     val title = varchar("title", 200).nullable()
     val address = varchar("address", 500)
     val status = varchar("status", 20)
@@ -123,10 +124,29 @@ object MaterialsTable : Table("materials") {
 
 object TasksTable : Table("tasks") {
     val id = javaUUID("id")
+    val ownerId = javaUUID("owner_id")
     val title = varchar("title", 300)
     val day = date("day")
     val remindAtMinutes = integer("remind_at_minutes").nullable()
     val done = bool("done")
+    val createdAt = timestamp("created_at")
+
+    override val primaryKey = PrimaryKey(id)
+}
+
+object UsersTable : Table("users") {
+    val id = javaUUID("id")
+    val name = varchar("name", 100)
+    val createdAt = timestamp("created_at")
+
+    override val primaryKey = PrimaryKey(id)
+}
+
+object ApiTokensTable : Table("api_tokens") {
+    val id = javaUUID("id")
+    val userId = javaUUID("user_id")
+    val tokenHash = char("token_hash", 64)
+    val tokenSource = varchar("source", 10)
     val createdAt = timestamp("created_at")
 
     override val primaryKey = PrimaryKey(id)

@@ -7,6 +7,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import ru.prorabprime.contract.ObjectRequestDto
 import ru.prorabprime.contract.ObjectStatusDto
+import ru.prorabprime.server.TEST_OWNER
 import ru.prorabprime.server.error.ServiceError
 import ru.prorabprime.server.error.ServiceException
 import ru.prorabprime.server.fakes.FIXED_NOW
@@ -33,7 +34,7 @@ class ObjectServiceTest {
 
     @Test
     fun `creating stores the object with a new id and the current time`() = runTest {
-        val created = service.create(request).getOrThrow()
+        val created = service.create(TEST_OWNER, request).getOrThrow()
 
         assertThat(created.id).isEqualTo(id)
         assertThat(created.createdAt).isEqualTo(FIXED_NOW)
@@ -44,7 +45,7 @@ class ObjectServiceTest {
 
     @Test
     fun `an invalid request stores nothing`() = runTest {
-        val result = service.create(request.copy(address = " "))
+        val result = service.create(TEST_OWNER, request.copy(address = " "))
 
         assertThat(result.serviceError()).isInstanceOf(ServiceError.Validation::class.java)
         assertThat(objects.records).isEmpty()
@@ -52,28 +53,34 @@ class ObjectServiceTest {
 
     @Test
     fun `getting an object includes its photos in order`() = runTest {
-        service.create(request)
+        service.create(TEST_OWNER, request)
         val second = aPhotoRecord(id, sortOrder = 2)
         val first = aPhotoRecord(id, sortOrder = 1)
         photos.records[second.id] = second
         photos.records[first.id] = first
 
-        val details = service.get(id).getOrThrow()
+        val details = service.get(TEST_OWNER, id).getOrThrow()
 
         assertThat(details.photos).containsExactly(first, second).inOrder()
     }
 
     @Test
     fun `getting an unknown object is not found`() = runTest {
-        assertThat(service.get(UUID.randomUUID()).serviceError()).isInstanceOf(ServiceError.NotFound::class.java)
+        assertThat(
+            service.get(TEST_OWNER, UUID.randomUUID()).serviceError(),
+        ).isInstanceOf(ServiceError.NotFound::class.java)
     }
 
     @Test
     fun `updating replaces the fields and moves only updatedAt`() = runTest {
-        service.create(request)
+        service.create(TEST_OWNER, request)
         clock.now = FIXED_NOW + 1.hours
 
-        val updated = service.update(id, request.copy(title = "Кухня", status = ObjectStatusDto.DONE)).getOrThrow()
+        val updated = service.update(
+            TEST_OWNER,
+            id,
+            request.copy(title = "Кухня", status = ObjectStatusDto.DONE),
+        ).getOrThrow()
 
         assertThat(updated.record.fields.title).isEqualTo("Кухня")
         assertThat(updated.record.fields.status).isEqualTo(ObjectStatusDto.DONE)
@@ -83,15 +90,15 @@ class ObjectServiceTest {
 
     @Test
     fun `updating an unknown object is not found`() = runTest {
-        assertThat(service.update(UUID.randomUUID(), request).serviceError())
+        assertThat(service.update(TEST_OWNER, UUID.randomUUID(), request).serviceError())
             .isInstanceOf(ServiceError.NotFound::class.java)
     }
 
     @Test
     fun `an invalid update changes nothing`() = runTest {
-        service.create(request)
+        service.create(TEST_OWNER, request)
 
-        val result = service.update(id, request.copy(address = ""))
+        val result = service.update(TEST_OWNER, id, request.copy(address = ""))
 
         assertThat(result.serviceError()).isInstanceOf(ServiceError.Validation::class.java)
         assertThat(objects.records.getValue(id).fields.address).isEqualTo("Тверская, 5")
@@ -99,38 +106,40 @@ class ObjectServiceTest {
 
     @Test
     fun `deleting puts the object in the trash with its files, and the object is no longer found`() = runTest {
-        service.create(request)
+        service.create(TEST_OWNER, request)
         storage.write(id, "a.jpg", byteArrayOf(1))
 
-        assertThat(service.delete(id).isSuccess).isTrue()
+        assertThat(service.delete(TEST_OWNER, id).isSuccess).isTrue()
 
         assertThat(objects.trashedAt).containsKey(id)
         assertThat(objects.records).containsKey(id)
         assertThat(storage.files).isNotEmpty()
-        assertThat(service.get(id).serviceError()).isInstanceOf(ServiceError.NotFound::class.java)
-        assertThat(service.list(ObjectListQuery())).isEmpty()
+        assertThat(service.get(TEST_OWNER, id).serviceError()).isInstanceOf(ServiceError.NotFound::class.java)
+        assertThat(service.list(TEST_OWNER, ObjectListQuery())).isEmpty()
     }
 
     @Test
     fun `deleting an object already in the trash is not found`() = runTest {
-        service.create(request)
-        service.delete(id)
+        service.create(TEST_OWNER, request)
+        service.delete(TEST_OWNER, id)
 
-        assertThat(service.delete(id).serviceError()).isInstanceOf(ServiceError.NotFound::class.java)
+        assertThat(service.delete(TEST_OWNER, id).serviceError()).isInstanceOf(ServiceError.NotFound::class.java)
     }
 
     @Test
     fun `an object cannot be created again with the id of one in the trash`() = runTest {
-        service.create(request.copy(id = id.toString()))
-        service.delete(id)
+        service.create(TEST_OWNER, request.copy(id = id.toString()))
+        service.delete(TEST_OWNER, id)
 
         // A retried create finds what it made instead of failing on the key.
-        assertThat(service.create(request.copy(id = id.toString())).isSuccess).isTrue()
+        assertThat(service.create(TEST_OWNER, request.copy(id = id.toString())).isSuccess).isTrue()
         assertThat(objects.records).hasSize(1)
     }
 
     @Test
     fun `deleting an unknown object is not found`() = runTest {
-        assertThat(service.delete(UUID.randomUUID()).serviceError()).isInstanceOf(ServiceError.NotFound::class.java)
+        assertThat(
+            service.delete(TEST_OWNER, UUID.randomUUID()).serviceError(),
+        ).isInstanceOf(ServiceError.NotFound::class.java)
     }
 }

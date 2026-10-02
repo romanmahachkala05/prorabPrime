@@ -11,6 +11,7 @@ import org.junit.After
 import org.junit.Assert.assertThrows
 import org.junit.Before
 import org.junit.Test
+import ru.prorabprime.server.TEST_OWNER
 
 class MigrationTest {
 
@@ -33,8 +34,10 @@ class MigrationTest {
         connection.createStatement().executeQuery(query).use { if (it.next()) it.getObject(1) else null }
     }
 
-    private fun insertObject(id: UUID) =
-        sql("INSERT INTO objects (id, address, created_at, updated_at) VALUES ('$id', 'Тверская, 5', now(), now())")
+    private fun insertObject(id: UUID) = sql(
+        "INSERT INTO objects (id, owner_id, address, created_at, updated_at) " +
+            "VALUES ('$id', '${TEST_OWNER.value}', 'Тверская, 5', now(), now())",
+    )
 
     private fun insertPhoto(id: UUID, objectId: UUID) = sql(
         "INSERT INTO photos (id, object_id, file_name, thumb_file_name, content_type, size_bytes, " +
@@ -55,8 +58,8 @@ class MigrationTest {
     fun `an unknown status is rejected`() {
         assertThrows(SQLException::class.java) {
             sql(
-                "INSERT INTO objects (id, address, status, created_at, updated_at) " +
-                    "VALUES ('${UUID.randomUUID()}', 'x', 'LOST', now(), now())",
+                "INSERT INTO objects (id, owner_id, address, status, created_at, updated_at) " +
+                    "VALUES ('${UUID.randomUUID()}', '${TEST_OWNER.value}', 'x', 'LOST', now(), now())",
             )
         }
     }
@@ -220,7 +223,10 @@ class MigrationTest {
 
     @Test
     fun `a task is open by default and its time is a minute of the day`() {
-        sql("INSERT INTO tasks (id, title, day, created_at) VALUES ('${UUID.randomUUID()}', 'x', '2026-09-25', now())")
+        sql(
+            "INSERT INTO tasks (id, owner_id, title, day, created_at) " +
+                "VALUES ('${UUID.randomUUID()}', '${TEST_OWNER.value}', 'x', '2026-09-25', now())",
+        )
         assertThat(scalar("SELECT done FROM tasks")).isEqualTo(false)
         assertThat(scalar("SELECT remind_at_minutes FROM tasks")).isNull()
 

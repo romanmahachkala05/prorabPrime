@@ -20,6 +20,7 @@ import ru.prorabprime.server.repository.ExposedObjectRepository
 import ru.prorabprime.server.repository.ExposedPaymentRepository
 import ru.prorabprime.server.repository.ExposedPhotoRepository
 import ru.prorabprime.server.repository.ExposedTaskRepository
+import ru.prorabprime.server.repository.ExposedUserRepository
 import ru.prorabprime.server.repository.ExtraWorkRepository
 import ru.prorabprime.server.repository.FinanceTermsRepository
 import ru.prorabprime.server.repository.MaterialRepository
@@ -27,8 +28,11 @@ import ru.prorabprime.server.repository.ObjectRepository
 import ru.prorabprime.server.repository.PaymentRepository
 import ru.prorabprime.server.repository.PhotoRepository
 import ru.prorabprime.server.repository.TaskRepository
+import ru.prorabprime.server.repository.UserRepository
+import ru.prorabprime.server.service.AccountService
 import ru.prorabprime.server.service.ContactService
 import ru.prorabprime.server.service.ExtraWorkService
+import ru.prorabprime.server.service.FileService
 import ru.prorabprime.server.service.FinanceService
 import ru.prorabprime.server.service.Geocoder
 import ru.prorabprime.server.service.MaterialService
@@ -73,9 +77,12 @@ fun databaseModule(database: Database): Module = module {
     single<ExtraWorkRepository> { ExposedExtraWorkRepository(get()) }
     single<MaterialRepository> { ExposedMaterialRepository(get()) }
     single<TaskRepository> { ExposedTaskRepository(get()) }
+    single<UserRepository> { ExposedUserRepository(get()) }
 }
 
 val serviceModule: Module = module {
+    single { AccountService(get(), get(), get()) }
+    single { FileService(get(), get()) }
     single { ObjectService(get(), get(), get(), get(), geocoder = get()) }
     single { TrashService(get(), get(), get(), get(), get()) }
     single { ContactService(get(), get(), get()) }

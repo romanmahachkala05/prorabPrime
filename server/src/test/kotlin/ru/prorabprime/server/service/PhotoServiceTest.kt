@@ -10,6 +10,7 @@ import org.junit.Test
 import ru.prorabprime.contract.AttachmentKindDto
 import ru.prorabprime.contract.ObjectStatusDto
 import ru.prorabprime.contract.PhotoLimits
+import ru.prorabprime.server.TEST_OWNER
 import ru.prorabprime.server.error.ServiceError
 import ru.prorabprime.server.error.ServiceException
 import ru.prorabprime.server.fakes.FIXED_NOW
@@ -50,6 +51,7 @@ class PhotoServiceTest {
     init {
         objects.records[objectId] = ObjectRecord(
             id = objectId,
+            ownerId = TEST_OWNER,
             fields = ObjectFields(null, "Тверская, 5", ObjectStatusDto.IN_PROGRESS, null, null, null),
             coverPhotoId = null,
             createdAt = FIXED_NOW,
@@ -61,7 +63,7 @@ class PhotoServiceTest {
 
     private suspend fun upload(minutesLater: Int = 0): UUID {
         clock.now = FIXED_NOW + minutesLater.minutes
-        return service.upload(objectId, bytes).getOrThrow().id
+        return service.upload(TEST_OWNER, objectId, bytes).getOrThrow().id
     }
 
     private fun cover() = objects.records.getValue(objectId).coverPhotoId
@@ -105,7 +107,7 @@ class PhotoServiceTest {
 
     @Test
     fun `an upload to an unknown object is not found and writes nothing`() = runTest {
-        val result = service.upload(UUID.randomUUID(), bytes)
+        val result = service.upload(TEST_OWNER, UUID.randomUUID(), bytes)
 
         assertThat(result.serviceError()).isInstanceOf(ServiceError.NotFound::class.java)
         assertThat(storage.files).isEmpty()
@@ -113,7 +115,7 @@ class PhotoServiceTest {
 
     @Test
     fun `an oversized upload is refused before anything is written`() = runTest {
-        val result = service.upload(objectId, ByteArray(PhotoLimits.MAX_UPLOAD_BYTES.toInt() + 1))
+        val result = service.upload(TEST_OWNER, objectId, ByteArray(PhotoLimits.MAX_UPLOAD_BYTES.toInt() + 1))
 
         assertThat(result.serviceError()).isInstanceOf(ServiceError.TooLarge::class.java)
         assertThat(storage.files).isEmpty()
@@ -124,7 +126,7 @@ class PhotoServiceTest {
         images.reject = true
 
         assertThat(
-            service.upload(objectId, bytes).serviceError(),
+            service.upload(TEST_OWNER, objectId, bytes).serviceError(),
         ).isInstanceOf(ServiceError.UnsupportedMedia::class.java)
         assertThat(storage.files).isEmpty()
         assertThat(photos.records).isEmpty()
@@ -134,7 +136,7 @@ class PhotoServiceTest {
     fun `a failed database write removes the files it left behind`() = runTest {
         photos.insertFailure = SQLException("connection lost")
 
-        val failure = runCatching { service.upload(objectId, bytes) }.exceptionOrNull()
+        val failure = runCatching { service.upload(TEST_OWNER, objectId, bytes) }.exceptionOrNull()
 
         assertThat(failure).isInstanceOf(SQLException::class.java)
 
@@ -146,7 +148,7 @@ class PhotoServiceTest {
     fun `a failed thumbnail write removes the original and adds no row`() = runTest {
         storage.failWritesEndingWith = "_thumb.jpg"
 
-        val failure = runCatching { service.upload(objectId, bytes) }.exceptionOrNull()
+        val failure = runCatching { service.upload(TEST_OWNER, objectId, bytes) }.exceptionOrNull()
 
         assertThat(failure).isInstanceOf(IOException::class.java)
 
@@ -161,7 +163,7 @@ class PhotoServiceTest {
         upload()
         val second = upload()
 
-        assertThat(service.delete(second).isSuccess).isTrue()
+        assertThat(service.delete(TEST_OWNER, second).isSuccess).isTrue()
 
         assertThat(photos.trashedAt).containsKey(second)
         assertThat(photos.listByObject(objectId).map { it.id }).doesNotContain(second)
@@ -174,7 +176,7 @@ class PhotoServiceTest {
         val newest = upload(minutesLater = 20)
         upload(minutesLater = 10)
 
-        service.delete(first).getOrThrow()
+        service.delete(TEST_OWNER, first).getOrThrow()
 
         assertThat(cover()).isEqualTo(newest)
     }
@@ -183,7 +185,7 @@ class PhotoServiceTest {
     fun `deleting the last photo leaves no cover`() = runTest {
         val only = upload()
 
-        service.delete(only).getOrThrow()
+        service.delete(TEST_OWNER, only).getOrThrow()
 
         assertThat(cover()).isNull()
     }
@@ -193,7 +195,7 @@ class PhotoServiceTest {
         val first = upload()
         val second = upload()
 
-        service.delete(second).getOrThrow()
+        service.delete(TEST_OWNER, second).getOrThrow()
 
         assertThat(cover()).isEqualTo(first)
     }
@@ -201,14 +203,16 @@ class PhotoServiceTest {
     @Test
     fun `deleting a photo already in the trash is not found`() = runTest {
         val id = upload()
-        service.delete(id)
+        service.delete(TEST_OWNER, id)
 
-        assertThat(service.delete(id).serviceError()).isInstanceOf(ServiceError.NotFound::class.java)
+        assertThat(service.delete(TEST_OWNER, id).serviceError()).isInstanceOf(ServiceError.NotFound::class.java)
     }
 
     @Test
     fun `deleting an unknown photo is not found`() = runTest {
-        assertThat(service.delete(UUID.randomUUID()).serviceError()).isInstanceOf(ServiceError.NotFound::class.java)
+        assertThat(
+            service.delete(TEST_OWNER, UUID.randomUUID()).serviceError(),
+        ).isInstanceOf(ServiceError.NotFound::class.java)
     }
 
     // --- receipt ---
@@ -217,8 +221,8 @@ class PhotoServiceTest {
     fun `a receipt keeps what its code said, and a photo is not even read`() = runTest {
         receipts.result = ReceiptData(79_000, "2026-10-01T15:26", "t=20261001T1526&s=790.00")
 
-        val receipt = service.upload(objectId, bytes, AttachmentKindDto.RECEIPT).getOrThrow()
-        val photo = service.upload(objectId, bytes, AttachmentKindDto.PHOTO).getOrThrow()
+        val receipt = service.upload(TEST_OWNER, objectId, bytes, AttachmentKindDto.RECEIPT).getOrThrow()
+        val photo = service.upload(TEST_OWNER, objectId, bytes, AttachmentKindDto.PHOTO).getOrThrow()
 
         assertThat(photos.records.getValue(receipt.id).receipt?.amountKopecks).isEqualTo(79_000)
         assertThat(photos.records.getValue(photo.id).receipt).isNull()
@@ -229,7 +233,7 @@ class PhotoServiceTest {
     fun `a receipt whose code cannot be read is stored all the same`() = runTest {
         receipts.result = null
 
-        val receipt = service.upload(objectId, bytes, AttachmentKindDto.RECEIPT).getOrThrow()
+        val receipt = service.upload(TEST_OWNER, objectId, bytes, AttachmentKindDto.RECEIPT).getOrThrow()
 
         assertThat(photos.records.getValue(receipt.id).receipt).isNull()
     }
@@ -238,8 +242,8 @@ class PhotoServiceTest {
 
     @Test
     fun `a note sent with the upload is kept, trimmed, and a blank one is no note`() = runTest {
-        val noted = service.upload(objectId, bytes, note = "  Трещина над окном ").getOrThrow()
-        val blank = service.upload(objectId, bytes, note = "   ").getOrThrow()
+        val noted = service.upload(TEST_OWNER, objectId, bytes, note = "  Трещина над окном ").getOrThrow()
+        val blank = service.upload(TEST_OWNER, objectId, bytes, note = "   ").getOrThrow()
 
         assertThat(photos.records.getValue(noted.id).note).isEqualTo("Трещина над окном")
         assertThat(photos.records.getValue(blank.id).note).isNull()
@@ -247,7 +251,7 @@ class PhotoServiceTest {
 
     @Test
     fun `a note that is too long is refused and nothing is stored`() = runTest {
-        val result = service.upload(objectId, bytes, note = "а".repeat(PhotoLimits.NOTE + 1))
+        val result = service.upload(TEST_OWNER, objectId, bytes, note = "а".repeat(PhotoLimits.NOTE + 1))
 
         assertThat(result.serviceError()).isInstanceOf(ServiceError.Validation::class.java)
         assertThat(photos.records).isEmpty()
@@ -259,20 +263,20 @@ class PhotoServiceTest {
         val id = upload()
         clock.now = FIXED_NOW + 5.minutes
 
-        service.setNote(id, "Договорились на пятницу").getOrThrow()
+        service.setNote(TEST_OWNER, id, "Договорились на пятницу").getOrThrow()
         assertThat(photos.records.getValue(id).note).isEqualTo("Договорились на пятницу")
         assertThat(objects.records.getValue(objectId).updatedAt).isEqualTo(FIXED_NOW + 5.minutes)
 
-        service.setNote(id, "").getOrThrow()
+        service.setNote(TEST_OWNER, id, "").getOrThrow()
         assertThat(photos.records.getValue(id).note).isNull()
     }
 
     @Test
     fun `a note for an unknown photo is not found, and a long one is refused`() = runTest {
-        assertThat(service.setNote(UUID.randomUUID(), "x").serviceError())
+        assertThat(service.setNote(TEST_OWNER, UUID.randomUUID(), "x").serviceError())
             .isInstanceOf(ServiceError.NotFound::class.java)
         val id = upload()
-        assertThat(service.setNote(id, "а".repeat(PhotoLimits.NOTE + 1)).serviceError())
+        assertThat(service.setNote(TEST_OWNER, id, "а".repeat(PhotoLimits.NOTE + 1)).serviceError())
             .isInstanceOf(ServiceError.Validation::class.java)
     }
 
@@ -283,7 +287,7 @@ class PhotoServiceTest {
         val id = upload()
         val rotation = UUID.randomUUID()
 
-        val photo = service.rotate(id, 1, rotation).getOrThrow()
+        val photo = service.rotate(TEST_OWNER, id, 1, rotation).getOrThrow()
 
         assertThat(photo.fileName).isEqualTo("$rotation.jpg")
         assertThat(photos.records.getValue(id).thumbFileName).isEqualTo("${rotation}_thumb.jpg")
@@ -296,9 +300,9 @@ class PhotoServiceTest {
     fun `the same rotation sent again turns nothing`() = runTest {
         val id = upload()
         val rotation = UUID.randomUUID()
-        service.rotate(id, 1, rotation).getOrThrow()
+        service.rotate(TEST_OWNER, id, 1, rotation).getOrThrow()
 
-        assertThat(service.rotate(id, 1, rotation).isSuccess).isTrue()
+        assertThat(service.rotate(TEST_OWNER, id, 1, rotation).isSuccess).isTrue()
 
         assertThat(images.turned).containsExactly(1)
     }
@@ -308,7 +312,7 @@ class PhotoServiceTest {
         val id = upload()
         storage.failWritesEndingWith = "_thumb.jpg"
 
-        runCatching { service.rotate(id, 1, UUID.randomUUID()) }
+        runCatching { service.rotate(TEST_OWNER, id, 1, UUID.randomUUID()) }
 
         assertThat(photos.records.getValue(id).fileName).isEqualTo("$id.jpg")
         assertThat(storage.namesOf(objectId)).containsExactly("$id.jpg", "${id}_thumb.jpg")
@@ -318,15 +322,15 @@ class PhotoServiceTest {
     fun `rotating by no turns, or by four, is refused`() = runTest {
         val id = upload()
 
-        assertThat(service.rotate(id, 0, UUID.randomUUID()).serviceError())
+        assertThat(service.rotate(TEST_OWNER, id, 0, UUID.randomUUID()).serviceError())
             .isInstanceOf(ServiceError.Validation::class.java)
-        assertThat(service.rotate(id, 4, UUID.randomUUID()).serviceError())
+        assertThat(service.rotate(TEST_OWNER, id, 4, UUID.randomUUID()).serviceError())
             .isInstanceOf(ServiceError.Validation::class.java)
     }
 
     @Test
     fun `rotating an unknown photo is not found`() = runTest {
-        assertThat(service.rotate(UUID.randomUUID(), 1, UUID.randomUUID()).serviceError())
+        assertThat(service.rotate(TEST_OWNER, UUID.randomUUID(), 1, UUID.randomUUID()).serviceError())
             .isInstanceOf(ServiceError.NotFound::class.java)
     }
 
@@ -337,7 +341,7 @@ class PhotoServiceTest {
         upload()
         val second = upload()
 
-        assertThat(service.setCover(objectId, second).isSuccess).isTrue()
+        assertThat(service.setCover(TEST_OWNER, objectId, second).isSuccess).isTrue()
         assertThat(cover()).isEqualTo(second)
     }
 
@@ -345,14 +349,16 @@ class PhotoServiceTest {
     fun `a photo of another object cannot be the cover`() = runTest {
         val otherObject = UUID.randomUUID()
         objects.records[otherObject] = objects.records.getValue(objectId).copy(id = otherObject)
-        val foreign = service.upload(otherObject, bytes).getOrThrow().id
+        val foreign = service.upload(TEST_OWNER, otherObject, bytes).getOrThrow().id
 
-        assertThat(service.setCover(objectId, foreign).serviceError()).isInstanceOf(ServiceError.Validation::class.java)
+        assertThat(
+            service.setCover(TEST_OWNER, objectId, foreign).serviceError(),
+        ).isInstanceOf(ServiceError.Validation::class.java)
     }
 
     @Test
     fun `a cover for an unknown object is not found`() = runTest {
-        assertThat(service.setCover(UUID.randomUUID(), UUID.randomUUID()).serviceError())
+        assertThat(service.setCover(TEST_OWNER, UUID.randomUUID(), UUID.randomUUID()).serviceError())
             .isInstanceOf(ServiceError.NotFound::class.java)
     }
 
@@ -360,7 +366,7 @@ class PhotoServiceTest {
 
     @Test
     fun `a receipt is stored as a receipt and never becomes the cover`() = runTest {
-        val receipt = service.upload(objectId, bytes, AttachmentKindDto.RECEIPT).getOrThrow()
+        val receipt = service.upload(TEST_OWNER, objectId, bytes, AttachmentKindDto.RECEIPT).getOrThrow()
 
         assertThat(receipt.kind).isEqualTo(AttachmentKindDto.RECEIPT)
         assertThat(cover()).isNull()
@@ -371,9 +377,9 @@ class PhotoServiceTest {
 
     @Test
     fun `a receipt cannot be made the cover`() = runTest {
-        val receipt = service.upload(objectId, bytes, AttachmentKindDto.RECEIPT).getOrThrow()
+        val receipt = service.upload(TEST_OWNER, objectId, bytes, AttachmentKindDto.RECEIPT).getOrThrow()
 
-        val result = service.setCover(objectId, receipt.id)
+        val result = service.setCover(TEST_OWNER, objectId, receipt.id)
 
         assertThat(result.serviceError()).isInstanceOf(ServiceError.Validation::class.java)
         assertThat(cover()).isNull()
@@ -382,10 +388,10 @@ class PhotoServiceTest {
     @Test
     fun `deleting the cover skips receipts when choosing the next one`() = runTest {
         val cover = upload()
-        service.upload(objectId, bytes, AttachmentKindDto.RECEIPT).getOrThrow()
+        service.upload(TEST_OWNER, objectId, bytes, AttachmentKindDto.RECEIPT).getOrThrow()
         val other = upload(minutesLater = 1)
 
-        service.delete(cover).getOrThrow()
+        service.delete(TEST_OWNER, cover).getOrThrow()
 
         assertThat(cover()).isEqualTo(other)
     }
@@ -394,8 +400,8 @@ class PhotoServiceTest {
     fun `a photo uploaded under the client's id is stored once however often it is sent`() = runTest {
         val id = UUID.randomUUID()
 
-        val first = service.upload(objectId, bytes, clientId = id).getOrThrow()
-        val again = service.upload(objectId, bytes, clientId = id).getOrThrow()
+        val first = service.upload(TEST_OWNER, objectId, bytes, clientId = id).getOrThrow()
+        val again = service.upload(TEST_OWNER, objectId, bytes, clientId = id).getOrThrow()
 
         assertThat(first.id).isEqualTo(id)
         assertThat(again.id).isEqualTo(id)

@@ -3,8 +3,10 @@ package ru.prorabprime.server.repository
 import java.util.UUID
 import kotlin.time.toJavaInstant
 import kotlin.time.toKotlinInstant
+import org.jetbrains.exposed.v1.core.Op
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.SortOrder
+import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.max
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
@@ -16,6 +18,7 @@ import ru.prorabprime.contract.MaterialStatusDto
 import ru.prorabprime.server.db.DbExecutor
 import ru.prorabprime.server.model.MaterialFields
 import ru.prorabprime.server.model.MaterialRecord
+import ru.prorabprime.server.model.OwnerId
 
 class ExposedMaterialRepository(
     private val db: DbExecutor,
@@ -28,8 +31,12 @@ class ExposedMaterialRepository(
             .map { it.toMaterialRecord() }
     }
 
-    override suspend fun find(id: UUID): MaterialRecord? = db.query {
-        MaterialsTable.selectAll().where { MaterialsTable.id eq id }.singleOrNull()?.toMaterialRecord()
+    /** The one material [id] names, if its object belongs to [owner]. */
+    private fun mine(owner: OwnerId, id: UUID): Op<Boolean> =
+        (MaterialsTable.id eq id) and MaterialsTable.objectId.ownedBy(owner)
+
+    override suspend fun find(owner: OwnerId, id: UUID): MaterialRecord? = db.query {
+        MaterialsTable.selectAll().where { mine(owner, id) }.singleOrNull()?.toMaterialRecord()
     }
 
     override suspend fun insert(material: MaterialRecord) {
@@ -45,15 +52,19 @@ class ExposedMaterialRepository(
         }
     }
 
-    override suspend fun update(id: UUID, fields: MaterialFields): Boolean = db.query {
-        MaterialsTable.update({ MaterialsTable.id eq id }) {
+    override suspend fun update(
+        owner: OwnerId,
+        id: UUID,
+        fields: MaterialFields,
+    ): Boolean = db.query {
+        MaterialsTable.update({ mine(owner, id) }) {
             it[title] = fields.title
             it[status] = fields.status.name
         } > 0
     }
 
-    override suspend fun delete(id: UUID): Boolean = db.query {
-        MaterialsTable.deleteWhere { MaterialsTable.id eq id } > 0
+    override suspend fun delete(owner: OwnerId, id: UUID): Boolean = db.query {
+        MaterialsTable.deleteWhere { mine(owner, id) } > 0
     }
 
     override suspend fun nextSortOrder(objectId: UUID): Int = db.query {

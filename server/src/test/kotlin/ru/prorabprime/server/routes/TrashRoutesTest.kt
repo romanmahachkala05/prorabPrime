@@ -15,6 +15,7 @@ import org.junit.Test
 import org.koin.dsl.module
 import ru.prorabprime.contract.ObjectStatusDto
 import ru.prorabprime.contract.TrashDto
+import ru.prorabprime.server.TEST_OWNER
 import ru.prorabprime.server.TEST_TOKEN
 import ru.prorabprime.server.db.Transactor
 import ru.prorabprime.server.di.serviceModule
@@ -49,6 +50,7 @@ class TrashRoutesTest {
     private fun server(block: suspend (HttpClient) -> Unit) {
         objects.records[objectId] = ObjectRecord(
             id = objectId,
+            ownerId = TEST_OWNER,
             fields = ObjectFields("Кухня", "Тверская, 5", ObjectStatusDto.IN_PROGRESS, null, null, null),
             coverPhotoId = null,
             createdAt = FIXED_NOW,

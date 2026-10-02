@@ -13,6 +13,7 @@ import ru.prorabprime.server.error.ServiceError
 import ru.prorabprime.server.error.asFailure
 import ru.prorabprime.server.model.MaterialFields
 import ru.prorabprime.server.model.MaterialRecord
+import ru.prorabprime.server.model.OwnerId
 import ru.prorabprime.server.repository.MaterialRepository
 import ru.prorabprime.server.repository.ObjectRepository
 
@@ -42,26 +43,30 @@ class MaterialService(
     private val clock: Clock,
     private val newId: () -> UUID = UUID::randomUUID,
 ) {
-    suspend fun list(objectId: UUID): Result<List<MaterialRecord>> {
-        if (objects.find(objectId) == null) return objectNotFound(objectId)
+    suspend fun list(owner: OwnerId, objectId: UUID): Result<List<MaterialRecord>> {
+        if (objects.find(owner, objectId) == null) return objectNotFound(objectId)
         return Result.success(materials.listByObject(objectId))
     }
 
-    suspend fun create(objectId: UUID, request: MaterialRequestDto): Result<MaterialRecord> {
+    suspend fun create(
+        owner: OwnerId,
+        objectId: UUID,
+        request: MaterialRequestDto,
+    ): Result<MaterialRecord> {
         val fields = validateMaterial(request).getOrElse { return Result.failure(it) }
-        if (objects.find(objectId) == null) return objectNotFound(objectId)
+        if (objects.find(owner, objectId) == null) return objectNotFound(objectId)
         val clientId = parseClientId(request.id).getOrElse { return Result.failure(it) }
-        alreadyCreated(clientId?.let { materials.find(it) }) { it.objectId == objectId }?.let { return it }
+        alreadyCreated(clientId?.let { materials.find(owner, it) }) { it.objectId == objectId }?.let { return it }
         val now = clock.now()
         val record = MaterialRecord(clientId ?: newId(), objectId, fields, materials.nextSortOrder(objectId), now)
         materials.insert(record)
-        objects.touch(objectId, now)
+        objects.touch(owner, objectId, now)
         return Result.success(record)
     }
 
     /** Adds the usual materials the list does not have yet, keeping the ones already there. */
-    suspend fun addDefaults(objectId: UUID): Result<List<MaterialRecord>> {
-        if (objects.find(objectId) == null) return objectNotFound(objectId)
+    suspend fun addDefaults(owner: OwnerId, objectId: UUID): Result<List<MaterialRecord>> {
+        if (objects.find(owner, objectId) == null) return objectNotFound(objectId)
         val existing = materials.listByObject(objectId).map { it.fields.title.lowercase() }.toSet()
         val now = clock.now()
         var order = materials.nextSortOrder(objectId)
@@ -69,22 +74,26 @@ class MaterialService(
             val fields = MaterialFields(title, MaterialStatusDto.NOT_CHOSEN)
             materials.insert(MaterialRecord(newId(), objectId, fields, order++, now))
         }
-        objects.touch(objectId, now)
+        objects.touch(owner, objectId, now)
         return Result.success(materials.listByObject(objectId))
     }
 
-    suspend fun update(id: UUID, request: MaterialRequestDto): Result<Unit> {
+    suspend fun update(
+        owner: OwnerId,
+        id: UUID,
+        request: MaterialRequestDto,
+    ): Result<Unit> {
         val fields = validateMaterial(request).getOrElse { return Result.failure(it) }
-        val existing = materials.find(id) ?: return notFound(id)
-        materials.update(id, fields)
-        objects.touch(existing.objectId, clock.now())
+        val existing = materials.find(owner, id) ?: return notFound(id)
+        materials.update(owner, id, fields)
+        objects.touch(owner, existing.objectId, clock.now())
         return Result.success(Unit)
     }
 
-    suspend fun delete(id: UUID): Result<Unit> {
-        val existing = materials.find(id) ?: return notFound(id)
-        materials.delete(id)
-        objects.touch(existing.objectId, clock.now())
+    suspend fun delete(owner: OwnerId, id: UUID): Result<Unit> {
+        val existing = materials.find(owner, id) ?: return notFound(id)
+        materials.delete(owner, id)
+        objects.touch(owner, existing.objectId, clock.now())
         return Result.success(Unit)
     }
 

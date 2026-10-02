@@ -40,6 +40,7 @@ import ru.prorabprime.contract.PhotoNoteRequestDto
 import ru.prorabprime.contract.ReceiptRequestDto
 import ru.prorabprime.contract.RotatePhotoRequestDto
 import ru.prorabprime.contract.SetCoverRequestDto
+import ru.prorabprime.server.TEST_OWNER
 import ru.prorabprime.server.TEST_TOKEN
 import ru.prorabprime.server.db.Transactor
 import ru.prorabprime.server.di.serviceModule
@@ -73,6 +74,7 @@ class PhotoRoutesTest {
     private fun server(block: suspend (HttpClient) -> Unit) {
         objects.records[objectId] = ObjectRecord(
             id = objectId,
+            ownerId = TEST_OWNER,
             fields = ObjectFields(null, "Тверская, 5", ObjectStatusDto.IN_PROGRESS, null, null, null),
             coverPhotoId = null,
             createdAt = FIXED_NOW,

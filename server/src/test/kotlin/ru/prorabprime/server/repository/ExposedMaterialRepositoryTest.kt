@@ -12,6 +12,7 @@ import org.junit.Before
 import org.junit.Test
 import ru.prorabprime.contract.MaterialStatusDto
 import ru.prorabprime.contract.ObjectStatusDto
+import ru.prorabprime.server.TEST_OWNER
 import ru.prorabprime.server.db.DbExecutor
 import ru.prorabprime.server.db.TestPostgres
 import ru.prorabprime.server.model.MaterialFields
@@ -38,6 +39,7 @@ class ExposedMaterialRepositoryTest {
         objects.insert(
             ObjectRecord(
                 id = objectId,
+                ownerId = TEST_OWNER,
                 fields = ObjectFields(null, "Тверская, 5", ObjectStatusDto.IN_PROGRESS, null, null, null),
                 coverPhotoId = null,
                 createdAt = base,
@@ -66,7 +68,7 @@ class ExposedMaterialRepositoryTest {
         materials.insert(second)
         materials.insert(first)
 
-        assertThat(materials.find(first.id)).isEqualTo(first)
+        assertThat(materials.find(TEST_OWNER, first.id)).isEqualTo(first)
         assertThat(materials.listByObject(objectId)).containsExactly(first, second).inOrder()
     }
 
@@ -76,11 +78,11 @@ class ExposedMaterialRepositoryTest {
         materials.insert(material)
 
         val changed = MaterialFields("Плитка 60х60", MaterialStatusDto.IN_APARTMENT)
-        assertThat(materials.update(material.id, changed)).isTrue()
-        assertThat(materials.find(material.id)?.fields).isEqualTo(changed)
-        assertThat(materials.update(UUID.randomUUID(), changed)).isFalse()
-        assertThat(materials.delete(material.id)).isTrue()
-        assertThat(materials.delete(material.id)).isFalse()
+        assertThat(materials.update(TEST_OWNER, material.id, changed)).isTrue()
+        assertThat(materials.find(TEST_OWNER, material.id)?.fields).isEqualTo(changed)
+        assertThat(materials.update(TEST_OWNER, UUID.randomUUID(), changed)).isFalse()
+        assertThat(materials.delete(TEST_OWNER, material.id)).isTrue()
+        assertThat(materials.delete(TEST_OWNER, material.id)).isFalse()
     }
 
     @Test
@@ -89,7 +91,7 @@ class ExposedMaterialRepositoryTest {
         materials.insert(material(7))
         assertThat(materials.nextSortOrder(objectId)).isEqualTo(8)
 
-        objects.delete(objectId)
+        objects.delete(TEST_OWNER, objectId)
 
         assertThat(materials.listByObject(objectId)).isEmpty()
     }

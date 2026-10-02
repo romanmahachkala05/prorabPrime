@@ -18,6 +18,7 @@ import ru.prorabprime.contract.ObjectCreatedDto
 import ru.prorabprime.contract.ObjectRequestDto
 import ru.prorabprime.contract.SortFieldDto
 import ru.prorabprime.contract.SortOrderDto
+import ru.prorabprime.server.auth.owner
 import ru.prorabprime.server.error.ServiceError
 import ru.prorabprime.server.error.ServiceException
 import ru.prorabprime.server.model.ObjectListQuery
@@ -27,24 +28,24 @@ fun Route.objectRoutes() {
     val service by inject<ObjectService>()
 
     get(ApiPaths.OBJECTS) {
-        call.respond(service.list(call.objectListQuery()).map { it.toSummaryDto() })
+        call.respond(service.list(call.owner, call.objectListQuery()).map { it.toSummaryDto() })
     }
     get(ApiPaths.OBJECT) {
-        call.respond(service.get(call.uuidParam(ApiParams.ID)).getOrThrow().toDetailsDto())
+        call.respond(service.get(call.owner, call.uuidParam(ApiParams.ID)).getOrThrow().toDetailsDto())
     }
     post(ApiPaths.OBJECTS) {
-        val created = service.create(call.receive<ObjectRequestDto>()).getOrThrow()
+        val created = service.create(call.owner, call.receive<ObjectRequestDto>()).getOrThrow()
         call.respond(HttpStatusCode.Created, ObjectCreatedDto(created.id.toString()))
     }
     put(ApiPaths.OBJECT) {
         val id = call.uuidParam(ApiParams.ID)
-        call.respond(service.update(id, call.receive<ObjectRequestDto>()).getOrThrow().toDetailsDto())
+        call.respond(service.update(call.owner, id, call.receive<ObjectRequestDto>()).getOrThrow().toDetailsDto())
     }
     post(ApiPaths.OBJECT_GEOCODE) {
-        call.respond(service.geocode(call.uuidParam(ApiParams.ID)).getOrThrow().toDetailsDto())
+        call.respond(service.geocode(call.owner, call.uuidParam(ApiParams.ID)).getOrThrow().toDetailsDto())
     }
     delete(ApiPaths.OBJECT) {
-        service.delete(call.uuidParam(ApiParams.ID)).getOrThrow()
+        service.delete(call.owner, call.uuidParam(ApiParams.ID)).getOrThrow()
         call.respond(HttpStatusCode.NoContent)
     }
 }

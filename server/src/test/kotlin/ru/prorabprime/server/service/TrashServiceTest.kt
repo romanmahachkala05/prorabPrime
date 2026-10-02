@@ -6,6 +6,7 @@ import kotlin.time.Duration.Companion.days
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import ru.prorabprime.contract.ObjectStatusDto
+import ru.prorabprime.server.TEST_OWNER
 import ru.prorabprime.server.error.ServiceError
 import ru.prorabprime.server.error.ServiceException
 import ru.prorabprime.server.fakes.FIXED_NOW
@@ -30,6 +31,7 @@ class TrashServiceTest {
         val id = UUID.randomUUID()
         objects.records[id] = ObjectRecord(
             id = id,
+            ownerId = TEST_OWNER,
             fields = ObjectFields(title, "Тверская, 5", ObjectStatusDto.IN_PROGRESS, null, null, null),
             coverPhotoId = null,
             createdAt = FIXED_NOW,
@@ -68,11 +70,11 @@ class TrashServiceTest {
         val photoOfGone = aPhoto(gone)
         val photoOfKept = aPhoto(kept)
         aPhoto(kept)
-        photos.trash(photoOfGone, FIXED_NOW)
-        photos.trash(photoOfKept, FIXED_NOW)
-        objects.trash(gone, FIXED_NOW)
+        photos.trash(TEST_OWNER, photoOfGone, FIXED_NOW)
+        photos.trash(TEST_OWNER, photoOfKept, FIXED_NOW)
+        objects.trash(TEST_OWNER, gone, FIXED_NOW)
 
-        val trash = service.list()
+        val trash = service.list(TEST_OWNER)
 
         assertThat(trash.objects.map { it.record.id }).containsExactly(gone)
         assertThat(trash.photos.map { it.photo.id }).containsExactly(photoOfKept)
@@ -82,12 +84,12 @@ class TrashServiceTest {
     @Test
     fun `restoring an object brings it back and moves its update time`() = runTest {
         val id = anObject("Кухня")
-        objects.trash(id, FIXED_NOW)
+        objects.trash(TEST_OWNER, id, FIXED_NOW)
         clock.now = FIXED_NOW + 3.days
 
-        assertThat(service.restoreObject(id).isSuccess).isTrue()
+        assertThat(service.restoreObject(TEST_OWNER, id).isSuccess).isTrue()
 
-        assertThat(objects.find(id)).isNotNull()
+        assertThat(objects.find(TEST_OWNER, id)).isNotNull()
         assertThat(objects.records.getValue(id).updatedAt).isEqualTo(clock.now)
     }
 
@@ -95,10 +97,10 @@ class TrashServiceTest {
     fun `restoring what is not in the trash is not found`() = runTest {
         val id = anObject("Кухня")
 
-        assertThat(service.restoreObject(id).serviceError()).isInstanceOf(ServiceError.NotFound::class.java)
-        assertThat(service.restoreObject(UUID.randomUUID()).serviceError())
+        assertThat(service.restoreObject(TEST_OWNER, id).serviceError()).isInstanceOf(ServiceError.NotFound::class.java)
+        assertThat(service.restoreObject(TEST_OWNER, UUID.randomUUID()).serviceError())
             .isInstanceOf(ServiceError.NotFound::class.java)
-        assertThat(service.restorePhoto(UUID.randomUUID()).serviceError())
+        assertThat(service.restorePhoto(TEST_OWNER, UUID.randomUUID()).serviceError())
             .isInstanceOf(ServiceError.NotFound::class.java)
     }
 
@@ -106,13 +108,15 @@ class TrashServiceTest {
     fun `restoring a photo puts it back in its object, but not while the object is in the trash`() = runTest {
         val id = anObject("Кухня")
         val photo = aPhoto(id)
-        photos.trash(photo, FIXED_NOW)
-        objects.trash(id, FIXED_NOW)
+        photos.trash(TEST_OWNER, photo, FIXED_NOW)
+        objects.trash(TEST_OWNER, id, FIXED_NOW)
 
-        assertThat(service.restorePhoto(photo).serviceError()).isInstanceOf(ServiceError.NotFound::class.java)
+        assertThat(
+            service.restorePhoto(TEST_OWNER, photo).serviceError(),
+        ).isInstanceOf(ServiceError.NotFound::class.java)
 
-        objects.restore(id)
-        assertThat(service.restorePhoto(photo).isSuccess).isTrue()
+        objects.restore(TEST_OWNER, id)
+        assertThat(service.restorePhoto(TEST_OWNER, photo).isSuccess).isTrue()
         assertThat(photos.listByObject(id).map { it.id }).containsExactly(photo)
     }
 
@@ -120,9 +124,9 @@ class TrashServiceTest {
     fun `purging an object removes it and all its files for good`() = runTest {
         val id = anObject("Кухня")
         aPhoto(id)
-        objects.trash(id, FIXED_NOW)
+        objects.trash(TEST_OWNER, id, FIXED_NOW)
 
-        assertThat(service.purgeObject(id).isSuccess).isTrue()
+        assertThat(service.purgeObject(TEST_OWNER, id).isSuccess).isTrue()
 
         assertThat(objects.records).doesNotContainKey(id)
         assertThat(photos.records).isEmpty()
@@ -133,7 +137,7 @@ class TrashServiceTest {
     fun `a live object cannot be purged`() = runTest {
         val id = anObject("Кухня")
 
-        assertThat(service.purgeObject(id).serviceError()).isInstanceOf(ServiceError.NotFound::class.java)
+        assertThat(service.purgeObject(TEST_OWNER, id).serviceError()).isInstanceOf(ServiceError.NotFound::class.java)
         assertThat(objects.records).containsKey(id)
     }
 
@@ -142,9 +146,9 @@ class TrashServiceTest {
         val id = anObject("Кухня")
         val photo = aPhoto(id)
         val other = aPhoto(id)
-        photos.trash(photo, FIXED_NOW)
+        photos.trash(TEST_OWNER, photo, FIXED_NOW)
 
-        assertThat(service.purgePhoto(photo).isSuccess).isTrue()
+        assertThat(service.purgePhoto(TEST_OWNER, photo).isSuccess).isTrue()
 
         assertThat(photos.records.keys).containsExactly(other)
         assertThat(storage.namesOf(id)).containsExactly("$other.jpg", "${other}_thumb.jpg")
@@ -153,10 +157,10 @@ class TrashServiceTest {
     @Test
     fun `files that cannot be deleted do not fail a purge`() = runTest {
         val id = anObject("Кухня")
-        objects.trash(id, FIXED_NOW)
+        objects.trash(TEST_OWNER, id, FIXED_NOW)
         storage.failDeletes = true
 
-        assertThat(service.purgeObject(id).isSuccess).isTrue()
+        assertThat(service.purgeObject(TEST_OWNER, id).isSuccess).isTrue()
         assertThat(objects.records).doesNotContainKey(id)
     }
 
@@ -167,10 +171,10 @@ class TrashServiceTest {
         aPhoto(gone)
         val trashedPhoto = aPhoto(kept)
         val keptPhoto = aPhoto(kept)
-        objects.trash(gone, FIXED_NOW)
-        photos.trash(trashedPhoto, FIXED_NOW)
+        objects.trash(TEST_OWNER, gone, FIXED_NOW)
+        photos.trash(TEST_OWNER, trashedPhoto, FIXED_NOW)
 
-        assertThat(service.empty()).isEqualTo(2)
+        assertThat(service.empty(TEST_OWNER)).isEqualTo(2)
 
         assertThat(objects.records.keys).containsExactly(kept)
         assertThat(photos.records.keys).containsExactly(keptPhoto)
@@ -181,16 +185,16 @@ class TrashServiceTest {
         val old = anObject("Старый")
         val recent = anObject("Недавний")
         val oldPhoto = aPhoto(recent)
-        objects.trash(old, FIXED_NOW - 31.days)
-        objects.trash(anObject("Свежий"), FIXED_NOW - 2.days)
-        photos.trash(oldPhoto, FIXED_NOW - 40.days)
-        photos.trash(aPhoto(recent), FIXED_NOW - 29.days)
+        objects.trash(TEST_OWNER, old, FIXED_NOW - 31.days)
+        objects.trash(TEST_OWNER, anObject("Свежий"), FIXED_NOW - 2.days)
+        photos.trash(TEST_OWNER, oldPhoto, FIXED_NOW - 40.days)
+        photos.trash(TEST_OWNER, aPhoto(recent), FIXED_NOW - 29.days)
 
         assertThat(service.purgeExpired()).isEqualTo(2)
 
         assertThat(objects.records).doesNotContainKey(old)
         assertThat(photos.records).doesNotContainKey(oldPhoto)
-        assertThat(service.list().objects).hasSize(1)
-        assertThat(service.list().photos).hasSize(1)
+        assertThat(service.list(TEST_OWNER).objects).hasSize(1)
+        assertThat(service.list(TEST_OWNER).photos).hasSize(1)
     }
 }

@@ -10,6 +10,7 @@ import kotlin.time.Clock
 import org.koin.ktor.ext.inject
 import ru.prorabprime.contract.ApiParams
 import ru.prorabprime.contract.ApiPaths
+import ru.prorabprime.server.auth.owner
 import ru.prorabprime.server.service.TrashService
 
 fun Route.trashRoutes() {
@@ -17,26 +18,26 @@ fun Route.trashRoutes() {
     val clock by inject<Clock>()
 
     get(ApiPaths.TRASH) {
-        call.respond(service.list().toDto(clock.now()))
+        call.respond(service.list(call.owner).toDto(clock.now()))
     }
     delete(ApiPaths.TRASH) {
-        service.empty()
+        service.empty(call.owner)
         call.respond(HttpStatusCode.NoContent)
     }
     post(ApiPaths.TRASH_OBJECT_RESTORE) {
-        service.restoreObject(call.uuidParam(ApiParams.ID)).getOrThrow()
+        service.restoreObject(call.owner, call.uuidParam(ApiParams.ID)).getOrThrow()
         call.respond(HttpStatusCode.NoContent)
     }
     delete(ApiPaths.TRASH_OBJECT) {
-        service.purgeObject(call.uuidParam(ApiParams.ID)).getOrThrow()
+        service.purgeObject(call.owner, call.uuidParam(ApiParams.ID)).getOrThrow()
         call.respond(HttpStatusCode.NoContent)
     }
     post(ApiPaths.TRASH_PHOTO_RESTORE) {
-        service.restorePhoto(call.uuidParam(ApiParams.ID)).getOrThrow()
+        service.restorePhoto(call.owner, call.uuidParam(ApiParams.ID)).getOrThrow()
         call.respond(HttpStatusCode.NoContent)
     }
     delete(ApiPaths.TRASH_PHOTO) {
-        service.purgePhoto(call.uuidParam(ApiParams.ID)).getOrThrow()
+        service.purgePhoto(call.owner, call.uuidParam(ApiParams.ID)).getOrThrow()
         call.respond(HttpStatusCode.NoContent)
     }
 }

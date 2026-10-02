@@ -74,6 +74,11 @@ class ApplicationTest {
     }
 
     @Test
+    fun `the token of another account is let through too`() = testServer(extraRoutes = probeRoutes) {
+        assertThat(it.get("/api/probe") { bearerAuth(OTHER_TOKEN) }.status).isEqualTo(HttpStatusCode.OK)
+    }
+
+    @Test
     fun `a not-found service error is 404 with its message`() = testServer(extraRoutes = probeRoutes) {
         val response = it.get("/api/probe/missing") { bearerAuth(TEST_TOKEN) }
 

@@ -8,6 +8,7 @@ import org.junit.Test
 import ru.prorabprime.contract.AttachmentKindDto
 import ru.prorabprime.contract.ObjectStatusDto
 import ru.prorabprime.contract.ReceiptRequestDto
+import ru.prorabprime.server.TEST_OWNER
 import ru.prorabprime.server.error.ServiceError
 import ru.prorabprime.server.error.ServiceException
 import ru.prorabprime.server.fakes.FIXED_NOW
@@ -31,6 +32,7 @@ class ReceiptServiceTest {
     init {
         objects.records[objectId] = ObjectRecord(
             id = objectId,
+            ownerId = TEST_OWNER,
             fields = ObjectFields(null, "Тверская, 5", ObjectStatusDto.IN_PROGRESS, null, null, null),
             coverPhotoId = null,
             createdAt = FIXED_NOW,
@@ -49,7 +51,7 @@ class ReceiptServiceTest {
         val photo = receipt()
         clock.now = FIXED_NOW + 3.minutes
 
-        service.set(photo.id, ReceiptRequestDto(125_050, "2026-10-01")).getOrThrow()
+        service.set(TEST_OWNER, photo.id, ReceiptRequestDto(125_050, "2026-10-01")).getOrThrow()
 
         assertThat(photos.records.getValue(photo.id).receipt?.amountKopecks).isEqualTo(125_050L)
         assertThat(photos.records.getValue(photo.id).receipt?.purchasedAt).isEqualTo("2026-10-01")
@@ -60,7 +62,7 @@ class ReceiptServiceTest {
     fun `a sum set by hand replaces what the code said and keeps the code's text`() = runTest {
         val photo = receipt(withCode = true)
 
-        service.set(photo.id, ReceiptRequestDto(79_000, "2026-10-01T15:26")).getOrThrow()
+        service.set(TEST_OWNER, photo.id, ReceiptRequestDto(79_000, "2026-10-01T15:26")).getOrThrow()
 
         val stored = photos.records.getValue(photo.id).receipt
         assertThat(stored?.amountKopecks).isEqualTo(79_000L)
@@ -71,7 +73,7 @@ class ReceiptServiceTest {
     fun `no sum clears what is known`() = runTest {
         val photo = receipt(withCode = true)
 
-        service.set(photo.id, ReceiptRequestDto()).getOrThrow()
+        service.set(TEST_OWNER, photo.id, ReceiptRequestDto()).getOrThrow()
 
         assertThat(photos.records.getValue(photo.id).receipt).isNull()
     }
@@ -88,11 +90,13 @@ class ReceiptServiceTest {
             ReceiptRequestDto(-1, "2026-10-01"),
             ReceiptRequestDto(Long.MAX_VALUE),
         )) {
-            assertThat(service.set(photo.id, bad).serviceError()).isInstanceOf(ServiceError.Validation::class.java)
+            assertThat(
+                service.set(TEST_OWNER, photo.id, bad).serviceError(),
+            ).isInstanceOf(ServiceError.Validation::class.java)
         }
-        assertThat(service.set(plain.id, ReceiptRequestDto(1)).serviceError())
+        assertThat(service.set(TEST_OWNER, plain.id, ReceiptRequestDto(1)).serviceError())
             .isInstanceOf(ServiceError.Validation::class.java)
-        assertThat(service.set(UUID.randomUUID(), ReceiptRequestDto(1)).serviceError())
+        assertThat(service.set(TEST_OWNER, UUID.randomUUID(), ReceiptRequestDto(1)).serviceError())
             .isInstanceOf(ServiceError.NotFound::class.java)
         assertThat(photos.records.getValue(photo.id).receipt).isNull()
     }

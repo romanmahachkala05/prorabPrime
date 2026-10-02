@@ -488,8 +488,16 @@ Rules:
   `ServiceError` to StatusPages. Anything else thrown is a 500 whose message stays in the log.
 - **Configuration** comes from `application.conf` overridden by environment
   variables. Nothing is hardcoded; secrets live in `.env`, never in git.
-- **Auth:** every endpoint except `/health` requires `Authorization: Bearer <API_TOKEN>`;
-  the token is compared in constant time (`MessageDigest.isEqual`).
+- **Auth:** every endpoint except `/health` requires `Authorization: Bearer <token>`. A token belongs to one
+  account (`users`, `api_tokens`) and is stored only as its SHA-256; the configured `API_TOKEN` is registered at
+  every start as a token of the first account. The authenticated call carries an `OwnerId`
+  (`call.owner`), and nothing else says whose data a route touches (ADR-0021).
+- **Every repository call that names a record by its id, or lists records, takes the `OwnerId`**, and the SQL
+  filters by it; what hangs on an object is filtered through the owner of that object (`ownedBy`). An id of
+  another account is "no such record" (404), never a leak; a create with an id someone else has is a `409`.
+  A new route has no way to read an object without naming whose it is. The one call that is not about an
+  owner is the trash's expiry, which works over all accounts. Accounts are made by the owner's own command
+  (`:server:admin`), never over HTTP.
 - **Files** are served only under auth, with the requested path resolved and checked
   to stay inside `STORAGE_DIR` (no path traversal). Upload type is checked by the
   file's signature, not only its declared content type.
@@ -499,7 +507,8 @@ Rules:
   database failures); routes — Ktor `testApplication` (status codes, 401 without a
   token, error format, path traversal); repositories — integration tests against
   PostgreSQL via Testcontainers, falling back to embedded PostgreSQL without Docker
-  (ADR-0006, ADR-0007).
+  (ADR-0006, ADR-0007). **A new route or repository call that is about a record is added to
+  `AccountIsolationTest`**: a second account asking for it by id must get 404 and change nothing.
 
 ---
 

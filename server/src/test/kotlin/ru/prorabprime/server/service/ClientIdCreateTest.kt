@@ -13,6 +13,7 @@ import ru.prorabprime.contract.PaymentMethodDto
 import ru.prorabprime.contract.PaymentRequestDto
 import ru.prorabprime.contract.PaymentSideDto
 import ru.prorabprime.contract.TaskRequestDto
+import ru.prorabprime.server.TEST_OWNER
 import ru.prorabprime.server.error.ServiceError
 import ru.prorabprime.server.error.ServiceException
 import ru.prorabprime.server.fakes.FakeContactRepository
@@ -49,14 +50,14 @@ class ClientIdCreateTest {
 
     private fun Result<*>.error() = (exceptionOrNull() as? ServiceException)?.error
 
-    private suspend fun anObject(): UUID = objectService.create(objectRequest()).getOrThrow().id
+    private suspend fun anObject(): UUID = objectService.create(TEST_OWNER, objectRequest()).getOrThrow().id
 
     @Test
     fun `an object is created under the id the client chose, once`() = runTest {
         val id = UUID.randomUUID()
 
-        val first = objectService.create(objectRequest(id.toString())).getOrThrow()
-        val again = objectService.create(objectRequest(id.toString())).getOrThrow()
+        val first = objectService.create(TEST_OWNER, objectRequest(id.toString())).getOrThrow()
+        val again = objectService.create(TEST_OWNER, objectRequest(id.toString())).getOrThrow()
 
         assertThat(first.id).isEqualTo(id)
         assertThat(again.id).isEqualTo(id)
@@ -66,10 +67,10 @@ class ClientIdCreateTest {
     @Test
     fun `an id that is not a UUID is a validation error, and none means the server picks`() = runTest {
         assertThat(
-            objectService.create(objectRequest("not-a-uuid")).error(),
+            objectService.create(TEST_OWNER, objectRequest("not-a-uuid")).error(),
         ).isInstanceOf(ServiceError.Validation::class.java)
 
-        val picked = objectService.create(objectRequest()).getOrThrow()
+        val picked = objectService.create(TEST_OWNER, objectRequest()).getOrThrow()
 
         assertThat(picked.id).isNotNull()
     }
@@ -90,10 +91,19 @@ class ClientIdCreateTest {
         )
 
         repeat(2) {
-            contacts.create(objectId, ContactRequestDto(id = contactId.toString(), name = "Анна")).getOrThrow()
-            materials.create(objectId, MaterialRequestDto(id = materialId.toString(), title = "Ламинат")).getOrThrow()
-            payments.create(objectId, payment).getOrThrow()
+            contacts.create(
+                TEST_OWNER,
+                objectId,
+                ContactRequestDto(id = contactId.toString(), name = "Анна"),
+            ).getOrThrow()
+            materials.create(
+                TEST_OWNER,
+                objectId,
+                MaterialRequestDto(id = materialId.toString(), title = "Ламинат"),
+            ).getOrThrow()
+            payments.create(TEST_OWNER, objectId, payment).getOrThrow()
             extras.create(
+                TEST_OWNER,
                 objectId,
                 ExtraWorkRequestDto(id = extraId.toString(), title = "Штробление", amountKopecks = 50_000),
             ).getOrThrow()
@@ -112,10 +122,10 @@ class ClientIdCreateTest {
         val id = UUID.randomUUID()
         val request = TaskRequestDto(id = id.toString(), title = "Позвонить", day = "2026-09-25")
 
-        tasks.create(request).getOrThrow()
-        tasks.create(request).getOrThrow()
+        tasks.create(TEST_OWNER, request).getOrThrow()
+        tasks.create(TEST_OWNER, request).getOrThrow()
 
-        assertThat(taskRepo.list(ru.prorabprime.server.model.TaskQuery()).map { it.id }).containsExactly(id)
+        assertThat(taskRepo.list(TEST_OWNER, ru.prorabprime.server.model.TaskQuery()).map { it.id }).containsExactly(id)
     }
 
     @Test
@@ -123,9 +133,9 @@ class ClientIdCreateTest {
         val first = anObject()
         val second = anObject()
         val id = UUID.randomUUID()
-        contacts.create(first, ContactRequestDto(id = id.toString(), name = "Анна")).getOrThrow()
+        contacts.create(TEST_OWNER, first, ContactRequestDto(id = id.toString(), name = "Анна")).getOrThrow()
 
-        val result = contacts.create(second, ContactRequestDto(id = id.toString(), name = "Анна"))
+        val result = contacts.create(TEST_OWNER, second, ContactRequestDto(id = id.toString(), name = "Анна"))
 
         assertThat(result.error()).isInstanceOf(ServiceError.Conflict::class.java)
         assertThat(contactRepo.listByObject(second)).isEmpty()

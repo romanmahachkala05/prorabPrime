@@ -3,8 +3,10 @@ package ru.prorabprime.server.repository
 import java.util.UUID
 import kotlin.time.toJavaInstant
 import kotlin.time.toKotlinInstant
+import org.jetbrains.exposed.v1.core.Op
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.SortOrder
+import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.max
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
@@ -16,6 +18,7 @@ import ru.prorabprime.contract.ContactRoleDto
 import ru.prorabprime.server.db.DbExecutor
 import ru.prorabprime.server.model.ContactFields
 import ru.prorabprime.server.model.ContactRecord
+import ru.prorabprime.server.model.OwnerId
 
 class ExposedContactRepository(
     private val db: DbExecutor,
@@ -28,8 +31,12 @@ class ExposedContactRepository(
             .map { it.toContactRecord() }
     }
 
-    override suspend fun find(id: UUID): ContactRecord? = db.query {
-        ContactsTable.selectAll().where { ContactsTable.id eq id }.singleOrNull()?.toContactRecord()
+    /** The one contact [id] names, if its object belongs to [owner]. */
+    private fun mine(owner: OwnerId, id: UUID): Op<Boolean> =
+        (ContactsTable.id eq id) and ContactsTable.objectId.ownedBy(owner)
+
+    override suspend fun find(owner: OwnerId, id: UUID): ContactRecord? = db.query {
+        ContactsTable.selectAll().where { mine(owner, id) }.singleOrNull()?.toContactRecord()
     }
 
     override suspend fun insert(contact: ContactRecord) {
@@ -46,16 +53,20 @@ class ExposedContactRepository(
         }
     }
 
-    override suspend fun update(id: UUID, fields: ContactFields): Boolean = db.query {
-        ContactsTable.update({ ContactsTable.id eq id }) {
+    override suspend fun update(
+        owner: OwnerId,
+        id: UUID,
+        fields: ContactFields,
+    ): Boolean = db.query {
+        ContactsTable.update({ mine(owner, id) }) {
             it[name] = fields.name
             it[phone] = fields.phone
             it[role] = fields.role.name
         } > 0
     }
 
-    override suspend fun delete(id: UUID): Boolean = db.query {
-        ContactsTable.deleteWhere { ContactsTable.id eq id } > 0
+    override suspend fun delete(owner: OwnerId, id: UUID): Boolean = db.query {
+        ContactsTable.deleteWhere { mine(owner, id) } > 0
     }
 
     override suspend fun nextSortOrder(objectId: UUID): Int = db.query {

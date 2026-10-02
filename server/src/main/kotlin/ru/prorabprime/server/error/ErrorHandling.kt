@@ -6,6 +6,7 @@ import io.ktor.server.application.install
 import io.ktor.server.plugins.BadRequestException
 import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.response.respond
+import java.sql.SQLException
 import ru.prorabprime.contract.ErrorCode
 import ru.prorabprime.contract.ErrorDto
 
@@ -20,6 +21,12 @@ fun Application.installErrorHandling() {
             call.respond(HttpStatusCode.BadRequest, ErrorDto(ErrorCode.VALIDATION, "Malformed request"))
         }
         exception<Throwable> { call, cause ->
+            if (cause.isUniqueViolation()) {
+                // A record made with an id somebody else already has (ADR-0021): the same answer as a retry that
+                // finds another account's record, and it says nothing about whose it is.
+                call.respond(HttpStatusCode.Conflict, ErrorDto(ErrorCode.CONFLICT, "This id is already used"))
+                return@exception
+            }
             call.application.environment.log.error("Unhandled error on ${call.request.local.uri}", cause)
             // The cause stays in the log: its message may describe internals.
             call.respond(HttpStatusCode.InternalServerError, ErrorDto(ErrorCode.INTERNAL, "Internal error"))
@@ -33,6 +40,11 @@ fun Application.installErrorHandling() {
         }
     }
 }
+
+private const val UNIQUE_VIOLATION = "23505"
+
+private fun Throwable.isUniqueViolation(): Boolean =
+    generateSequence(this) { it.cause }.any { it is SQLException && it.sqlState == UNIQUE_VIOLATION }
 
 internal fun ServiceError.toResponse(): Pair<HttpStatusCode, ErrorDto> = when (this) {
     is ServiceError.NotFound -> HttpStatusCode.NotFound to ErrorDto(ErrorCode.NOT_FOUND, message)
